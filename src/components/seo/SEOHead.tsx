@@ -11,7 +11,7 @@ interface SEOHeadProps {
 export function SEOHead({ title, description, image, url, type = "website" }: SEOHeadProps) {
   useEffect(() => {
     // Update title
-    document.title = `${title} | StreamFlix`;
+    document.title = `${title} | fmovies`;
 
     // Update meta tags
     const updateMeta = (name: string, content: string, property?: boolean) => {
@@ -49,7 +49,7 @@ export function SEOHead({ title, description, image, url, type = "website" }: SE
     }
 
     return () => {
-      document.title = "StreamFlix - Watch Free Movies & TV Shows Online";
+      document.title = "fmovies - Watch Free Movies & TV Shows Online";
     };
   }, [title, description, image, url, type]);
 

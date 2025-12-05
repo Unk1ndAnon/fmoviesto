@@ -14,10 +14,10 @@ export function Footer() {
               <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
                 <Film className="w-6 h-6 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">StreamFlix</span>
+              <span className="text-xl font-bold text-foreground">fmovies</span>
             </Link>
             <p className="text-muted-foreground text-sm max-w-md">
-              StreamFlix is your ultimate destination for streaming movies and TV shows. 
+              fmovies is your ultimate destination for streaming movies and TV shows.
               Enjoy thousands of titles in HD quality, completely free.
             </p>
           </div>
