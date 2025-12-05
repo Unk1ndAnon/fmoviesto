@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, RefreshCw, ExternalLink } from "lucide-react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import { EMBED_SOURCES, getEmbedUrl } from "@/lib/tmdb";
 import { adminStorage } from "@/lib/admin";
 import { Button } from "@/components/ui/button";
@@ -57,10 +57,34 @@ export function VideoPlayer({ id, type, season, episode, title }: VideoPlayerPro
 
   return (
     <div className="w-full">
+      {/* Server Tabs - Above Player */}
+      <div className="bg-card/80 backdrop-blur rounded-t-lg border border-border border-b-0 p-4">
+        <div className="flex flex-wrap gap-2">
+          {allSources.map((source, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                setCurrentSource(index);
+                setIsLoading(true);
+                setHasError(false);
+              }}
+              className={cn(
+                "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                currentSource === index
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary/80 text-secondary-foreground hover:bg-secondary"
+              )}
+            >
+              {source.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Player Container */}
-      <div className="relative aspect-video bg-card rounded-lg overflow-hidden">
+      <div className="relative aspect-video bg-black overflow-hidden border-x border-border">
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-card">
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
             <div className="flex flex-col items-center gap-4">
               <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
               <p className="text-muted-foreground">Loading player...</p>
@@ -69,16 +93,16 @@ export function VideoPlayer({ id, type, season, episode, title }: VideoPlayerPro
         )}
 
         {hasError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-card">
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
             <div className="flex flex-col items-center gap-4 text-center px-4">
               <AlertTriangle className="w-12 h-12 text-destructive" />
               <p className="text-foreground font-medium">Failed to load video</p>
               <p className="text-muted-foreground text-sm">
-                This source might be unavailable. Try another source below.
+                This server might be unavailable. Try another server above.
               </p>
               <Button variant="outline" onClick={tryNextSource} className="gap-2">
                 <RefreshCw className="w-4 h-4" />
-                Try Next Source
+                Try Next Server
               </Button>
             </div>
           </div>
@@ -98,34 +122,12 @@ export function VideoPlayer({ id, type, season, episode, title }: VideoPlayerPro
         />
       </div>
 
-      {/* Source Selector */}
-      <div className="mt-4">
-        <p className="text-sm text-muted-foreground mb-2">Select Server:</p>
-        <div className="flex flex-wrap gap-2">
-          {allSources.map((source, index) => (
-            <Button
-              key={index}
-              variant={currentSource === index ? "default" : "cinema"}
-              size="sm"
-              onClick={() => {
-                setCurrentSource(index);
-                setIsLoading(true);
-                setHasError(false);
-              }}
-              className="gap-2"
-            >
-              {source.isCustom && <ExternalLink className="w-3 h-3" />}
-              {source.name}
-            </Button>
-          ))}
-        </div>
+      {/* Server Notice - Below Player */}
+      <div className="bg-card/80 backdrop-blur rounded-b-lg border border-border border-t-0 p-4">
+        <p className="text-sm text-center text-muted-foreground">
+          If current server doesn't work please try other servers above.
+        </p>
       </div>
-
-      {/* Disclaimer */}
-      <p className="mt-4 text-xs text-muted-foreground/60 text-center">
-        If the video doesn't play, try selecting a different server above. 
-        All videos are hosted by third-party providers.
-      </p>
     </div>
   );
 }
