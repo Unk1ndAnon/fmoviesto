@@ -51,7 +51,7 @@ export function Navbar() {
               <Film className="w-6 h-6 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
-              StreamFlix
+              fmovies
             </span>
           </Link>
 
