@@ -84,14 +84,19 @@ export default function TVDetails() {
 
           <div className="relative container mx-auto px-4 pt-32 pb-12">
             <div className="flex flex-col md:flex-row gap-8">
-              {/* Poster */}
-              <div className="flex-shrink-0">
+              {/* Poster with Play Button */}
+              <Link to={`/watch/tv/${show.id}-${slug}?s=1&e=1`} className="flex-shrink-0 relative group/poster">
                 <img
                   src={getImageUrl(show.poster_path, "w342")}
                   alt={show.name}
-                  className="w-48 md:w-64 rounded-lg shadow-2xl mx-auto md:mx-0"
+                  className="w-48 md:w-64 rounded-lg shadow-2xl mx-auto md:mx-0 transition-transform duration-300 group-hover/poster:scale-105"
                 />
-              </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-background/40 opacity-0 group-hover/poster:opacity-100 transition-opacity duration-300 rounded-lg">
+                  <div className="w-16 h-16 rounded-full bg-primary/90 backdrop-blur flex items-center justify-center">
+                    <Play className="w-8 h-8 text-primary-foreground ml-1" fill="currentColor" />
+                  </div>
+                </div>
+              </Link>
 
               {/* Info */}
               <div className="flex-1 space-y-4">
@@ -246,22 +251,22 @@ export default function TVDetails() {
         {cast.length > 0 && (
           <section className="container mx-auto px-4 py-8">
             <h2 className="text-2xl font-bold text-foreground mb-4">Cast</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-              {cast.map((person) => (
-                <div key={person.id} className="text-center">
-                  <img
-                    src={getImageUrl(person.profile_path, "w185")}
-                    alt={person.name}
-                    className="w-full aspect-square object-cover rounded-lg mb-2"
-                  />
-                  <p className="text-sm font-medium text-foreground line-clamp-1">
+            <div className="flex flex-wrap gap-2">
+              {cast.map((person) => {
+                const actorSlug = person.name
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/(^-|-$)/g, "");
+                return (
+                  <Link
+                    key={person.id}
+                    to={`/actor/${person.id}-${actorSlug}`}
+                    className="px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-primary hover:text-primary-foreground transition-colors"
+                  >
                     {person.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground line-clamp-1">
-                    {person.character}
-                  </p>
-                </div>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           </section>
         )}
