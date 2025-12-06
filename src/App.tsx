@@ -15,6 +15,7 @@ import ActorMovies from "./pages/ActorMovies";
 import Privacy from "./pages/Privacy";
 import DMCA from "./pages/DMCA";
 import Terms from "./pages/Terms";
+import Sitemap from "./pages/Sitemap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/sitemap" element={<Sitemap />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

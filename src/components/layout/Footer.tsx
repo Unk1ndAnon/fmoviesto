@@ -66,6 +66,11 @@ export function Footer() {
                   DMCA
                 </Link>
               </li>
+              <li>
+                <Link to="/sitemap" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                  Sitemap
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
