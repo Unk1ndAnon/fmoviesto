@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Film, Github, Twitter, Mail } from "lucide-react";
+import { Github, Twitter, Mail } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -10,14 +11,11 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                <Film className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">fmovies</span>
-            </Link>
+            <div className="mb-4">
+              <Logo />
+            </div>
             <p className="text-muted-foreground text-sm max-w-md">
-              fmovies is your ultimate destination for streaming movies and TV shows.
+              Fmovies is your ultimate destination for streaming movies and TV shows.
               Enjoy thousands of titles in HD quality, completely free.
             </p>
           </div>
