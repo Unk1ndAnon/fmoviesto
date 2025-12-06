@@ -208,6 +208,13 @@ export const tmdb = {
   // Genres
   getMovieGenres: () => fetchTMDB<{ genres: Genre[] }>("/genre/movie/list"),
   getTVGenres: () => fetchTMDB<{ genres: Genre[] }>("/genre/tv/list"),
+
+  // Person
+  getPersonDetails: (id: number) =>
+    fetchTMDB<{ id: number; name: string; biography: string; profile_path: string | null; known_for_department: string }>(`/person/${id}`),
+  
+  getPersonCredits: (id: number) =>
+    fetchTMDB<{ cast: Array<{ id: number; title?: string; name?: string; poster_path: string | null; vote_average: number; release_date?: string; first_air_date?: string; media_type: string }> }>(`/person/${id}/combined_credits`),
 };
 
 export const EMBED_SOURCES = [
