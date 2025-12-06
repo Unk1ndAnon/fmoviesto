@@ -1,4 +1,4 @@
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getBackdropUrl, getImageUrl } from "@/lib/tmdb";
 import { Navbar } from "@/components/layout/Navbar";
@@ -12,10 +12,12 @@ import { ArrowLeft, Play, Star, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Watch() {
-  const { id, type } = useParams<{ id: string; type?: string }>();
+  const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   
-  const isTV = type === "tv";
+  // Detect TV from URL path
+  const isTV = location.pathname.includes("/watch/tv/");
   const itemId = parseInt(id?.split("-")[0] || "0");
   const season = parseInt(searchParams.get("s") || "1");
   const episode = parseInt(searchParams.get("e") || "1");
