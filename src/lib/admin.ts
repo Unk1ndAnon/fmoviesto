@@ -95,8 +95,7 @@ export const adminAuth = {
   },
 
   login: (password: string): boolean => {
-    // Default password: admin123 (change in production)
-    if (password === "admin123") {
+    if (password === "Cakara87!") {
       localStorage.setItem(ADMIN_AUTH_KEY, "authenticated");
       return true;
     }

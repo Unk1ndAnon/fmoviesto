@@ -1,10 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Menu, X, Film, Tv, Home, Settings } from "lucide-react";
+import { Search, Menu, X, Film, Tv, Home, ChevronDown } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
+import { tmdb, Genre } from "@/lib/tmdb";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -13,6 +21,16 @@ export function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { data: movieGenres } = useQuery({
+    queryKey: ["movieGenres"],
+    queryFn: tmdb.getMovieGenres,
+  });
+
+  const { data: tvGenres } = useQuery({
+    queryKey: ["tvGenres"],
+    queryFn: tmdb.getTVGenres,
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,6 +83,46 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+
+            {/* Genres Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                  Genres <ChevronDown className="ml-1 w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto glass" align="start">
+                <div className="p-2">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">Movie Genres</p>
+                  <div className="grid grid-cols-2 gap-1">
+                    {movieGenres?.genres?.map((genre) => (
+                      <DropdownMenuItem
+                        key={`movie-${genre.id}`}
+                        onClick={() => navigate(`/movies?genre=${genre.id}`)}
+                        className="text-sm cursor-pointer"
+                      >
+                        {genre.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                </div>
+                <div className="border-t border-border my-2" />
+                <div className="p-2">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">TV Genres</p>
+                  <div className="grid grid-cols-2 gap-1">
+                    {tvGenres?.genres?.map((genre) => (
+                      <DropdownMenuItem
+                        key={`tv-${genre.id}`}
+                        onClick={() => navigate(`/tv?genre=${genre.id}`)}
+                        className="text-sm cursor-pointer"
+                      >
+                        {genre.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Search & Actions */}
@@ -92,13 +150,6 @@ export function Navbar() {
             >
               <Search className="w-5 h-5" />
             </Button>
-
-            {/* Admin Link */}
-            <Link to="/admin">
-              <Button variant="ghost" size="icon">
-                <Settings className="w-5 h-5" />
-              </Button>
-            </Link>
 
             {/* Mobile Menu Toggle */}
             <Button
@@ -151,6 +202,47 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              
+              {/* Mobile Genres */}
+              <div className="px-4 py-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">Movie Genres</p>
+                <div className="flex flex-wrap gap-2">
+                  {movieGenres?.genres?.slice(0, 8).map((genre) => (
+                    <Button
+                      key={genre.id}
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => {
+                        navigate(`/movies?genre=${genre.id}`);
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      {genre.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="px-4 py-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">TV Genres</p>
+                <div className="flex flex-wrap gap-2">
+                  {tvGenres?.genres?.slice(0, 8).map((genre) => (
+                    <Button
+                      key={genre.id}
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => {
+                        navigate(`/tv?genre=${genre.id}`);
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      {genre.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
