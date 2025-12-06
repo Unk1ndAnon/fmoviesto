@@ -1,4 +1,4 @@
-import { useParams, Link, useSearchParams, useLocation } from "react-router-dom";
+import { useParams, Link, useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getBackdropUrl, getImageUrl } from "@/lib/tmdb";
 import { Navbar } from "@/components/layout/Navbar";
@@ -8,13 +8,14 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Play, Star, Film } from "lucide-react";
+import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Watch() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Detect TV from URL path
   const isTV = location.pathname.includes("/watch/tv/");
@@ -110,7 +111,7 @@ export default function Watch() {
             </h1>
 
             {/* Player */}
-            <div className="mb-6">
+            <div className="mb-4">
               <VideoPlayer
                 id={itemId}
                 type={isTV ? "tv" : "movie"}
@@ -119,6 +120,35 @@ export default function Watch() {
                 title={title}
               />
             </div>
+
+            {/* Next/Previous Episode Navigation */}
+            {isTV && seasonData?.episodes && (
+              <div className="flex items-center justify-between mb-6 p-3 rounded-lg bg-card border border-border">
+                <Button
+                  variant="ghost"
+                  disabled={episode <= 1}
+                  onClick={() => navigate(`/watch/tv/${itemId}-${slug}?s=${season}&e=${episode - 1}`)}
+                  className="gap-2"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous Episode
+                </Button>
+                
+                <span className="text-sm text-muted-foreground">
+                  S{season} E{episode} / {seasonData.episodes.length}
+                </span>
+                
+                <Button
+                  variant="ghost"
+                  disabled={episode >= seasonData.episodes.length}
+                  onClick={() => navigate(`/watch/tv/${itemId}-${slug}?s=${season}&e=${episode + 1}`)}
+                  className="gap-2"
+                >
+                  Next Episode
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
 
             {/* Season & Episode Selector for TV */}
             {isTV && (
