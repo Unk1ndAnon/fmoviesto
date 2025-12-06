@@ -218,26 +218,35 @@ export const tmdb = {
 };
 
 export const EMBED_SOURCES = [
-  { name: "VidSrc", url: (id: number, type: "movie" | "tv") => `https://vidsrc.xyz/embed/${type}/${id}` },
-  { name: "VidSrc.me", url: (id: number, type: "movie" | "tv") => `https://vidsrc.net/embed/${type}/?tmdb=${id}` },
-  { name: "2Embed", url: (id: number, type: "movie" | "tv") => `https://www.2embed.cc/embed/${id}` },
+  { name: "VidLink", url: (id: number, type: "movie" | "tv") => `https://vidlink.pro/movie/${id}` },
+  { name: "Embed.su", url: (id: number, type: "movie" | "tv") => `https://embed.su/embed/${type}/${id}` },
+  { name: "AutoEmbed", url: (id: number, type: "movie" | "tv") => `https://autoembed.cc/embed/${type}/${id}` },
+  { name: "VidBinge", url: (id: number, type: "movie" | "tv") => `https://vidbinge.dev/embed/${type}/${id}` },
   { name: "SuperEmbed", url: (id: number, type: "movie" | "tv") => `https://multiembed.mov/?video_id=${id}&tmdb=1` },
-  { name: "NontonGo", url: (id: number, type: "movie" | "tv") => `https://www.NontonGo.win/embed/${type}/${id}` },
+  { name: "2Embed", url: (id: number, type: "movie" | "tv") => `https://www.2embed.cc/embed/${id}` },
 ];
 
 export const getEmbedUrl = (id: number, type: "movie" | "tv", sourceIndex: number = 0, season?: number, episode?: number): string => {
   const source = EMBED_SOURCES[sourceIndex] || EMBED_SOURCES[0];
-  let url = source.url(id, type);
   
   if (type === "tv" && season !== undefined && episode !== undefined) {
-    if (sourceIndex === 0) {
-      url = `https://vidsrc.xyz/embed/tv/${id}/${season}/${episode}`;
-    } else if (sourceIndex === 1) {
-      url = `https://vidsrc.net/embed/tv/?tmdb=${id}&season=${season}&episode=${episode}`;
-    } else if (sourceIndex === 3) {
-      url = `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
+    switch (sourceIndex) {
+      case 0: // VidLink
+        return `https://vidlink.pro/tv/${id}/${season}/${episode}`;
+      case 1: // Embed.su
+        return `https://embed.su/embed/tv/${id}/${season}/${episode}`;
+      case 2: // AutoEmbed
+        return `https://autoembed.cc/embed/tv/${id}/${season}/${episode}`;
+      case 3: // VidBinge
+        return `https://vidbinge.dev/embed/tv/${id}/${season}/${episode}`;
+      case 4: // SuperEmbed
+        return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
+      case 5: // 2Embed
+        return `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
+      default:
+        return source.url(id, type);
     }
   }
   
-  return url;
+  return source.url(id, type);
 };
