@@ -12,6 +12,9 @@ import Watch from "./pages/Watch";
 import Search from "./pages/Search";
 import Admin from "./pages/Admin";
 import ActorMovies from "./pages/ActorMovies";
+import Privacy from "./pages/Privacy";
+import DMCA from "./pages/DMCA";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -40,6 +43,9 @@ const App = () => (
           <Route path="/search" element={<Search />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/actor/:id" element={<ActorMovies />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/dmca" element={<DMCA />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
