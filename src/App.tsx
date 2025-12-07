@@ -16,6 +16,7 @@ import Privacy from "./pages/Privacy";
 import DMCA from "./pages/DMCA";
 import Terms from "./pages/Terms";
 import Sitemap from "./pages/Sitemap";
+import SitemapXml from "./pages/SitemapXml";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/sitemap" element={<Sitemap />} />
+          <Route path="/sitemap.xml" element={<SitemapXml />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
