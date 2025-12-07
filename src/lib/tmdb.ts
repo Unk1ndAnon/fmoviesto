@@ -219,7 +219,6 @@ export const tmdb = {
 
 export const EMBED_SOURCES = [
   { name: "VidLink", url: (id: number, type: "movie" | "tv") => `https://vidlink.pro/${type}/${id}` },
-  { name: "FMovies4U", url: (id: number, type: "movie" | "tv") => `https://fmovies4u.com/embed/${type}/${id}` },
   { name: "Embed.su", url: (id: number, type: "movie" | "tv") => `https://embed.su/embed/${type}/${id}` },
   { name: "AutoEmbed", url: (id: number, type: "movie" | "tv") => `https://autoembed.cc/embed/${type}/${id}` },
   { name: "VidBinge", url: (id: number, type: "movie" | "tv") => `https://vidbinge.dev/embed/${type}/${id}` },
@@ -234,17 +233,15 @@ export const getEmbedUrl = (id: number, type: "movie" | "tv", sourceIndex: numbe
     switch (sourceIndex) {
       case 0: // VidLink
         return `https://vidlink.pro/tv/${id}/${season}/${episode}`;
-      case 1: // FMovies4U
-        return `https://fmovies4u.com/embed/tv/${id}/${season}/${episode}`;
-      case 2: // Embed.su
+      case 1: // Embed.su
         return `https://embed.su/embed/tv/${id}/${season}/${episode}`;
-      case 3: // AutoEmbed
+      case 2: // AutoEmbed
         return `https://autoembed.cc/embed/tv/${id}/${season}/${episode}`;
-      case 4: // VidBinge
+      case 3: // VidBinge
         return `https://vidbinge.dev/embed/tv/${id}/${season}/${episode}`;
-      case 5: // SuperEmbed
+      case 4: // SuperEmbed
         return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
-      case 6: // 2Embed
+      case 5: // 2Embed
         return `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
       default:
         return source.url(id, type);
