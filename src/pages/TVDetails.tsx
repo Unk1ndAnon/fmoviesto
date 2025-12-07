@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { TVShowJsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, Star, Calendar, Film } from "lucide-react";
@@ -64,6 +65,7 @@ export default function TVDetails() {
         image={getBackdropUrl(show.backdrop_path)}
         type="video.tv_show"
       />
+      <TVShowJsonLd show={show} />
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />

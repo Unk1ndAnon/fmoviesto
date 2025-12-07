@@ -5,6 +5,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { MovieJsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
 import { Play, Star, Clock, Calendar, DollarSign } from "lucide-react";
 
@@ -64,6 +65,7 @@ export default function MovieDetails() {
         image={getBackdropUrl(movie.backdrop_path)}
         type="video.movie"
       />
+      <MovieJsonLd movie={movie} />
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
