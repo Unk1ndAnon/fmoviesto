@@ -8,7 +8,7 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight, Heart, Bookmark, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Watch() {
@@ -44,6 +44,9 @@ export default function Watch() {
   const isLoading = isTV ? showLoading : movieLoading;
   const item = isTV ? show : movie;
   const title = isTV ? (show?.name || "") : (movie?.title || "");
+  const year = isTV 
+    ? (show?.first_air_date ? new Date(show.first_air_date).getFullYear() : "")
+    : (movie?.release_date ? new Date(movie.release_date).getFullYear() : "");
 
   if (isLoading) {
     return (
@@ -92,177 +95,225 @@ export default function Watch() {
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
 
-        <main className="flex-1 pt-20">
-          <div className="container mx-auto px-4 py-6">
-            {/* Back Button */}
-            <Link to={detailsLink} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors text-sm">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Details
-            </Link>
-
-            {/* Title */}
-            <h1 className="text-xl md:text-2xl font-bold text-foreground mb-4">
-              {title}
-              {isTV && (
-                <span className="text-base font-normal text-muted-foreground ml-2">
-                  - Season {season}, Episode {episode}
-                </span>
-              )}
-            </h1>
-
-            {/* Player */}
-            <div className="mb-4">
+        <main className="flex-1 pt-16">
+          {/* Watch Page Layout */}
+          <div className="flex flex-col lg:flex-row">
+            {/* Main Player Area */}
+            <div className="flex-1 p-4 lg:p-6">
+              {/* Player */}
               <VideoPlayer
                 id={itemId}
                 type={isTV ? "tv" : "movie"}
                 season={isTV ? season : undefined}
                 episode={isTV ? episode : undefined}
                 title={title}
+                backdrop={getBackdropUrl(item.backdrop_path)}
               />
-            </div>
 
-            {/* Next/Previous Episode Navigation */}
-            {isTV && seasonData?.episodes && (
-              <div className="flex items-center justify-between mb-6 p-3 rounded-lg bg-card border border-border">
-                <Button
-                  variant="ghost"
-                  disabled={episode <= 1}
-                  onClick={() => navigate(`/watch/tv/${itemId}-${slug}?s=${season}&e=${episode - 1}`)}
-                  className="gap-2"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous Episode
-                </Button>
-                
-                <span className="text-sm text-muted-foreground">
-                  S{season} E{episode} / {seasonData.episodes.length}
-                </span>
-                
-                <Button
-                  variant="ghost"
-                  disabled={episode >= seasonData.episodes.length}
-                  onClick={() => navigate(`/watch/tv/${itemId}-${slug}?s=${season}&e=${episode + 1}`)}
-                  className="gap-2"
-                >
-                  Next Episode
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
+              {/* Next/Previous Episode Navigation */}
+              {isTV && seasonData?.episodes && (
+                <div className="flex items-center justify-between mt-4 p-3 rounded-lg bg-card border border-border">
+                  <Button
+                    variant="ghost"
+                    disabled={episode <= 1}
+                    onClick={() => navigate(`/watch/tv/${itemId}-${slug}?s=${season}&e=${episode - 1}`)}
+                    className="gap-2"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous Episode
+                  </Button>
+                  
+                  <span className="text-sm text-muted-foreground">
+                    S{season} E{episode} / {seasonData.episodes.length}
+                  </span>
+                  
+                  <Button
+                    variant="ghost"
+                    disabled={episode >= seasonData.episodes.length}
+                    onClick={() => navigate(`/watch/tv/${itemId}-${slug}?s=${season}&e=${episode + 1}`)}
+                    className="gap-2"
+                  >
+                    Next Episode
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
 
-            {/* Season & Episode Selector for TV */}
-            {isTV && (
-              <div className="mb-6 p-4 rounded-lg bg-card border border-border">
-                <div className="flex flex-wrap items-center gap-4">
-                  {/* Season Selector */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Season:</span>
-                    <Select value={String(season)} onValueChange={handleSeasonChange}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {seasons.map((s) => (
-                          <SelectItem key={s.season_number} value={String(s.season_number)}>
-                            Season {s.season_number}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              {/* Season & Episode Selector for TV */}
+              {isTV && (
+                <div className="mt-4 p-4 rounded-lg bg-card border border-border">
+                  <div className="flex flex-wrap items-center gap-4">
+                    {/* Season Selector */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Season:</span>
+                      <Select value={String(season)} onValueChange={handleSeasonChange}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {seasons.map((s) => (
+                            <SelectItem key={s.season_number} value={String(s.season_number)}>
+                              Season {s.season_number}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  {/* Episode Selector */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Episode:</span>
-                    <Select value={String(episode)} onValueChange={handleEpisodeChange}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {seasonData?.episodes?.map((ep) => (
-                          <SelectItem key={ep.episode_number} value={String(ep.episode_number)}>
-                            Episode {ep.episode_number}
-                          </SelectItem>
-                        )) || Array.from({ length: 20 }, (_, i) => (
-                          <SelectItem key={i + 1} value={String(i + 1)}>
-                            Episode {i + 1}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {/* Episode Selector */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Episode:</span>
+                      <Select value={String(episode)} onValueChange={handleEpisodeChange}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {seasonData?.episodes?.map((ep) => (
+                            <SelectItem key={ep.episode_number} value={String(ep.episode_number)}>
+                              Episode {ep.episode_number}
+                            </SelectItem>
+                          )) || Array.from({ length: 20 }, (_, i) => (
+                            <SelectItem key={i + 1} value={String(i + 1)}>
+                              Episode {i + 1}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Episode List for TV */}
-            {isTV && seasonData?.episodes && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-foreground mb-4">Episodes</h3>
-                <div className="grid gap-2">
-                  {seasonData.episodes.map((ep) => (
-                    <Link
-                      key={ep.id}
-                      to={`/watch/tv/${itemId}-${slug}?s=${season}&e=${ep.episode_number}`}
-                      className={cn(
-                        "flex gap-4 p-3 rounded-lg transition-colors",
-                        ep.episode_number === episode
-                          ? "bg-primary/10 border border-primary"
-                          : "bg-card border border-border hover:bg-secondary"
-                      )}
-                    >
-                      <div className="flex-shrink-0 w-32 aspect-video rounded overflow-hidden bg-secondary">
-                        {ep.still_path ? (
-                          <img
-                            src={getImageUrl(ep.still_path, "w300")}
-                            alt={ep.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            <Film className="w-6 h-6" />
-                          </div>
+              {/* Episode List for TV */}
+              {isTV && seasonData?.episodes && (
+                <div className="mt-6">
+                  <h3 className="font-semibold text-foreground mb-4">Episodes</h3>
+                  <div className="grid gap-2 max-h-96 overflow-y-auto">
+                    {seasonData.episodes.map((ep) => (
+                      <Link
+                        key={ep.id}
+                        to={`/watch/tv/${itemId}-${slug}?s=${season}&e=${ep.episode_number}`}
+                        className={cn(
+                          "flex gap-4 p-3 rounded-lg transition-colors",
+                          ep.episode_number === episode
+                            ? "bg-primary/10 border border-primary"
+                            : "bg-card border border-border hover:bg-secondary"
                         )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={cn(
-                            "text-xs px-2 py-0.5 rounded",
-                            ep.episode_number === episode
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-secondary text-secondary-foreground"
-                          )}>
-                            E{ep.episode_number}
-                          </span>
-                          {ep.vote_average > 0 && (
-                            <div className="flex items-center gap-1 text-xs text-rating-gold">
-                              <Star className="w-3 h-3" fill="currentColor" />
-                              {ep.vote_average.toFixed(1)}
+                      >
+                        <div className="flex-shrink-0 w-32 aspect-video rounded overflow-hidden bg-secondary">
+                          {ep.still_path ? (
+                            <img
+                              src={getImageUrl(ep.still_path, "w300")}
+                              alt={ep.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                              <Film className="w-6 h-6" />
                             </div>
                           )}
                         </div>
-                        <h4 className={cn(
-                          "font-medium line-clamp-1",
-                          ep.episode_number === episode ? "text-primary" : "text-foreground"
-                        )}>
-                          {ep.name}
-                        </h4>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                          {ep.overview || "No description available."}
-                        </p>
-                      </div>
-                      {ep.episode_number === episode && (
-                        <div className="flex items-center">
-                          <Play className="w-5 h-5 text-primary" fill="currentColor" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={cn(
+                              "text-xs px-2 py-0.5 rounded",
+                              ep.episode_number === episode
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary text-secondary-foreground"
+                            )}>
+                              E{ep.episode_number}
+                            </span>
+                            {ep.vote_average > 0 && (
+                              <div className="flex items-center gap-1 text-xs text-rating-gold">
+                                <Star className="w-3 h-3" fill="currentColor" />
+                                {ep.vote_average.toFixed(1)}
+                              </div>
+                            )}
+                          </div>
+                          <h4 className={cn(
+                            "font-medium line-clamp-1",
+                            ep.episode_number === episode ? "text-primary" : "text-foreground"
+                          )}>
+                            {ep.name}
+                          </h4>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                            {ep.overview || "No description available."}
+                          </p>
                         </div>
-                      )}
-                    </Link>
-                  ))}
+                        {ep.episode_number === episode && (
+                          <div className="flex items-center">
+                            <Play className="w-5 h-5 text-primary" fill="currentColor" />
+                          </div>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Similar */}
+            {/* Sidebar - Movie/Show Info */}
+            <div className="w-full lg:w-80 xl:w-96 p-4 lg:p-6 lg:border-l border-border">
+              {/* Poster */}
+              <div className="rounded-lg overflow-hidden mb-4">
+                <img 
+                  src={getImageUrl(item.poster_path, "w342")}
+                  alt={title}
+                  className="w-full aspect-[2/3] object-cover"
+                />
+              </div>
+
+              {/* Title & Year */}
+              <h2 className="text-xl font-bold text-foreground mb-1">{title}</h2>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                <Calendar className="w-4 h-4" />
+                <span>{year}</span>
+                {item.vote_average > 0 && (
+                  <>
+                    <span>•</span>
+                    <div className="flex items-center gap-1 text-rating-gold">
+                      <Star className="w-4 h-4" fill="currentColor" />
+                      {item.vote_average.toFixed(1)}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Back to Details */}
+              <Link 
+                to={detailsLink}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Details
+              </Link>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 mb-6">
+                <Button variant="outline" size="sm" className="flex-1 gap-2">
+                  <Heart className="w-4 h-4" />
+                  Favorite
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1 gap-2">
+                  <Bookmark className="w-4 h-4" />
+                  Watchlist
+                </Button>
+              </div>
+
+              {/* Overview */}
+              {item.overview && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Overview</h3>
+                  <p className="text-sm text-muted-foreground line-clamp-6">
+                    {item.overview}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Similar Content */}
+          <div className="container mx-auto px-4 py-6">
             {!isTV && movie?.similar?.results && movie.similar.results.length > 0 && (
               <MovieRow
                 title="You May Also Like"

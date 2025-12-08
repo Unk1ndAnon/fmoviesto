@@ -36,20 +36,24 @@ export default function Search() {
     enabled: !!debouncedQuery,
   });
 
-  const results = data?.results?.filter((item) => {
-    if (filter === "all") return true;
-    const mediaType = "title" in item ? "movie" : "tv";
-    return mediaType === filter;
+  // Filter out person results and only keep movies and TV shows
+  const allResults = data?.results?.filter((item: any) => {
+    return item.media_type === "movie" || item.media_type === "tv";
   }) || [];
 
-  const movies = results.filter((item) => "title" in item);
-  const tvShows = results.filter((item) => "name" in item && !("title" in item));
+  const results = allResults.filter((item: any) => {
+    if (filter === "all") return true;
+    return item.media_type === filter;
+  });
+
+  const movies = allResults.filter((item: any) => item.media_type === "movie");
+  const tvShows = allResults.filter((item: any) => item.media_type === "tv");
 
   return (
     <>
       <SEOHead
         title={debouncedQuery ? `Search Results for "${debouncedQuery}"` : "Search"}
-        description={`Search for movies and TV shows on StreamFlix. Find your favorite content to stream in HD.`}
+        description={`Search for movies and TV shows on fmovies. Find your favorite content to stream in HD.`}
       />
 
       <div className="min-h-screen flex flex-col bg-background">
@@ -92,7 +96,7 @@ export default function Search() {
                       size="sm"
                       onClick={() => setFilter("all")}
                     >
-                      All ({results.length})
+                      All ({allResults.length})
                     </Button>
                     <Button
                       variant={filter === "movie" ? "default" : "cinema"}
@@ -132,7 +136,7 @@ export default function Search() {
                 ) : results.length > 0 ? (
                   <MovieGrid
                     items={results}
-                    type={filter === "tv" ? "tv" : "movie"}
+                    detectType={true}
                   />
                 ) : (
                   <div className="text-center py-20">

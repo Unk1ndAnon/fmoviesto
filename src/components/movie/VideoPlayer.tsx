@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw, Play } from "lucide-react";
 import { EMBED_SOURCES, getEmbedUrl } from "@/lib/tmdb";
 import { adminStorage } from "@/lib/admin";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,15 @@ interface VideoPlayerProps {
   season?: number;
   episode?: number;
   title: string;
+  backdrop?: string;
+  onPlay?: () => void;
 }
 
-export function VideoPlayer({ id, type, season, episode, title }: VideoPlayerProps) {
+export function VideoPlayer({ id, type, season, episode, title, backdrop, onPlay }: VideoPlayerProps) {
   const [currentSource, setCurrentSource] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // Get custom embeds from admin storage
   const adminData = adminStorage.get(id, type);
@@ -55,34 +58,65 @@ export function VideoPlayer({ id, type, season, episode, title }: VideoPlayerPro
     }
   };
 
-  return (
-    <div className="w-full">
-      {/* Server Tabs - Above Player */}
-      <div className="bg-card/80 backdrop-blur rounded-t-lg border border-border border-b-0 p-4">
-        <div className="flex flex-wrap gap-2">
-          {allSources.map((source, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setCurrentSource(index);
-                setIsLoading(true);
-                setHasError(false);
-              }}
-              className={cn(
-                "px-4 py-2 rounded-md text-sm font-medium transition-all",
-                currentSource === index
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary/80 text-secondary-foreground hover:bg-secondary"
-              )}
-            >
-              {source.name}
-            </button>
-          ))}
+  const handlePlay = () => {
+    setIsPlaying(true);
+    setIsLoading(true);
+    onPlay?.();
+  };
+
+  // Click to Play overlay
+  if (!isPlaying && backdrop) {
+    return (
+      <div className="w-full">
+        <div 
+          className="relative aspect-video bg-black overflow-hidden rounded-lg cursor-pointer group"
+          onClick={handlePlay}
+        >
+          <img 
+            src={backdrop} 
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center">
+            <div className="w-20 h-20 rounded-full bg-primary/90 backdrop-blur flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110">
+              <Play className="w-10 h-10 text-primary-foreground ml-1" fill="currentColor" />
+            </div>
+            <p className="mt-4 text-lg font-medium text-white">Click to Play</p>
+          </div>
+        </div>
+        
+        {/* Server Tabs - Below Preview */}
+        <div className="bg-card/80 backdrop-blur rounded-lg border border-border mt-4 p-4">
+          <p className="text-sm text-muted-foreground mb-3">{allSources.length} servers available</p>
+          <div className="flex flex-wrap gap-2">
+            {allSources.map((source, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentSource(index);
+                  handlePlay();
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-md text-sm font-medium transition-all border",
+                  currentSource === index
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-secondary/80 text-secondary-foreground border-border hover:bg-secondary"
+                )}
+              >
+                {source.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+    );
+  }
 
+  return (
+    <div className="w-full">
       {/* Player Container */}
-      <div className="relative aspect-video bg-black overflow-hidden border-x border-border">
+      <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black">
             <div className="flex flex-col items-center gap-4">
@@ -98,7 +132,7 @@ export function VideoPlayer({ id, type, season, episode, title }: VideoPlayerPro
               <AlertTriangle className="w-12 h-12 text-destructive" />
               <p className="text-foreground font-medium">Failed to load video</p>
               <p className="text-muted-foreground text-sm">
-                This server might be unavailable. Try another server above.
+                This server might be unavailable. Try another server below.
               </p>
               <Button variant="outline" onClick={tryNextSource} className="gap-2">
                 <RefreshCw className="w-4 h-4" />
@@ -122,11 +156,29 @@ export function VideoPlayer({ id, type, season, episode, title }: VideoPlayerPro
         />
       </div>
 
-      {/* Server Notice - Below Player */}
-      <div className="bg-card/80 backdrop-blur rounded-b-lg border border-border border-t-0 p-4">
-        <p className="text-sm text-center text-muted-foreground">
-          If current server doesn't work please try other servers above.
-        </p>
+      {/* Server Tabs - Below Player */}
+      <div className="bg-card/80 backdrop-blur rounded-lg border border-border mt-4 p-4">
+        <p className="text-sm text-muted-foreground mb-3">{allSources.length} servers available</p>
+        <div className="flex flex-wrap gap-2">
+          {allSources.map((source, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                setCurrentSource(index);
+                setIsLoading(true);
+                setHasError(false);
+              }}
+              className={cn(
+                "px-4 py-2 rounded-md text-sm font-medium transition-all border",
+                currentSource === index
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-secondary/80 text-secondary-foreground border-border hover:bg-secondary"
+              )}
+            >
+              {source.name}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
