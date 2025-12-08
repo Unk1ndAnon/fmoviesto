@@ -215,6 +215,9 @@ export const tmdb = {
   
   getPersonCredits: (id: number) =>
     fetchTMDB<{ cast: Array<{ id: number; title?: string; name?: string; poster_path: string | null; vote_average: number; release_date?: string; first_air_date?: string; media_type: string }> }>(`/person/${id}/combined_credits`),
+
+  getPopularPeople: (page: number = 1) =>
+    fetchTMDB<{ results: Array<{ id: number; name: string; profile_path: string | null; known_for_department: string; known_for: Array<{ title?: string; name?: string }> }> }>("/person/popular", { page: String(page) }),
 };
 
 export const EMBED_SOURCES = [
