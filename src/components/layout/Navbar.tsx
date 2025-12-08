@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard } from "lucide-react";
+import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Newspaper } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
-import { tmdb, Genre } from "@/lib/tmdb";
+import { tmdb, Genre, getImageUrl } from "@/lib/tmdb";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -39,11 +39,6 @@ const trendingCategories = [
   { title: "Shows", description: "Catch up with the world and see what TV shows are trending.", href: "/tv?sort=trending", icon: Tv },
 ];
 
-const moreCategories = [
-  { title: "Popular", description: "Explore the most popular people in the entertainment industry.", href: "/search", icon: TrendingUp },
-  { title: "Latest News", description: "Get the scoop on the latest happenings in entertainment.", href: "/", icon: Sparkles, isNew: true },
-];
-
 const streamingServices = [
   { title: "Netflix", description: "Dive into Netflix's vast library of original series, blockbuster movies.", href: "/movies?network=213", icon: "N" },
   { title: "Disney", description: "Enter the enchanting world of Disney Plus, where you can find favorites.", href: "/movies?network=2739", icon: "D" },
@@ -67,6 +62,16 @@ export function Navbar() {
   const { data: tvGenres } = useQuery({
     queryKey: ["tvGenres"],
     queryFn: tmdb.getTVGenres,
+  });
+
+  const { data: popularPeople } = useQuery({
+    queryKey: ["popularPeople"],
+    queryFn: () => tmdb.getPopularPeople(1),
+  });
+
+  const { data: latestMovies } = useQuery({
+    queryKey: ["latestMoviesNews"],
+    queryFn: () => tmdb.getNowPlaying(1),
   });
 
   useEffect(() => {
@@ -259,7 +264,7 @@ export function Navbar() {
                     More
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <div className="w-[400px] p-4">
+                    <div className="w-[600px] p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <LayoutGrid className="w-5 h-5" />
                         <h3 className="font-semibold">More</h3>
@@ -267,25 +272,74 @@ export function Navbar() {
                       <p className="text-sm text-muted-foreground mb-4">
                         Explore additional features and content to enhance your entertainment experience.
                       </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {moreCategories.map((category) => (
-                          <Link
-                            key={category.title}
-                            to={category.href}
-                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
-                          >
-                            <category.icon className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm">{category.title}</span>
-                                {category.isNew && (
-                                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-primary text-primary-foreground">NEW</span>
+                      
+                      {/* Popular People Section */}
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Users className="w-4 h-4" />
+                          <span className="font-medium text-sm">Popular People</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                          {popularPeople?.results?.slice(0, 8).map((person) => (
+                            <Link
+                              key={person.id}
+                              to={`/actor/${person.id}`}
+                              className="flex flex-col items-center p-2 rounded-lg hover:bg-secondary transition-colors group text-center"
+                            >
+                              <div className="w-12 h-12 rounded-full overflow-hidden bg-muted mb-1">
+                                {person.profile_path ? (
+                                  <img 
+                                    src={getImageUrl(person.profile_path, "w185")} 
+                                    alt={person.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                    <Users className="w-5 h-5" />
+                                  </div>
                                 )}
                               </div>
-                              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{category.description}</p>
-                            </div>
-                          </Link>
-                        ))}
+                              <span className="text-xs font-medium line-clamp-1">{person.name}</span>
+                              <span className="text-[10px] text-muted-foreground">{person.known_for_department}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Latest News Section */}
+                      <div className="border-t border-border pt-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Newspaper className="w-4 h-4" />
+                          <span className="font-medium text-sm">Latest News</span>
+                          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-primary text-primary-foreground">NEW</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {latestMovies?.results?.slice(0, 4).map((movie) => (
+                            <Link
+                              key={movie.id}
+                              to={`/movie/${movie.id}`}
+                              className="flex items-start gap-2 p-2 rounded-lg hover:bg-secondary transition-colors group"
+                            >
+                              <div className="w-10 h-14 rounded overflow-hidden bg-muted flex-shrink-0">
+                                {movie.poster_path ? (
+                                  <img 
+                                    src={getImageUrl(movie.poster_path, "w92")} 
+                                    alt={movie.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                    <Film className="w-4 h-4" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-xs font-medium line-clamp-2 group-hover:text-primary">{movie.title}</span>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">Now Playing</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </NavigationMenuContent>
