@@ -10,6 +10,96 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight, Heart, Bookmark, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites, useWatchlist } from "@/hooks/useUserLists";
+import { toast } from "sonner";
+
+function WatchActionButtons({
+  itemId,
+  mediaType,
+  title,
+  posterPath,
+  voteAverage,
+  releaseDate,
+}: {
+  itemId: number;
+  mediaType: "movie" | "tv";
+  title: string;
+  posterPath: string | null;
+  voteAverage: number;
+  releaseDate: string | null;
+}) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites();
+  const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
+
+  const inFavorites = isFavorite(itemId, mediaType);
+  const inWatchlist = isInWatchlist(itemId, mediaType);
+
+  const handleFavorite = () => {
+    if (!user) {
+      toast.error("Please sign in to add favorites");
+      navigate("/auth");
+      return;
+    }
+    if (inFavorites) {
+      removeFavorite.mutate({ tmdb_id: itemId, media_type: mediaType });
+    } else {
+      addFavorite.mutate({
+        tmdb_id: itemId,
+        media_type: mediaType,
+        title,
+        poster_path: posterPath,
+        vote_average: voteAverage,
+        release_date: releaseDate,
+      });
+    }
+  };
+
+  const handleWatchlist = () => {
+    if (!user) {
+      toast.error("Please sign in to add to watchlist");
+      navigate("/auth");
+      return;
+    }
+    if (inWatchlist) {
+      removeFromWatchlist.mutate({ tmdb_id: itemId, media_type: mediaType });
+    } else {
+      addToWatchlist.mutate({
+        tmdb_id: itemId,
+        media_type: mediaType,
+        title,
+        poster_path: posterPath,
+        vote_average: voteAverage,
+        release_date: releaseDate,
+      });
+    }
+  };
+
+  return (
+    <div className="flex gap-2 mb-6">
+      <Button
+        variant={inFavorites ? "default" : "outline"}
+        size="sm"
+        className="flex-1 gap-2"
+        onClick={handleFavorite}
+      >
+        <Heart className={cn("w-4 h-4", inFavorites && "fill-current")} />
+        {inFavorites ? "Favorited" : "Favorite"}
+      </Button>
+      <Button
+        variant={inWatchlist ? "default" : "outline"}
+        size="sm"
+        className="flex-1 gap-2"
+        onClick={handleWatchlist}
+      >
+        <Bookmark className={cn("w-4 h-4", inWatchlist && "fill-current")} />
+        {inWatchlist ? "In Watchlist" : "Watchlist"}
+      </Button>
+    </div>
+  );
+}
 
 export default function Watch() {
   const { id } = useParams<{ id: string }>();
@@ -289,16 +379,14 @@ export default function Watch() {
               </Link>
 
               {/* Action Buttons */}
-              <div className="flex gap-2 mb-6">
-                <Button variant="outline" size="sm" className="flex-1 gap-2">
-                  <Heart className="w-4 h-4" />
-                  Favorite
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1 gap-2">
-                  <Bookmark className="w-4 h-4" />
-                  Watchlist
-                </Button>
-              </div>
+              <WatchActionButtons
+                itemId={itemId}
+                mediaType={isTV ? "tv" : "movie"}
+                title={title}
+                posterPath={item.poster_path}
+                voteAverage={item.vote_average}
+                releaseDate={isTV ? (show?.first_air_date || null) : (movie?.release_date || null)}
+              />
 
               {/* Overview */}
               {item.overview && (

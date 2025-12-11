@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      favorites: {
+        Row: {
+          created_at: string | null
+          id: string
+          media_type: string
+          poster_path: string | null
+          release_date: string | null
+          title: string
+          tmdb_id: number
+          user_id: string
+          vote_average: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          media_type: string
+          poster_path?: string | null
+          release_date?: string | null
+          title: string
+          tmdb_id: number
+          user_id: string
+          vote_average?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          media_type?: string
+          poster_path?: string | null
+          release_date?: string | null
+          title?: string
+          tmdb_id?: number
+          user_id?: string
+          vote_average?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      watchlist: {
+        Row: {
+          created_at: string | null
+          id: string
+          media_type: string
+          poster_path: string | null
+          release_date: string | null
+          title: string
+          tmdb_id: number
+          user_id: string
+          vote_average: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          media_type: string
+          poster_path?: string | null
+          release_date?: string | null
+          title: string
+          tmdb_id: number
+          user_id: string
+          vote_average?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          media_type?: string
+          poster_path?: string | null
+          release_date?: string | null
+          title?: string
+          tmdb_id?: number
+          user_id?: string
+          vote_average?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

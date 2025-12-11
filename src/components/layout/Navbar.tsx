@@ -1,12 +1,20 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Newspaper } from "lucide-react";
+import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Newspaper, Heart, Bookmark, LogIn, LogOut, User } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { tmdb, Genre, getImageUrl } from "@/lib/tmdb";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -15,6 +23,58 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+
+function UserMenu() {
+  const { user, signOut, loading } = useAuth();
+  const navigate = useNavigate();
+
+  if (loading) {
+    return <div className="w-9 h-9 rounded-full bg-secondary animate-pulse" />;
+  }
+
+  if (!user) {
+    return (
+      <Link to="/auth">
+        <Button variant="ghost" size="sm" className="gap-2">
+          <LogIn className="w-4 h-4" />
+          <span className="hidden sm:inline">Sign In</span>
+        </Button>
+      </Link>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="rounded-full">
+          <User className="w-5 h-5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem asChild>
+          <Link to="/favorites" className="flex items-center gap-2">
+            <Heart className="w-4 h-4" />
+            My Favorites
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/watchlist" className="flex items-center gap-2">
+            <Bookmark className="w-4 h-4" />
+            My Watchlist
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => signOut()}
+          className="flex items-center gap-2 text-destructive focus:text-destructive"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 const movieCategories = [
   { title: "Discover", description: "Uncover hidden gems and new releases in the world of cinema.", href: "/movies", icon: Sparkles, isNew: true },
@@ -362,6 +422,9 @@ export function Navbar() {
                 />
               </div>
             </form>
+
+            {/* User Menu */}
+            <UserMenu />
 
             {/* Mobile Search Toggle */}
             <Button
