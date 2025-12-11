@@ -89,7 +89,7 @@ export function HeroSlider({ movies }: HeroSliderProps) {
 
             {/* Actions */}
             <div className="flex flex-wrap gap-4">
-              <Link to={`/watch/${currentMovie.id}-${slug}`}>
+              <Link to={`/watch/movie/${currentMovie.id}-${slug}`}>
                 <Button variant="hero" size="lg" className="gap-2">
                   <Play className="w-5 h-5" fill="currentColor" />
                   Watch Now

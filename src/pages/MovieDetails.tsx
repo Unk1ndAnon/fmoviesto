@@ -87,7 +87,7 @@ export default function MovieDetails() {
           <div className="relative container mx-auto px-4 pt-32 pb-12">
             <div className="flex flex-col md:flex-row gap-8">
               {/* Poster with Play Button */}
-              <Link to={`/watch/${movie.id}-${slug}`} className="flex-shrink-0 relative group/poster">
+              <Link to={`/watch/movie/${movie.id}-${slug}`} className="flex-shrink-0 relative group/poster">
                 <img
                   src={getImageUrl(movie.poster_path, "w342")}
                   alt={movie.title}
@@ -174,7 +174,7 @@ export default function MovieDetails() {
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-4 pt-4">
-                  <Link to={`/watch/${movie.id}-${slug}`}>
+                  <Link to={`/watch/movie/${movie.id}-${slug}`}>
                     <Button variant="hero" size="lg" className="gap-2">
                       <Play className="w-5 h-5" fill="currentColor" />
                       Watch Now
