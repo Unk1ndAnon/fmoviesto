@@ -20,7 +20,7 @@ Allow: /
 Crawl-delay: 2
 
 # Sitemap location
-Sitemap: https://fmovies.lovable.app/sitemap.xml
+Sitemap: https://fmoviesto.lovable.app/sitemap.xml
 
 # Disallow admin and search with empty queries
 Disallow: /admin
