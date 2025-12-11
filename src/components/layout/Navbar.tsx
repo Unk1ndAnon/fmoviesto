@@ -18,25 +18,24 @@ import {
 
 const movieCategories = [
   { title: "Discover", description: "Uncover hidden gems and new releases in the world of cinema.", href: "/movies", icon: Sparkles, isNew: true },
-  { title: "Popular", description: "Dive into the world of popular movies that have captured hearts.", href: "/movies?sort=popular", icon: TrendingUp },
-  { title: "Now Playing", description: "Catch the latest movies now playing in theaters near you.", href: "/movies?sort=now_playing", icon: Play },
-  { title: "Upcoming", description: "Be the first to watch the latest movies before they hit big screen.", href: "/movies?sort=upcoming", icon: Calendar },
-  { title: "Top Rated", description: "Explore the pinnacle of cinematic excellence with our collection.", href: "/movies?sort=top_rated", icon: Star },
+  { title: "Popular", description: "Dive into the world of popular movies that have captured hearts.", href: "/movies?category=popular", icon: TrendingUp },
+  { title: "Now Playing", description: "Catch the latest movies now playing in theaters near you.", href: "/movies?category=now-playing", icon: Play },
+  { title: "Upcoming", description: "Be the first to watch the latest movies before they hit big screen.", href: "/movies?category=upcoming", icon: Calendar },
+  { title: "Top Rated", description: "Explore the pinnacle of cinematic excellence with our collection.", href: "/movies?category=top-rated", icon: Star },
   { title: "Anime", description: "Embark on an epic journey with our handpicked collection of anime.", href: "/movies?genre=16", icon: Clapperboard },
 ];
 
 const tvCategories = [
   { title: "Discover", description: "Unearth new TV shows and hidden gems in television.", href: "/tv", icon: Sparkles, isNew: true },
-  { title: "Popular", description: "Dive into the world of popular TV shows that captured hearts.", href: "/tv?sort=popular", icon: TrendingUp },
-  { title: "Airing Today", description: "Don't miss out on the latest episodes of your favorite shows.", href: "/tv?sort=airing_today", icon: Play },
-  { title: "On The Air", description: "Tune in to the latest buzz with shows currently on the air.", href: "/tv?sort=on_the_air", icon: Calendar },
-  { title: "Top Rated", description: "Explore the pinnacle of television excellence with top picks.", href: "/tv?sort=top_rated", icon: Star },
+  { title: "Popular", description: "Dive into the world of popular TV shows that captured hearts.", href: "/tv?category=popular", icon: TrendingUp },
+  { title: "Trending", description: "Don't miss out on the latest trending shows everyone's watching.", href: "/tv?category=trending", icon: Play },
+  { title: "Top Rated", description: "Explore the pinnacle of television excellence with top picks.", href: "/tv?category=top-rated", icon: Star },
   { title: "Anime TV Shows", description: "Dive into the vast world of anime series, from hits to classics.", href: "/tv?genre=16", icon: Clapperboard },
 ];
 
 const trendingCategories = [
-  { title: "Movies", description: "Stay on the pulse of what's hot in the movie scene.", href: "/movies?sort=trending", icon: Film },
-  { title: "Shows", description: "Catch up with the world and see what TV shows are trending.", href: "/tv?sort=trending", icon: Tv },
+  { title: "Movies", description: "Stay on the pulse of what's hot in the movie scene.", href: "/movies?category=trending", icon: Film },
+  { title: "Shows", description: "Catch up with the world and see what TV shows are trending.", href: "/tv?category=trending", icon: Tv },
 ];
 
 const streamingServices = [
