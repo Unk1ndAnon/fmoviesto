@@ -2,22 +2,20 @@
 # Allow all search engines to crawl the site
 
 User-agent: Googlebot
-Allow: /
-Crawl-delay: 1
-
-User-agent: Bingbot
-Allow: /
-Crawl-delay: 1
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+Disallow: 
+User-agent: googlebot-image
+Disallow: 
+User-agent: googlebot-mobile
+Disallow: 
+User-agent: MSNBot
+Disallow: 
+User-agent: Slurp
+Disallow: 
+User-agent: yahoo-mmcrawler
+Disallow: 
 User-agent: *
-Allow: /
-Crawl-delay: 2
+Disallow: 
+Sitemap: https://www.fmov.online/sitemap.xml
 
 # Sitemap location
 Sitemap: https://fmoviesto.lovable.app/sitemap.xml
