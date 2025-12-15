@@ -31,7 +31,7 @@ export function Logo({ className, showText = true }: LogoProps) {
       {showText && (
         <div className="flex flex-col">
           <span className="text-xl font-black tracking-tight text-foreground group-hover:text-primary transition-colors">
-            <span className="text-primary">F</span>movies
+            <span className="text-primary">F</span>mov
           </span>
           <span className="text-[9px] text-muted-foreground -mt-1 tracking-widest uppercase">
             Watch Free
