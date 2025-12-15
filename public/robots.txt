@@ -1,25 +1,7 @@
 # Fmovies Robots.txt
 # Allow all search engines to crawl the site
 
-User-agent: Googlebot
-Disallow: 
-User-agent: googlebot-image
-Disallow: 
-User-agent: googlebot-mobile
-Disallow: 
-User-agent: MSNBot
-Disallow: 
-User-agent: Slurp
-Disallow: 
-User-agent: yahoo-mmcrawler
-Disallow: 
 User-agent: *
 Disallow: 
+Disallow: /cgi-bin/
 Sitemap: https://www.fmov.online/sitemap.xml
-
-# Sitemap location
-Sitemap: https://fmoviesto.lovable.app/sitemap.xml
-
-# Disallow admin and search with empty queries
-Disallow: /admin
-Disallow: /search?q=
