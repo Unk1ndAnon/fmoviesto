@@ -1,9 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb } from "@/lib/tmdb";
 
+// Sanitize string to prevent XSS - only allow safe characters for URLs
+const sanitizeUrlPart = (str: string): string => {
+  return str.replace(/[^a-zA-Z0-9\-_./=?&]/g, "");
+};
+
 export default function SitemapXml() {
   const [episodeUrls, setEpisodeUrls] = useState<Array<{ loc: string; priority: string; changefreq: string }>>([]);
+  const containerRef = useRef<HTMLPreElement>(null);
 
   const { data: popularMovies } = useQuery({
     queryKey: ["sitemapMovies"],
@@ -83,7 +89,7 @@ export default function SitemapXml() {
               
               for (const episode of seasonData.episodes || []) {
                 episodes.push({
-                  loc: `/watch/tv/${show.id}-${slug}?season=${season.season_number}&episode=${episode.episode_number}`,
+                  loc: sanitizeUrlPart(`/watch/tv/${show.id}-${slug}?season=${season.season_number}&episode=${episode.episode_number}`),
                   priority: "0.7",
                   changefreq: "weekly",
                 });
@@ -104,7 +110,7 @@ export default function SitemapXml() {
   }, [popularTV]);
 
   useEffect(() => {
-    if (!popularMovies || !popularTV || !movieGenres || !tvGenres) return;
+    if (!popularMovies || !popularTV || !movieGenres || !tvGenres || !containerRef.current) return;
 
     const baseUrl = window.location.origin;
     const today = new Date().toISOString().split("T")[0];
@@ -121,31 +127,31 @@ export default function SitemapXml() {
     ];
 
     const movieUrls = popularMovies.map((movie) => ({
-      loc: `/movie/${movie.id}-${generateSlug(movie.title)}`,
+      loc: sanitizeUrlPart(`/movie/${movie.id}-${generateSlug(movie.title)}`),
       priority: "0.8",
       changefreq: "weekly",
     }));
 
     const movieWatchUrls = popularMovies.map((movie) => ({
-      loc: `/watch/movie/${movie.id}-${generateSlug(movie.title)}`,
+      loc: sanitizeUrlPart(`/watch/movie/${movie.id}-${generateSlug(movie.title)}`),
       priority: "0.8",
       changefreq: "weekly",
     }));
 
     const tvUrls = popularTV.map((show) => ({
-      loc: `/tv/${show.id}-${generateSlug(show.name)}`,
+      loc: sanitizeUrlPart(`/tv/${show.id}-${generateSlug(show.name)}`),
       priority: "0.8",
       changefreq: "weekly",
     }));
 
     const genreUrls = [
       ...movieGenres.genres.map((g) => ({
-        loc: `/movies?genre=${g.id}`,
+        loc: sanitizeUrlPart(`/movies?genre=${g.id}`),
         priority: "0.6",
         changefreq: "weekly",
       })),
       ...tvGenres.genres.map((g) => ({
-        loc: `/tv?genre=${g.id}`,
+        loc: sanitizeUrlPart(`/tv?genre=${g.id}`),
         priority: "0.6",
         changefreq: "weekly",
       })),
@@ -167,14 +173,26 @@ ${allUrls
   .join("\n")}
 </urlset>`;
 
-    // Set content type and display XML
-    document.body.innerHTML = `<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace; background: #1a1a1a; color: #00ff00; padding: 20px; margin: 0; min-height: 100vh;">${xml.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`;
+    // Use textContent instead of innerHTML to prevent XSS
+    containerRef.current.textContent = xml;
     document.title = "Sitemap XML - fmovies";
   }, [popularMovies, popularTV, movieGenres, tvGenres, episodeUrls]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <p className="text-muted-foreground">Generating sitemap...</p>
-    </div>
+    <pre 
+      ref={containerRef}
+      style={{
+        whiteSpace: "pre-wrap",
+        wordWrap: "break-word",
+        fontFamily: "monospace",
+        background: "#1a1a1a",
+        color: "#00ff00",
+        padding: "20px",
+        margin: 0,
+        minHeight: "100vh"
+      }}
+    >
+      Generating sitemap...
+    </pre>
   );
 }
