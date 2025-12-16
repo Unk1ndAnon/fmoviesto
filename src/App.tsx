@@ -21,6 +21,8 @@ import SitemapXml from "./pages/SitemapXml";
 import Auth from "./pages/Auth";
 import Favorites from "./pages/Favorites";
 import Watchlist from "./pages/Watchlist";
+import PopularPeople from "./pages/PopularPeople";
+import RandomMovies from "./pages/RandomMovies";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -53,6 +55,8 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/watchlist" element={<Watchlist />} />
+            <Route path="/people" element={<PopularPeople />} />
+            <Route path="/random" element={<RandomMovies />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/dmca" element={<DMCA />} />
             <Route path="/terms" element={<Terms />} />
