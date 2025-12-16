@@ -1,28 +1,49 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getImageUrl, Movie, TVShow } from "@/lib/tmdb";
+import { slugToTitle } from "@/lib/slug";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { SEOHead } from "@/components/seo/SEOHead";
 
 export default function ActorMovies() {
-  const { id } = useParams<{ id: string }>();
-  const personId = parseInt(id?.split("-")[0] || "0");
+  const { slug } = useParams<{ slug: string }>();
+  const searchName = slugToTitle(slug || "");
+
+  // Search for person by name to get TMDB ID
+  const { data: peopleSearch, isLoading: searchLoading } = useQuery({
+    queryKey: ["personSearch", searchName],
+    queryFn: async () => {
+      const result = await tmdb.getPopularPeople(1);
+      // First try popular people, then search
+      const popular = result.results.find(
+        p => p.name.toLowerCase() === searchName.toLowerCase()
+      );
+      if (popular) return popular;
+      
+      // If not found in popular, we'd need a person search endpoint
+      // For now, just return undefined
+      return undefined;
+    },
+    enabled: !!searchName,
+  });
+
+  const personId = peopleSearch?.id;
 
   const { data: person, isLoading: personLoading } = useQuery({
     queryKey: ["person", personId],
-    queryFn: () => tmdb.getPersonDetails(personId),
+    queryFn: () => tmdb.getPersonDetails(personId!),
     enabled: !!personId,
   });
 
   const { data: credits, isLoading: creditsLoading } = useQuery({
     queryKey: ["personCredits", personId],
-    queryFn: () => tmdb.getPersonCredits(personId),
+    queryFn: () => tmdb.getPersonCredits(personId!),
     enabled: !!personId,
   });
 
-  const isLoading = personLoading || creditsLoading;
+  const isLoading = searchLoading || personLoading || creditsLoading;
 
   if (isLoading) {
     return (

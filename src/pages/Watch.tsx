@@ -1,6 +1,7 @@
-import { useParams, Link, useSearchParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getBackdropUrl, getImageUrl } from "@/lib/tmdb";
+import { slugToTitle, generateSlug, getWatchMovieUrl, getWatchTVUrl, getMovieUrl, getTVShowUrl, parseSeasonEpisode } from "@/lib/slug";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { VideoPlayer } from "@/components/movie/VideoPlayer";
@@ -102,36 +103,56 @@ function WatchActionButtons({
 }
 
 export default function Watch() {
-  const { id } = useParams<{ id: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { slug, seasonEpisode } = useParams<{ slug: string; seasonEpisode?: string }>();
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Detect TV from URL path
-  const isTV = location.pathname.includes("/watch/tv/");
-  const itemId = parseInt(id?.split("-")[0] || "0");
-  const season = parseInt(searchParams.get("s") || "1");
-  const episode = parseInt(searchParams.get("e") || "1");
+  // Detect TV from URL (has seasonEpisode param)
+  const isTV = !!seasonEpisode;
+  const searchTitle = slugToTitle(slug || "");
+  
+  // Parse season/episode from URL
+  const { season, episode } = seasonEpisode 
+    ? parseSeasonEpisode(seasonEpisode)
+    : { season: 1, episode: 1 };
+
+  // Search for content by title
+  const { data: movieSearch, isLoading: movieSearching } = useQuery({
+    queryKey: ["movieSearch", searchTitle],
+    queryFn: () => tmdb.searchMovieByTitle(searchTitle),
+    enabled: !!searchTitle && !isTV,
+  });
+
+  const { data: tvSearch, isLoading: tvSearching } = useQuery({
+    queryKey: ["tvSearch", searchTitle],
+    queryFn: () => tmdb.searchTVByTitle(searchTitle),
+    enabled: !!searchTitle && isTV,
+  });
+
+  const itemId = isTV ? tvSearch?.id : movieSearch?.id;
 
   const { data: movie, isLoading: movieLoading } = useQuery({
     queryKey: ["movie", itemId],
-    queryFn: () => tmdb.getMovieDetails(itemId),
+    queryFn: () => tmdb.getMovieDetails(itemId!),
     enabled: !!itemId && !isTV,
   });
 
   const { data: show, isLoading: showLoading } = useQuery({
     queryKey: ["tv", itemId],
-    queryFn: () => tmdb.getTVDetails(itemId),
+    queryFn: () => tmdb.getTVDetails(itemId!),
     enabled: !!itemId && isTV,
   });
 
   const { data: seasonData } = useQuery({
     queryKey: ["tvSeason", itemId, season],
-    queryFn: () => tmdb.getSeasonDetails(itemId, season),
+    queryFn: () => tmdb.getSeasonDetails(itemId!, season),
     enabled: !!itemId && isTV && season > 0,
   });
 
-  const isLoading = isTV ? showLoading : movieLoading;
+  const isLoading = isTV 
+    ? (tvSearching || showLoading)
+    : (movieSearching || movieLoading);
+  
   const item = isTV ? show : movie;
   const title = isTV ? (show?.name || "") : (movie?.title || "");
   const year = isTV 
@@ -149,7 +170,7 @@ export default function Watch() {
     );
   }
 
-  if (!item) {
+  if (!item || !itemId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Content not found</p>
@@ -157,20 +178,16 @@ export default function Watch() {
     );
   }
 
-  const slug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-
-  const detailsLink = isTV ? `/tv/${itemId}-${slug}` : `/movie/${itemId}-${slug}`;
+  const contentSlug = generateSlug(title);
+  const detailsLink = isTV ? getTVShowUrl(title) : getMovieUrl(title);
   const seasons = show?.seasons?.filter((s) => s.season_number > 0) || [];
 
   const handleSeasonChange = (newSeason: string) => {
-    setSearchParams({ s: newSeason, e: "1" });
+    navigate(getWatchTVUrl(title, parseInt(newSeason), 1));
   };
 
   const handleEpisodeChange = (newEpisode: string) => {
-    setSearchParams({ s: String(season), e: newEpisode });
+    navigate(getWatchTVUrl(title, season, parseInt(newEpisode)));
   };
 
   return (
@@ -206,7 +223,7 @@ export default function Watch() {
                   <Button
                     variant="ghost"
                     disabled={episode <= 1}
-                    onClick={() => navigate(`/watch/tv/${itemId}-${slug}?s=${season}&e=${episode - 1}`)}
+                    onClick={() => navigate(getWatchTVUrl(title, season, episode - 1))}
                     className="gap-2"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -220,7 +237,7 @@ export default function Watch() {
                   <Button
                     variant="ghost"
                     disabled={episode >= seasonData.episodes.length}
-                    onClick={() => navigate(`/watch/tv/${itemId}-${slug}?s=${season}&e=${episode + 1}`)}
+                    onClick={() => navigate(getWatchTVUrl(title, season, episode + 1))}
                     className="gap-2"
                   >
                     Next Episode
@@ -282,7 +299,7 @@ export default function Watch() {
                     {seasonData.episodes.map((ep) => (
                       <Link
                         key={ep.id}
-                        to={`/watch/tv/${itemId}-${slug}?s=${season}&e=${ep.episode_number}`}
+                        to={getWatchTVUrl(title, season, ep.episode_number)}
                         className={cn(
                           "flex gap-4 p-3 rounded-lg transition-colors",
                           ep.episode_number === episode

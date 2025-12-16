@@ -45,10 +45,10 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/movies" element={<Movies />} />
             <Route path="/tv" element={<TVShows />} />
-            <Route path="/movie/:id" element={<MovieDetails />} />
-            <Route path="/tv/:id" element={<TVDetails />} />
-            <Route path="/watch/movie/:id" element={<Watch />} />
-            <Route path="/watch/tv/:id" element={<Watch />} />
+            <Route path="/movie/:slug" element={<MovieDetails />} />
+            <Route path="/tvshow/:slug" element={<TVDetails />} />
+            <Route path="/watch/:slug" element={<Watch />} />
+            <Route path="/watch/:slug/:seasonEpisode" element={<Watch />} />
             <Route path="/search" element={<Search />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/actor/:id" element={<ActorMovies />} />

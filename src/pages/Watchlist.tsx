@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { getImageUrl } from "@/lib/tmdb";
+import { getMovieUrl, getTVShowUrl, getWatchMovieUrl, getWatchTVUrl } from "@/lib/slug";
 import { Bookmark, Star, Play, Trash2, Film, Loader2 } from "lucide-react";
 
 export default function Watchlist() {
@@ -27,12 +28,6 @@ export default function Watchlist() {
       </div>
     );
   }
-
-  const generateSlug = (title: string) =>
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
 
   return (
     <>
@@ -74,11 +69,12 @@ export default function Watchlist() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                 {watchlist.map((item) => {
-                  const slug = generateSlug(item.title);
-                  const detailsLink = `/${item.media_type}/${item.tmdb_id}-${slug}`;
+                  const detailsLink = item.media_type === "movie" 
+                    ? getMovieUrl(item.title)
+                    : getTVShowUrl(item.title);
                   const watchLink = item.media_type === "movie"
-                    ? `/watch/movie/${item.tmdb_id}-${slug}`
-                    : `/watch/tv/${item.tmdb_id}-${slug}?s=1&e=1`;
+                    ? getWatchMovieUrl(item.title)
+                    : getWatchTVUrl(item.title, 1, 1);
 
                   return (
                     <div key={item.id} className="group relative">

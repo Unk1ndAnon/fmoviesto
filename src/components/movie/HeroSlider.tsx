@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Play, Info, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { Movie, getBackdropUrl } from "@/lib/tmdb";
+import { getWatchMovieUrl, getMovieUrl } from "@/lib/slug";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -36,10 +37,6 @@ export function HeroSlider({ movies }: HeroSliderProps) {
   if (!movies || movies.length === 0) return null;
 
   const currentMovie = movies[currentIndex];
-  const slug = currentMovie.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 
   return (
     <section className="relative h-[70vh] md:h-[85vh] overflow-hidden">
@@ -89,13 +86,13 @@ export function HeroSlider({ movies }: HeroSliderProps) {
 
             {/* Actions */}
             <div className="flex flex-wrap gap-4">
-              <Link to={`/watch/movie/${currentMovie.id}-${slug}`}>
+              <Link to={getWatchMovieUrl(currentMovie.title)}>
                 <Button variant="hero" size="lg" className="gap-2">
                   <Play className="w-5 h-5" fill="currentColor" />
                   Watch Now
                 </Button>
               </Link>
-              <Link to={`/movie/${currentMovie.id}-${slug}`}>
+              <Link to={getMovieUrl(currentMovie.title)}>
                 <Button variant="glass" size="lg" className="gap-2">
                   <Info className="w-5 h-5" />
                   More Info
