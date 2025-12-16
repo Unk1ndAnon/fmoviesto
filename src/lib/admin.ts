@@ -1,108 +1,229 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export interface CustomEmbed {
   id: string;
-  movieId: number;
   name: string;
   url: string;
   quality?: string;
   language?: string;
-  addedAt: string;
+  created_at: string;
 }
 
 export interface AdminMovie {
-  tmdbId: number;
-  type: "movie" | "tv";
-  customTitle?: string;
-  customDescription?: string;
+  id: string;
+  tmdb_id: number;
+  media_type: "movie" | "tv";
+  custom_title?: string;
+  custom_description?: string;
   featured?: boolean;
   hidden?: boolean;
-  customPoster?: string;
-  customBackdrop?: string;
-  embeds: CustomEmbed[];
-  updatedAt: string;
+  custom_poster?: string;
+  custom_backdrop?: string;
+  created_at: string;
+  updated_at: string;
+  embeds?: CustomEmbed[];
 }
 
-const ADMIN_STORAGE_KEY = "streamflix_admin_data";
-const ADMIN_AUTH_KEY = "streamflix_admin_auth";
-
 export const adminStorage = {
-  getAll: (): AdminMovie[] => {
-    const data = localStorage.getItem(ADMIN_STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  },
-
-  get: (tmdbId: number, type: "movie" | "tv"): AdminMovie | undefined => {
-    const all = adminStorage.getAll();
-    return all.find((m) => m.tmdbId === tmdbId && m.type === type);
-  },
-
-  save: (movie: AdminMovie): void => {
-    const all = adminStorage.getAll();
-    const index = all.findIndex((m) => m.tmdbId === movie.tmdbId && m.type === movie.type);
-    if (index >= 0) {
-      all[index] = { ...movie, updatedAt: new Date().toISOString() };
-    } else {
-      all.push({ ...movie, updatedAt: new Date().toISOString() });
-    }
-    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(all));
-  },
-
-  delete: (tmdbId: number, type: "movie" | "tv"): void => {
-    const all = adminStorage.getAll();
-    const filtered = all.filter((m) => !(m.tmdbId === tmdbId && m.type === type));
-    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(filtered));
-  },
-
-  addEmbed: (tmdbId: number, type: "movie" | "tv", embed: Omit<CustomEmbed, "id" | "movieId" | "addedAt">): void => {
-    const movie = adminStorage.get(tmdbId, type) || {
-      tmdbId,
-      type,
-      embeds: [],
-      updatedAt: new Date().toISOString(),
-    };
+  getAll: async (): Promise<AdminMovie[]> => {
+    const { data, error } = await supabase
+      .from('admin_movies')
+      .select('*');
     
-    const newEmbed: CustomEmbed = {
-      ...embed,
-      id: crypto.randomUUID(),
-      movieId: tmdbId,
-      addedAt: new Date().toISOString(),
-    };
-    
-    movie.embeds.push(newEmbed);
-    adminStorage.save(movie);
-  },
-
-  removeEmbed: (tmdbId: number, type: "movie" | "tv", embedId: string): void => {
-    const movie = adminStorage.get(tmdbId, type);
-    if (movie) {
-      movie.embeds = movie.embeds.filter((e) => e.id !== embedId);
-      adminStorage.save(movie);
+    if (error) {
+      console.error('Error fetching admin movies:', error);
+      return [];
     }
+
+    // Fetch embeds for each movie
+    const moviesWithEmbeds = await Promise.all(
+      (data || []).map(async (movie) => {
+        const { data: embeds } = await supabase
+          .from('custom_embeds')
+          .select('*')
+          .eq('admin_movie_id', movie.id);
+        
+        return {
+          ...movie,
+          embeds: embeds || []
+        } as AdminMovie;
+      })
+    );
+
+    return moviesWithEmbeds;
   },
 
-  getFeatured: (): AdminMovie[] => {
-    return adminStorage.getAll().filter((m) => m.featured);
+  get: async (tmdbId: number, type: "movie" | "tv"): Promise<AdminMovie | null> => {
+    const { data, error } = await supabase
+      .from('admin_movies')
+      .select('*')
+      .eq('tmdb_id', tmdbId)
+      .eq('media_type', type)
+      .single();
+    
+    if (error || !data) {
+      return null;
+    }
+
+    // Fetch embeds
+    const { data: embeds } = await supabase
+      .from('custom_embeds')
+      .select('*')
+      .eq('admin_movie_id', data.id);
+
+    return {
+      ...data,
+      embeds: embeds || []
+    } as AdminMovie;
   },
 
-  getHidden: (): number[] => {
-    return adminStorage.getAll().filter((m) => m.hidden).map((m) => m.tmdbId);
+  save: async (movie: Omit<AdminMovie, 'id' | 'created_at' | 'updated_at'>): Promise<AdminMovie | null> => {
+    const { data, error } = await supabase
+      .from('admin_movies')
+      .upsert({
+        tmdb_id: movie.tmdb_id,
+        media_type: movie.media_type,
+        custom_title: movie.custom_title,
+        custom_description: movie.custom_description,
+        featured: movie.featured,
+        hidden: movie.hidden,
+        custom_poster: movie.custom_poster,
+        custom_backdrop: movie.custom_backdrop
+      }, {
+        onConflict: 'tmdb_id,media_type'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving admin movie:', error);
+      return null;
+    }
+
+    return data as AdminMovie;
+  },
+
+  delete: async (tmdbId: number, type: "movie" | "tv"): Promise<boolean> => {
+    const { error } = await supabase
+      .from('admin_movies')
+      .delete()
+      .eq('tmdb_id', tmdbId)
+      .eq('media_type', type);
+
+    if (error) {
+      console.error('Error deleting admin movie:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  addEmbed: async (tmdbId: number, type: "movie" | "tv", embed: { name: string; url: string; quality?: string; language?: string }): Promise<boolean> => {
+    // First ensure the admin_movie exists
+    let movie = await adminStorage.get(tmdbId, type);
+    
+    if (!movie) {
+      movie = await adminStorage.save({
+        tmdb_id: tmdbId,
+        media_type: type
+      });
+    }
+
+    if (!movie) {
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('custom_embeds')
+      .insert({
+        admin_movie_id: movie.id,
+        name: embed.name,
+        url: embed.url,
+        quality: embed.quality,
+        language: embed.language
+      });
+
+    if (error) {
+      console.error('Error adding embed:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  removeEmbed: async (embedId: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('custom_embeds')
+      .delete()
+      .eq('id', embedId);
+
+    if (error) {
+      console.error('Error removing embed:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  getFeatured: async (): Promise<AdminMovie[]> => {
+    const { data, error } = await supabase
+      .from('admin_movies')
+      .select('*')
+      .eq('featured', true);
+
+    if (error) {
+      console.error('Error fetching featured movies:', error);
+      return [];
+    }
+
+    return (data || []) as AdminMovie[];
+  },
+
+  getHidden: async (): Promise<number[]> => {
+    const { data, error } = await supabase
+      .from('admin_movies')
+      .select('tmdb_id')
+      .eq('hidden', true);
+
+    if (error) {
+      console.error('Error fetching hidden movies:', error);
+      return [];
+    }
+
+    return (data || []).map(m => m.tmdb_id);
   },
 };
 
-// Simple admin authentication (for demo - in production use proper auth)
+// Admin authentication using Supabase auth and user_roles table
 export const adminAuth = {
-  isAuthenticated: (): boolean => {
-    return localStorage.getItem(ADMIN_AUTH_KEY) === "authenticated";
-  },
-
-  login: (password: string): boolean => {
-    if (password === "Cakara87!") {
-      localStorage.setItem(ADMIN_AUTH_KEY, "authenticated");
-      return true;
+  isAuthenticated: async (): Promise<boolean> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return false;
     }
-    return false;
+
+    // Check if user has admin role
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (error || !data) {
+      return false;
+    }
+
+    return true;
   },
 
-  logout: (): void => {
-    localStorage.removeItem(ADMIN_AUTH_KEY);
+  getCurrentUser: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+  },
+
+  logout: async (): Promise<void> => {
+    await supabase.auth.signOut();
   },
 };

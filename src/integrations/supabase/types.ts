@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_movies: {
+        Row: {
+          created_at: string
+          custom_backdrop: string | null
+          custom_description: string | null
+          custom_poster: string | null
+          custom_title: string | null
+          featured: boolean | null
+          hidden: boolean | null
+          id: string
+          media_type: string
+          tmdb_id: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_backdrop?: string | null
+          custom_description?: string | null
+          custom_poster?: string | null
+          custom_title?: string | null
+          featured?: boolean | null
+          hidden?: boolean | null
+          id?: string
+          media_type: string
+          tmdb_id: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_backdrop?: string | null
+          custom_description?: string | null
+          custom_poster?: string | null
+          custom_title?: string | null
+          featured?: boolean | null
+          hidden?: boolean | null
+          id?: string
+          media_type?: string
+          tmdb_id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      custom_embeds: {
+        Row: {
+          admin_movie_id: string
+          created_at: string
+          id: string
+          language: string | null
+          name: string
+          quality: string | null
+          url: string
+        }
+        Insert: {
+          admin_movie_id: string
+          created_at?: string
+          id?: string
+          language?: string | null
+          name: string
+          quality?: string | null
+          url: string
+        }
+        Update: {
+          admin_movie_id?: string
+          created_at?: string
+          id?: string
+          language?: string | null
+          name?: string
+          quality?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_embeds_admin_movie_id_fkey"
+            columns: ["admin_movie_id"]
+            isOneToOne: false
+            referencedRelation: "admin_movies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string | null
@@ -71,6 +151,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       watchlist: {
         Row: {
           created_at: string | null
@@ -112,10 +213,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -242,6 +350,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

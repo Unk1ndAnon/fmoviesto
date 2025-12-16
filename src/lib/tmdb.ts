@@ -1,5 +1,5 @@
-const TMDB_API_KEY = "1e61d290e56866f3b6c22d63a28c6e69";
-const TMDB_BASE_URL = "https://api.themoviedb.org/3";
+import { supabase } from "@/integrations/supabase/client";
+
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
 export interface Movie {
@@ -139,17 +139,20 @@ export const getBackdropUrl = (path: string | null, size: string = "original"): 
 };
 
 async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
-  const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
-  url.searchParams.set("api_key", TMDB_API_KEY);
-  Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.set(key, value);
+  const { data, error } = await supabase.functions.invoke('tmdb-proxy', {
+    body: { endpoint, params }
   });
 
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    throw new Error(`TMDB API error: ${response.status}`);
+  if (error) {
+    console.error('TMDB proxy error:', error);
+    throw new Error(`TMDB API error: ${error.message}`);
   }
-  return response.json();
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  return data as T;
 }
 
 export const tmdb = {
@@ -179,6 +182,9 @@ export const tmdb = {
       sort_by: "popularity.desc",
     }),
 
+  discoverMovies: (params: Record<string, string>) =>
+    fetchTMDB<{ results: Movie[]; total_pages: number }>("/discover/movie", params),
+
   // TV Shows
   getTrendingTV: (timeWindow: "day" | "week" = "week") =>
     fetchTMDB<{ results: TVShow[] }>(`/trending/tv/${timeWindow}`),
@@ -194,6 +200,9 @@ export const tmdb = {
 
   getSeasonDetails: (tvId: number, seasonNumber: number) =>
     fetchTMDB<{ episodes: Episode[] }>(`/tv/${tvId}/season/${seasonNumber}`),
+
+  discoverTV: (params: Record<string, string>) =>
+    fetchTMDB<{ results: TVShow[]; total_pages: number }>("/discover/tv", params),
 
   // Search
   searchMulti: (query: string, page: number = 1) =>

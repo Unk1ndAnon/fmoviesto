@@ -65,12 +65,7 @@ export default function TVShows() {
         }
         if (minRating) params["vote_average.gte"] = minRating;
         
-        const url = new URL("https://api.themoviedb.org/3/discover/tv");
-        url.searchParams.set("api_key", "1e61d290e56866f3b6c22d63a28c6e69");
-        Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-        
-        const response = await fetch(url.toString());
-        return response.json();
+        return tmdb.discoverTV(params);
       }
       
       switch (category) {

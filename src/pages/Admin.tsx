@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { tmdb, getImageUrl } from "@/lib/tmdb";
 import { adminStorage, adminAuth, AdminMovie, CustomEmbed } from "@/lib/admin";
+import { useAuth } from "@/contexts/AuthContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
@@ -12,16 +14,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Lock, Search, Plus, Trash2, Edit, Film, Tv, ExternalLink, Save } from "lucide-react";
+import { Lock, Search, Plus, Trash2, Film, Tv, ExternalLink, Save, ShieldAlert } from "lucide-react";
+
+interface EditableMovie {
+  id?: string;
+  tmdb_id: number;
+  media_type: "movie" | "tv";
+  custom_title?: string;
+  custom_description?: string;
+  featured?: boolean;
+  hidden?: boolean;
+  custom_poster?: string;
+  custom_backdrop?: string;
+  embeds: CustomEmbed[];
+}
 
 export default function Admin() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<"movie" | "tv">("movie");
-  const [selectedItem, setSelectedItem] = useState<AdminMovie | null>(null);
+  const [selectedItem, setSelectedItem] = useState<EditableMovie | null>(null);
   const [managedMovies, setManagedMovies] = useState<AdminMovie[]>([]);
 
   // New embed form
@@ -33,9 +48,20 @@ export default function Admin() {
   });
 
   useEffect(() => {
-    setIsAuthenticated(adminAuth.isAuthenticated());
-    setManagedMovies(adminStorage.getAll());
-  }, []);
+    const checkAdmin = async () => {
+      setIsCheckingAdmin(true);
+      const isAdminUser = await adminAuth.isAuthenticated();
+      setIsAdmin(isAdminUser);
+      
+      if (isAdminUser) {
+        const movies = await adminStorage.getAll();
+        setManagedMovies(movies);
+      }
+      setIsCheckingAdmin(false);
+    };
+    
+    checkAdmin();
+  }, [user]);
 
   const { data: searchResults } = useQuery({
     queryKey: ["adminSearch", searchQuery, searchType],
@@ -45,44 +71,72 @@ export default function Admin() {
       }
       return tmdb.searchTV(searchQuery);
     },
-    enabled: searchQuery.length > 2,
+    enabled: searchQuery.length > 2 && isAdmin,
   });
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminAuth.login(password)) {
-      setIsAuthenticated(true);
-      toast.success("Successfully logged in");
-    } else {
-      toast.error("Invalid password");
-    }
-  };
-
-  const handleLogout = () => {
-    adminAuth.logout();
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    await adminAuth.logout();
+    setIsAdmin(false);
     toast.success("Logged out");
   };
 
-  const handleSelectMovie = (id: number, type: "movie" | "tv", title: string) => {
-    const existing = adminStorage.get(id, type);
+  const handleSelectMovie = async (id: number, type: "movie" | "tv") => {
+    const existing = await adminStorage.get(id, type);
     if (existing) {
-      setSelectedItem(existing);
+      setSelectedItem({
+        id: existing.id,
+        tmdb_id: existing.tmdb_id,
+        media_type: existing.media_type,
+        custom_title: existing.custom_title,
+        custom_description: existing.custom_description,
+        featured: existing.featured,
+        hidden: existing.hidden,
+        custom_poster: existing.custom_poster,
+        custom_backdrop: existing.custom_backdrop,
+        embeds: existing.embeds || []
+      });
     } else {
       setSelectedItem({
-        tmdbId: id,
-        type,
+        tmdb_id: id,
+        media_type: type,
         embeds: [],
-        updatedAt: new Date().toISOString(),
       });
     }
   };
 
-  const handleSave = () => {
-    if (selectedItem) {
-      adminStorage.save(selectedItem);
-      setManagedMovies(adminStorage.getAll());
+  const handleSave = async () => {
+    if (!selectedItem) return;
+
+    const saved = await adminStorage.save({
+      tmdb_id: selectedItem.tmdb_id,
+      media_type: selectedItem.media_type,
+      custom_title: selectedItem.custom_title,
+      custom_description: selectedItem.custom_description,
+      featured: selectedItem.featured,
+      hidden: selectedItem.hidden,
+      custom_poster: selectedItem.custom_poster,
+      custom_backdrop: selectedItem.custom_backdrop
+    });
+
+    if (saved) {
+      // Save embeds
+      for (const embed of selectedItem.embeds) {
+        if (!embed.id.includes('-')) {
+          // New embed (temp ID)
+          await adminStorage.addEmbed(selectedItem.tmdb_id, selectedItem.media_type, {
+            name: embed.name,
+            url: embed.url,
+            quality: embed.quality,
+            language: embed.language
+          });
+        }
+      }
+
+      const movies = await adminStorage.getAll();
+      setManagedMovies(movies);
       toast.success("Changes saved");
+    } else {
+      toast.error("Failed to save changes");
     }
   };
 
@@ -92,44 +146,72 @@ export default function Admin() {
       return;
     }
 
-    const embed = {
-      id: crypto.randomUUID(),
-      movieId: selectedItem.tmdbId,
+    const tempEmbed: CustomEmbed = {
+      id: `temp-${Date.now()}`,
       name: newEmbed.name,
       url: newEmbed.url,
-      quality: newEmbed.quality,
-      language: newEmbed.language,
-      addedAt: new Date().toISOString(),
-    } as CustomEmbed;
+      quality: newEmbed.quality || undefined,
+      language: newEmbed.language || undefined,
+      created_at: new Date().toISOString(),
+    };
 
     setSelectedItem({
       ...selectedItem,
-      embeds: [...selectedItem.embeds, embed],
+      embeds: [...selectedItem.embeds, tempEmbed],
     });
 
     setNewEmbed({ name: "", url: "", quality: "", language: "" });
-    toast.success("Embed added");
+    toast.success("Embed added (save to persist)");
   };
 
-  const handleRemoveEmbed = (embedId: string) => {
-    if (selectedItem) {
-      setSelectedItem({
-        ...selectedItem,
-        embeds: selectedItem.embeds.filter((e) => e.id !== embedId),
-      });
+  const handleRemoveEmbed = async (embedId: string) => {
+    if (!selectedItem) return;
+
+    // If it's not a temp ID, delete from database
+    if (!embedId.startsWith('temp-')) {
+      await adminStorage.removeEmbed(embedId);
+    }
+
+    setSelectedItem({
+      ...selectedItem,
+      embeds: selectedItem.embeds.filter((e) => e.id !== embedId),
+    });
+  };
+
+  const handleDelete = async (tmdbId: number, type: "movie" | "tv") => {
+    const success = await adminStorage.delete(tmdbId, type);
+    if (success) {
+      const movies = await adminStorage.getAll();
+      setManagedMovies(movies);
+      if (selectedItem?.tmdb_id === tmdbId) {
+        setSelectedItem(null);
+      }
+      toast.success("Deleted");
+    } else {
+      toast.error("Failed to delete");
     }
   };
 
-  const handleDelete = (tmdbId: number, type: "movie" | "tv") => {
-    adminStorage.delete(tmdbId, type);
-    setManagedMovies(adminStorage.getAll());
-    if (selectedItem?.tmdbId === tmdbId) {
-      setSelectedItem(null);
-    }
-    toast.success("Deleted");
-  };
+  // Loading state
+  if (isCheckingAdmin) {
+    return (
+      <>
+        <SEOHead title="Admin Panel" description="Admin panel" />
+        <div className="min-h-screen bg-background">
+          <Navbar />
+          <main className="pt-20 flex items-center justify-center min-h-[80vh]">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-muted-foreground">Checking permissions...</p>
+            </div>
+          </main>
+        </div>
+      </>
+    );
+  }
 
-  if (!isAuthenticated) {
+  // Not logged in
+  if (!user) {
     return (
       <>
         <SEOHead title="Admin Login" description="Admin panel login" />
@@ -141,30 +223,53 @@ export default function Admin() {
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Lock className="w-8 h-8 text-primary" />
                 </div>
-                <CardTitle>Admin Login</CardTitle>
+                <CardTitle>Admin Login Required</CardTitle>
                 <CardDescription>
-                  Enter the admin password to access the panel
+                  Please sign in with an admin account to access this panel
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter password"
-                    />
-                  </div>
-                  <Button type="submit" className="w-full">
-                    Login
+              <CardContent className="space-y-4">
+                <Link to="/auth">
+                  <Button className="w-full">
+                    Sign In
                   </Button>
-                </form>
-                <p className="text-xs text-muted-foreground text-center mt-4">
-                  Default password: admin123
+                </Link>
+                <p className="text-xs text-muted-foreground text-center">
+                  Only users with admin role can access this panel
                 </p>
+              </CardContent>
+            </Card>
+          </main>
+        </div>
+      </>
+    );
+  }
+
+  // Not an admin
+  if (!isAdmin) {
+    return (
+      <>
+        <SEOHead title="Access Denied" description="Admin access denied" />
+        <div className="min-h-screen bg-background">
+          <Navbar />
+          <main className="pt-20 flex items-center justify-center min-h-[80vh]">
+            <Card className="w-full max-w-md mx-4">
+              <CardHeader className="text-center">
+                <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+                  <ShieldAlert className="w-8 h-8 text-destructive" />
+                </div>
+                <CardTitle>Access Denied</CardTitle>
+                <CardDescription>
+                  Your account does not have admin privileges
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground text-center">
+                  Logged in as: {user.email}
+                </p>
+                <Button variant="outline" className="w-full" onClick={handleLogout}>
+                  Sign Out
+                </Button>
               </CardContent>
             </Card>
           </main>
@@ -183,7 +288,10 @@ export default function Admin() {
         <main className="flex-1 pt-20">
           <div className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-8">
-              <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
+                <p className="text-sm text-muted-foreground mt-1">Logged in as: {user.email}</p>
+              </div>
               <Button variant="outline" onClick={handleLogout}>
                 Logout
               </Button>
@@ -207,7 +315,7 @@ export default function Admin() {
                   <CardContent className="space-y-4">
                     <div className="flex gap-2">
                       <Button
-                        variant={searchType === "movie" ? "default" : "cinema"}
+                        variant={searchType === "movie" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSearchType("movie")}
                         className="gap-2"
@@ -216,7 +324,7 @@ export default function Admin() {
                         Movies
                       </Button>
                       <Button
-                        variant={searchType === "tv" ? "default" : "cinema"}
+                        variant={searchType === "tv" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSearchType("tv")}
                         className="gap-2"
@@ -246,7 +354,7 @@ export default function Admin() {
                             <div
                               key={item.id}
                               className="cursor-pointer group"
-                              onClick={() => handleSelectMovie(item.id, searchType, title)}
+                              onClick={() => handleSelectMovie(item.id, searchType)}
                             >
                               <div className="aspect-[2/3] rounded-lg overflow-hidden bg-card mb-2">
                                 <img
@@ -275,7 +383,7 @@ export default function Admin() {
                     <CardHeader>
                       <CardTitle>Edit Content</CardTitle>
                       <CardDescription>
-                        TMDB ID: {selectedItem.tmdbId} ({selectedItem.type})
+                        TMDB ID: {selectedItem.tmdb_id} ({selectedItem.media_type})
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -285,9 +393,9 @@ export default function Admin() {
                           <Label htmlFor="customTitle">Custom Title (optional)</Label>
                           <Input
                             id="customTitle"
-                            value={selectedItem.customTitle || ""}
+                            value={selectedItem.custom_title || ""}
                             onChange={(e) =>
-                              setSelectedItem({ ...selectedItem, customTitle: e.target.value })
+                              setSelectedItem({ ...selectedItem, custom_title: e.target.value })
                             }
                             placeholder="Override TMDB title"
                           />
@@ -296,9 +404,9 @@ export default function Admin() {
                           <Label htmlFor="customPoster">Custom Poster URL (optional)</Label>
                           <Input
                             id="customPoster"
-                            value={selectedItem.customPoster || ""}
+                            value={selectedItem.custom_poster || ""}
                             onChange={(e) =>
-                              setSelectedItem({ ...selectedItem, customPoster: e.target.value })
+                              setSelectedItem({ ...selectedItem, custom_poster: e.target.value })
                             }
                             placeholder="https://..."
                           />
@@ -309,9 +417,9 @@ export default function Admin() {
                         <Label htmlFor="customDescription">Custom Description (optional)</Label>
                         <Textarea
                           id="customDescription"
-                          value={selectedItem.customDescription || ""}
+                          value={selectedItem.custom_description || ""}
                           onChange={(e) =>
-                            setSelectedItem({ ...selectedItem, customDescription: e.target.value })
+                            setSelectedItem({ ...selectedItem, custom_description: e.target.value })
                           }
                           placeholder="Override TMDB description"
                           rows={3}
@@ -446,52 +554,65 @@ export default function Admin() {
                   <CardHeader>
                     <CardTitle>Managed Content</CardTitle>
                     <CardDescription>
-                      All movies and TV shows with custom settings or embeds
+                      View and edit all movies and TV shows with custom settings
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {managedMovies.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">
-                        No managed content yet. Search and add content above.
-                      </p>
+                      <div className="text-center py-12">
+                        <Film className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No managed content yet</p>
+                        <p className="text-sm text-muted-foreground">
+                          Search for movies or TV shows to add custom settings
+                        </p>
+                      </div>
                     ) : (
-                      <div className="space-y-2">
-                        {managedMovies.map((item) => (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {managedMovies.map((movie) => (
                           <div
-                            key={`${item.type}-${item.tmdbId}`}
-                            className="flex items-center justify-between p-4 rounded-lg bg-secondary"
+                            key={movie.id}
+                            className="p-4 rounded-lg border border-border bg-card hover:bg-secondary/50 transition-colors"
                           >
-                            <div className="flex items-center gap-4">
-                              {item.type === "movie" ? (
-                                <Film className="w-5 h-5 text-muted-foreground" />
-                              ) : (
-                                <Tv className="w-5 h-5 text-muted-foreground" />
-                              )}
+                            <div className="flex items-start justify-between mb-2">
                               <div>
                                 <p className="font-medium text-foreground">
-                                  {item.customTitle || `TMDB ID: ${item.tmdbId}`}
+                                  {movie.custom_title || `TMDB #${movie.tmdb_id}`}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {item.embeds.length} custom embeds
-                                  {item.featured && " • Featured"}
-                                  {item.hidden && " • Hidden"}
+                                  {movie.media_type.toUpperCase()} • ID: {movie.tmdb_id}
                                 </p>
                               </div>
+                              <div className="flex gap-1">
+                                {movie.featured && (
+                                  <span className="px-2 py-0.5 rounded text-xs bg-primary/20 text-primary">
+                                    Featured
+                                  </span>
+                                )}
+                                {movie.hidden && (
+                                  <span className="px-2 py-0.5 rounded text-xs bg-destructive/20 text-destructive">
+                                    Hidden
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <p className="text-sm text-muted-foreground mb-3">
+                              {movie.embeds?.length || 0} custom embeds
+                            </p>
+                            <div className="flex gap-2">
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setSelectedItem(item)}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSelectMovie(movie.tmdb_id, movie.media_type)}
                               >
-                                <Edit className="w-4 h-4" />
+                                Edit
                               </Button>
                               <Button
                                 variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(item.tmdbId, item.type)}
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(movie.tmdb_id, movie.media_type)}
                               >
-                                <Trash2 className="w-4 h-4 text-destructive" />
+                                <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
                           </div>
