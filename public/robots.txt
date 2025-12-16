@@ -1,7 +1,7 @@
 # Fmovies Robots.txt
 # Allow all search engines to crawl the site
 
-User-agent: *
+User-agent: /
 Disallow: 
 Disallow: /cgi-bin/
 Sitemap: https://www.fmov.online/sitemap.xml
