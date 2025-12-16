@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertTriangle, RefreshCw, Play } from "lucide-react";
 import { EMBED_SOURCES, getEmbedUrl } from "@/lib/tmdb";
-import { adminStorage } from "@/lib/admin";
+import { adminStorage, AdminMovie } from "@/lib/admin";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +20,17 @@ export function VideoPlayer({ id, type, season, episode, title, backdrop, onPlay
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [adminData, setAdminData] = useState<AdminMovie | null>(null);
 
-  // Get custom embeds from admin storage
-  const adminData = adminStorage.get(id, type);
+  // Fetch custom embeds from admin storage
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      const data = await adminStorage.get(id, type);
+      setAdminData(data);
+    };
+    fetchAdminData();
+  }, [id, type]);
+
   const customEmbeds = adminData?.embeds || [];
 
   const allSources = [
