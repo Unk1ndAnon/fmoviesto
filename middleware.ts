@@ -62,8 +62,16 @@ function shouldPrerender(pathname: string, userAgent: string): boolean {
     return false;
   }
 
-  // Only prerender movie and TV show pages
-  if (lowerPath.startsWith('/movie/') || lowerPath.startsWith('/tv/') || lowerPath.startsWith('/watch/')) {
+  // Prerender movie, TV show, and watch pages with new URL structure:
+  // /movie/{slug} - movie detail pages
+  // /tvshow/{slug} - TV show detail pages
+  // /watch/{slug} - movie watch pages
+  // /watch/{slug}/{season}-{episode} - TV show watch pages
+  if (
+    lowerPath.startsWith('/movie/') || 
+    lowerPath.startsWith('/tvshow/') || 
+    lowerPath.startsWith('/watch/')
+  ) {
     return true;
   }
 
@@ -71,7 +79,7 @@ function shouldPrerender(pathname: string, userAgent: string): boolean {
 }
 
 export const config = {
-  matcher: ['/movie/:path*', '/tv/:path*', '/watch/:path*'],
+  matcher: ['/movie/:path*', '/tvshow/:path*', '/watch/:path*'],
 };
 
 export default async function middleware(request: Request) {
