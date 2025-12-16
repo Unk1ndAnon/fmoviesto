@@ -230,26 +230,24 @@ export const tmdb = {
 };
 
 export const EMBED_SOURCES = [
-  { name: "NontonGo", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
-    type === "tv" ? `https://www.nontongo.win/embed/tv/${id}/${season}/${episode}` : `https://www.nontongo.win/embed/movie/${id}` },
-  { name: "VidLink", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
-    type === "tv" ? `https://vidlink.pro/tv/${id}/${season}/${episode}` : `https://vidlink.pro/movie/${id}` },
   { name: "Vidify", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
     type === "tv" ? `https://player.vidify.top/embed/tv/${id}/${season}/${episode}` : `https://player.vidify.top/embed/movie/${id}` },
-  { name: "VidFast", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
-    type === "tv" ? `https://vidfast.pro/tv/${id}/${season}/${episode}` : `https://vidfast.pro/movie/${id}` },
-  { name: "Vidzee", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
-    type === "tv" ? `https://player.vidzee.wtf/embed/tv/${id}/${season}/${episode}` : `https://player.vidzee.wtf/embed/movie/${id}` },
-  { name: "MoviesAPI", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
-    type === "tv" ? `https://moviesapi.to/tv/${id}-${season}-${episode}` : `https://moviesapi.to/movie/${id}` },
-  { name: "VidSrc", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
-    type === "tv" ? `https://vidsrc-embed.ru/embed/tv/${id}/${season}-${episode}` : `https://vidsrc-embed.ru/embed/${id}` },
   { name: "FMovies4U", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
     type === "tv" ? `https://fmovies4u.com/embed/tmdb-tv-${id}/${season}/${episode}` : `https://fmovies4u.com/embed/tmdb-movie-${id}` },
+  { name: "Vidzee", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
+    type === "tv" ? `https://player.vidzee.wtf/embed/tv/${id}/${season}/${episode}` : `https://player.vidzee.wtf/embed/movie/${id}` },
+  { name: "VidLink", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
+    type === "tv" ? `https://vidlink.pro/tv/${id}/${season}/${episode}` : `https://vidlink.pro/movie/${id}` },
+  { name: "VidFast", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
+    type === "tv" ? `https://vidfast.pro/tv/${id}/${season}/${episode}` : `https://vidfast.pro/movie/${id}` },
+  { name: "MoviesAPI", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
+    type === "tv" ? `https://moviesapi.to/tv/${id}-${season}-${episode}` : `https://moviesapi.to/movie/${id}` },
+  { name: "NontonGo", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
+    type === "tv" ? `https://www.nontongo.win/embed/tv/${id}/${season}/${episode}` : `https://www.nontongo.win/embed/movie/${id}` },
+  { name: "VidSrc", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
+    type === "tv" ? `https://vidsrc-embed.ru/embed/tv/${id}/${season}-${episode}` : `https://vidsrc-embed.ru/embed/${id}` },
   { name: "SuperEmbed", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
     type === "tv" ? `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}` : `https://multiembed.mov/?video_id=${id}&tmdb=1` },
-  { name: "2Embed", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
-    type === "tv" ? `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}` : `https://www.2embed.cc/embed/${id}` },
 ];
 
 export const getEmbedUrl = (id: number, type: "movie" | "tv", sourceIndex: number = 0, season?: number, episode?: number): string => {
