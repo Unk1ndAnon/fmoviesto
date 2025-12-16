@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb } from "@/lib/tmdb";
+import { generateSlug } from "@/lib/slug";
 
 // Sanitize string to prevent XSS - only allow safe characters for URLs
 const sanitizeUrlPart = (str: string): string => {
-  return str.replace(/[^a-zA-Z0-9\-_./=?&]/g, "");
+  return str.replace(/[^a-zA-Z0-9\-_./]/g, "");
 };
 
 export default function SitemapXml() {
@@ -57,12 +58,6 @@ export default function SitemapXml() {
     queryFn: () => tmdb.getTVGenres(),
   });
 
-  const generateSlug = (title: string) =>
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-
   // Fetch episode data for TV shows
   useEffect(() => {
     if (!popularTV) return;
@@ -88,8 +83,9 @@ export default function SitemapXml() {
               const seasonData = await tmdb.getSeasonDetails(show.id, season.season_number);
               
               for (const episode of seasonData.episodes || []) {
+                // New URL format: /watch/{slug}/{season}-{episode}
                 episodes.push({
-                  loc: sanitizeUrlPart(`/watch/tv/${show.id}-${slug}?season=${season.season_number}&episode=${episode.episode_number}`),
+                  loc: sanitizeUrlPart(`/watch/${slug}/${season.season_number}-${episode.episode_number}`),
                   priority: "0.7",
                   changefreq: "weekly",
                 });
@@ -126,20 +122,23 @@ export default function SitemapXml() {
       { loc: "/terms", priority: "0.3", changefreq: "monthly" },
     ];
 
+    // Movie detail pages: /movie/{slug}
     const movieUrls = popularMovies.map((movie) => ({
-      loc: sanitizeUrlPart(`/movie/${movie.id}-${generateSlug(movie.title)}`),
+      loc: sanitizeUrlPart(`/movie/${generateSlug(movie.title)}`),
       priority: "0.8",
       changefreq: "weekly",
     }));
 
+    // Movie watch pages: /watch/{slug}
     const movieWatchUrls = popularMovies.map((movie) => ({
-      loc: sanitizeUrlPart(`/watch/movie/${movie.id}-${generateSlug(movie.title)}`),
+      loc: sanitizeUrlPart(`/watch/${generateSlug(movie.title)}`),
       priority: "0.8",
       changefreq: "weekly",
     }));
 
+    // TV show detail pages: /tvshow/{slug}
     const tvUrls = popularTV.map((show) => ({
-      loc: sanitizeUrlPart(`/tv/${show.id}-${generateSlug(show.name)}`),
+      loc: sanitizeUrlPart(`/tvshow/${generateSlug(show.name)}`),
       priority: "0.8",
       changefreq: "weekly",
     }));
