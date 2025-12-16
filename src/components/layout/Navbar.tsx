@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Shuffle, Heart, Bookmark, LogIn, LogOut, User } from "lucide-react";
+import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Shuffle, Heart, Bookmark, LogIn, LogOut, User, Shield } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { tmdb, Genre, getImageUrl } from "@/lib/tmdb";
 import { useAuth } from "@/contexts/AuthContext";
+import { adminAuth } from "@/lib/admin";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,15 @@ import {
 function UserMenu() {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      adminAuth.isAuthenticated().then(setIsAdmin);
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user]);
 
   if (loading) {
     return <div className="w-9 h-9 rounded-full bg-secondary animate-pulse" />;
@@ -63,6 +73,17 @@ function UserMenu() {
             My Watchlist
           </Link>
         </DropdownMenuItem>
+        {isAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/admin" className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Admin Panel
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => signOut()}
