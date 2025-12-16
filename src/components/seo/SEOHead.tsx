@@ -6,9 +6,10 @@ interface SEOHeadProps {
   image?: string;
   url?: string;
   type?: "website" | "video.movie" | "video.tv_show";
+  keywords?: string;
 }
 
-export function SEOHead({ title, description, image, url, type = "website" }: SEOHeadProps) {
+export function SEOHead({ title, description, image, url, type = "website", keywords }: SEOHeadProps) {
   useEffect(() => {
     // Update title
     document.title = `${title} | fmovies`;
@@ -32,6 +33,10 @@ export function SEOHead({ title, description, image, url, type = "website" }: SE
     updateMeta("twitter:title", title);
     updateMeta("twitter:description", description);
 
+    if (keywords) {
+      updateMeta("keywords", keywords);
+    }
+
     if (image) {
       updateMeta("og:image", image, true);
       updateMeta("twitter:image", image);
@@ -51,7 +56,7 @@ export function SEOHead({ title, description, image, url, type = "website" }: SE
     return () => {
       document.title = "fmovies - Watch Free Movies & TV Shows Online";
     };
-  }, [title, description, image, url, type]);
+  }, [title, description, image, url, type, keywords]);
 
   return null;
 }
