@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getImageUrl, getBackdropUrl } from "@/lib/tmdb";
 import { slugToTitle, generateSlug, getWatchTVUrl, getTVShowUrl } from "@/lib/slug";
+import { generateTVKeywords } from "@/lib/seo-keywords";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieRow } from "@/components/movie/MovieRow";
@@ -65,6 +66,15 @@ export default function TVDetails() {
   const cast = show.credits?.cast?.slice(0, 8) || [];
   const seasons = show.seasons?.filter((s) => s.season_number > 0) || [];
 
+  const seoKeywords = generateTVKeywords({
+    title: show.name,
+    year: show.first_air_date?.split("-")[0],
+    genres: show.genres?.map(g => g.name) || [],
+    cast: cast.map(c => c.name),
+    seasons: show.number_of_seasons,
+    latestSeason: show.number_of_seasons,
+  });
+
   return (
     <>
       <SEOHead
@@ -72,6 +82,7 @@ export default function TVDetails() {
         description={show.overview}
         image={getBackdropUrl(show.backdrop_path)}
         type="video.tv_show"
+        keywords={seoKeywords}
       />
       <TVShowJsonLd show={show} />
 

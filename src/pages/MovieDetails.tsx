@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getImageUrl, getBackdropUrl } from "@/lib/tmdb";
 import { slugToTitle, generateSlug, getWatchMovieUrl, getMovieUrl } from "@/lib/slug";
+import { generateMovieKeywords } from "@/lib/seo-keywords";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieRow } from "@/components/movie/MovieRow";
@@ -65,6 +66,13 @@ export default function MovieDetails() {
     }).format(amount);
   };
 
+  const seoKeywords = generateMovieKeywords({
+    title: movie.title,
+    year: movie.release_date?.split("-")[0],
+    genres: movie.genres?.map(g => g.name) || [],
+    cast: cast.map(c => c.name),
+  });
+
   return (
     <>
       <SEOHead
@@ -72,6 +80,7 @@ export default function MovieDetails() {
         description={movie.overview}
         image={getBackdropUrl(movie.backdrop_path)}
         type="video.movie"
+        keywords={seoKeywords}
       />
       <MovieJsonLd movie={movie} />
 
