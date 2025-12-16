@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { getMovieUrl, getTVShowUrl } from "@/lib/slug";
 import { Film, Tv, FileText, Home } from "lucide-react";
 
 const Sitemap = () => {
@@ -135,7 +136,7 @@ const Sitemap = () => {
               {uniqueMovies.map((movie) => (
                 <Link
                   key={movie.id}
-                  to={`/movie/${movie.id}`}
+                  to={getMovieUrl(movie.title)}
                   className="text-muted-foreground hover:text-primary transition-colors text-sm py-1 truncate"
                 >
                   {movie.title}
@@ -154,7 +155,7 @@ const Sitemap = () => {
               {uniqueTV.map((show) => (
                 <Link
                   key={show.id}
-                  to={`/tv/${show.id}`}
+                  to={getTVShowUrl(show.name)}
                   className="text-muted-foreground hover:text-primary transition-colors text-sm py-1 truncate"
                 >
                   {show.name}

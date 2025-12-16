@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Star, Play } from "lucide-react";
 import { Movie, TVShow, getImageUrl } from "@/lib/tmdb";
+import { getMovieUrl, getTVShowUrl } from "@/lib/slug";
 import { cn } from "@/lib/utils";
 
 interface MovieCardProps {
@@ -16,14 +17,11 @@ export function MovieCard({ item, type, className }: MovieCardProps) {
   const rating = item.vote_average?.toFixed(1) || "N/A";
   const isHighRating = item.vote_average >= 7;
 
-  const slug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+  const url = type === "movie" ? getMovieUrl(title) : getTVShowUrl(title);
 
   return (
     <Link
-      to={`/${type}/${item.id}-${slug}`}
+      to={url}
       className={cn("movie-card group block", className)}
     >
       <div className="relative aspect-[2/3] bg-secondary rounded-lg overflow-hidden">

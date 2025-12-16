@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getImageUrl, getBackdropUrl } from "@/lib/tmdb";
+import { slugToTitle, generateSlug, getWatchMovieUrl, getMovieUrl } from "@/lib/slug";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieRow } from "@/components/movie/MovieRow";
@@ -10,14 +11,24 @@ import { Button } from "@/components/ui/button";
 import { Play, Star, Clock, Calendar, DollarSign } from "lucide-react";
 
 export default function MovieDetails() {
-  const { id } = useParams<{ id: string }>();
-  const movieId = parseInt(id?.split("-")[0] || "0");
+  const { slug } = useParams<{ slug: string }>();
+  const searchTitle = slugToTitle(slug || "");
 
-  const { data: movie, isLoading } = useQuery({
-    queryKey: ["movie", movieId],
-    queryFn: () => tmdb.getMovieDetails(movieId),
-    enabled: !!movieId,
+  // Search for movie by title to get TMDB ID
+  const { data: searchResult, isLoading: isSearching } = useQuery({
+    queryKey: ["movieSearch", searchTitle],
+    queryFn: () => tmdb.searchMovieByTitle(searchTitle),
+    enabled: !!searchTitle,
   });
+
+  // Fetch full movie details once we have the ID
+  const { data: movie, isLoading: isLoadingDetails } = useQuery({
+    queryKey: ["movie", searchResult?.id],
+    queryFn: () => tmdb.getMovieDetails(searchResult!.id),
+    enabled: !!searchResult?.id,
+  });
+
+  const isLoading = isSearching || isLoadingDetails;
 
   if (isLoading) {
     return (
@@ -36,10 +47,7 @@ export default function MovieDetails() {
     );
   }
 
-  const slug = movie.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+  const movieSlug = generateSlug(movie.title);
 
   const trailer = movie.videos?.results?.find(
     (v) => v.type === "Trailer" && v.site === "YouTube"
@@ -87,7 +95,7 @@ export default function MovieDetails() {
           <div className="relative container mx-auto px-4 pt-32 pb-12">
             <div className="flex flex-col md:flex-row gap-8">
               {/* Poster with Play Button */}
-              <Link to={`/watch/movie/${movie.id}-${slug}`} className="flex-shrink-0 relative group/poster">
+              <Link to={getWatchMovieUrl(movie.title)} className="flex-shrink-0 relative group/poster">
                 <img
                   src={getImageUrl(movie.poster_path, "w342")}
                   alt={movie.title}
@@ -174,7 +182,7 @@ export default function MovieDetails() {
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-4 pt-4">
-                  <Link to={`/watch/movie/${movie.id}-${slug}`}>
+                  <Link to={getWatchMovieUrl(movie.title)}>
                     <Button variant="hero" size="lg" className="gap-2">
                       <Play className="w-5 h-5" fill="currentColor" />
                       Watch Now
@@ -204,14 +212,11 @@ export default function MovieDetails() {
             <h2 className="text-2xl font-bold text-foreground mb-4">Cast</h2>
             <div className="flex flex-wrap gap-2">
               {cast.map((person) => {
-                const actorSlug = person.name
-                  .toLowerCase()
-                  .replace(/[^a-z0-9]+/g, "-")
-                  .replace(/(^-|-$)/g, "");
+                const actorSlug = generateSlug(person.name);
                 return (
                   <Link
                     key={person.id}
-                    to={`/actor/${person.id}-${actorSlug}`}
+                    to={`/actor/${actorSlug}`}
                     className="px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-primary hover:text-primary-foreground transition-colors"
                   >
                     {person.name}

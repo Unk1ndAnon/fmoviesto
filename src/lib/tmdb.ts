@@ -214,6 +214,17 @@ export const tmdb = {
   searchTV: (query: string, page: number = 1) =>
     fetchTMDB<{ results: TVShow[]; total_pages: number }>("/search/tv", { query, page: String(page) }),
 
+  // Search and get first result (for slug-based routing)
+  searchMovieByTitle: async (title: string): Promise<Movie | null> => {
+    const result = await fetchTMDB<{ results: Movie[] }>("/search/movie", { query: title });
+    return result.results[0] || null;
+  },
+
+  searchTVByTitle: async (title: string): Promise<TVShow | null> => {
+    const result = await fetchTMDB<{ results: TVShow[] }>("/search/tv", { query: title });
+    return result.results[0] || null;
+  },
+
   // Genres
   getMovieGenres: () => fetchTMDB<{ genres: Genre[] }>("/genre/movie/list"),
   getTVGenres: () => fetchTMDB<{ genres: Genre[] }>("/genre/tv/list"),
