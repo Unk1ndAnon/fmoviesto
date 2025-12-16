@@ -1,4 +1,7 @@
 project_id = "fblsoqabliezhxtswfah"
 
+[functions.prerender]
+verify_jwt = false
+
 [functions.tmdb-proxy]
 verify_jwt = false
