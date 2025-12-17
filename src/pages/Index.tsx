@@ -63,6 +63,7 @@ export default function Index() {
               items={trending?.results || []}
               type="movie"
               viewMoreLink="/movies?category=trending"
+              isLoading={trendingLoading}
             />
 
             <MovieRow
@@ -70,6 +71,7 @@ export default function Index() {
               items={popular?.results || []}
               type="movie"
               viewMoreLink="/movies?category=popular"
+              isLoading={!popular}
             />
 
             <MovieRow
@@ -77,6 +79,7 @@ export default function Index() {
               items={nowPlaying?.results || []}
               type="movie"
               viewMoreLink="/movies?category=now-playing"
+              isLoading={!nowPlaying}
             />
 
             <MovieRow
@@ -84,6 +87,7 @@ export default function Index() {
               items={topRated?.results || []}
               type="movie"
               viewMoreLink="/movies?category=top-rated"
+              isLoading={!topRated}
             />
 
             <MovieRow
@@ -91,6 +95,7 @@ export default function Index() {
               items={trendingTV?.results || []}
               type="tv"
               viewMoreLink="/tv?category=trending"
+              isLoading={!trendingTV}
             />
 
             <MovieRow
@@ -98,6 +103,7 @@ export default function Index() {
               items={popularTV?.results || []}
               type="tv"
               viewMoreLink="/tv?category=popular"
+              isLoading={!popularTV}
             />
           </div>
         </main>
