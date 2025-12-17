@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AlertTriangle, RefreshCw, Play } from "lucide-react";
 import { EMBED_SOURCES, getEmbedUrl } from "@/lib/tmdb";
 import { adminStorage, AdminMovie } from "@/lib/admin";
+import { validateEmbedUrl } from "@/lib/url-validation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -31,10 +32,16 @@ export function VideoPlayer({ id, type, season, episode, title, backdrop, onPlay
     fetchAdminData();
   }, [id, type]);
 
-  const customEmbeds = adminData?.embeds || [];
+  // Filter custom embeds to only include valid HTTPS URLs
+  const validCustomEmbeds = useMemo(() => {
+    return (adminData?.embeds || []).filter(embed => {
+      const validation = validateEmbedUrl(embed.url);
+      return validation.valid;
+    });
+  }, [adminData]);
 
   const allSources = [
-    ...customEmbeds.map((embed) => ({
+    ...validCustomEmbeds.map((embed) => ({
       name: embed.name,
       url: embed.url,
       isCustom: true,
