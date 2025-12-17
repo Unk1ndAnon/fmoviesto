@@ -50,7 +50,7 @@ export function HeroSlider({ movies }: HeroSliderProps) {
           )}
         >
           <img
-            src={getBackdropUrl(movie.backdrop_path, "w1280")}
+            src={getBackdropUrl(movie.backdrop_path, "w780")}
             alt={movie.title}
             className="w-full h-full object-cover"
             fetchPriority={index === 0 ? "high" : "auto"}
