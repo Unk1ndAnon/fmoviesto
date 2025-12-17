@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getImageUrl, getBackdropUrl } from "@/lib/tmdb";
@@ -11,12 +11,18 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { TVShowJsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Star, Calendar, Film } from "lucide-react";
+import { Play, Star, Calendar, ChevronRight, ChevronLeft, Share2, Plus, Film } from "lucide-react";
+import { useWatchlist } from "@/hooks/useUserLists";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export default function TVDetails() {
   const { slug } = useParams<{ slug: string }>();
   const searchTitle = slugToTitle(slug || "");
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const episodeScrollRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
 
   // Search for TV show by title to get TMDB ID
   const { data: searchResult, isLoading: isSearching } = useQuery({
@@ -40,6 +46,50 @@ export default function TVDetails() {
 
   const isLoading = isSearching || isLoadingDetails;
 
+  const scrollEpisodes = (direction: "left" | "right") => {
+    if (episodeScrollRef.current) {
+      const scrollAmount = 300;
+      episodeScrollRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const handleWatchlist = () => {
+    if (!user) {
+      toast.error("Please sign in to add to watchlist");
+      return;
+    }
+    if (!show) return;
+
+    const inWatchlist = isInWatchlist(show.id, "tv");
+    if (inWatchlist) {
+      removeFromWatchlist.mutate({ tmdb_id: show.id, media_type: "tv" });
+    } else {
+      addToWatchlist.mutate({
+        tmdb_id: show.id,
+        media_type: "tv",
+        title: show.name,
+        poster_path: show.poster_path,
+        vote_average: show.vote_average,
+        release_date: show.first_air_date,
+      });
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: show?.name,
+        url: window.location.href,
+      });
+    } catch {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied to clipboard");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -58,17 +108,20 @@ export default function TVDetails() {
   }
 
   const showSlug = generateSlug(show.name);
-
   const trailer = show.videos?.results?.find(
     (v) => v.type === "Trailer" && v.site === "YouTube"
   );
-
   const cast = show.credits?.cast?.slice(0, 8) || [];
   const seasons = show.seasons?.filter((s) => s.season_number > 0) || [];
+  const isOngoing = show.status === "Returning Series" || show.status === "In Production";
+  const statusText = isOngoing ? "Ongoing" : "Completed";
+  const year = show.first_air_date?.split("-")[0];
+  const genres = show.genres?.map(g => g.name).join(", ") || "";
+  const episodeCount = seasonData?.episodes?.length || 0;
 
   const seoKeywords = generateTVKeywords({
     title: show.name,
-    year: show.first_air_date?.split("-")[0],
+    year,
     genres: show.genres?.map(g => g.name) || [],
     cast: cast.map(c => c.name),
     seasons: show.number_of_seasons,
@@ -78,7 +131,7 @@ export default function TVDetails() {
   return (
     <>
       <SEOHead
-        title={`${show.name} (${show.first_air_date?.split("-")[0]})`}
+        title={`${show.name} (${year})`}
         description={show.overview}
         image={getBackdropUrl(show.backdrop_path)}
         type="video.tv_show"
@@ -89,8 +142,8 @@ export default function TVDetails() {
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
 
-        {/* Hero */}
-        <section className="relative min-h-[60vh] md:min-h-[70vh]">
+        {/* Hero Section - Desktop Design */}
+        <section className="relative min-h-[70vh] lg:min-h-[80vh]">
           {show.backdrop_path && (
             <>
               <img
@@ -98,180 +151,180 @@ export default function TVDetails() {
                 alt={show.name}
                 className="absolute inset-0 w-full h-full object-cover"
               />
-              <div className="absolute inset-0 hero-gradient" />
-              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/30" />
+              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
             </>
           )}
 
-          <div className="relative container mx-auto px-4 pt-32 pb-12">
-            <div className="flex flex-col md:flex-row gap-8">
-              {/* Poster with Play Button */}
-              <Link to={getWatchTVUrl(show.name, 1, 1)} className="flex-shrink-0 relative group/poster">
-                <img
-                  src={getImageUrl(show.poster_path, "w342")}
-                  alt={show.name}
-                  className="w-48 md:w-64 rounded-lg shadow-2xl mx-auto md:mx-0 transition-transform duration-300 group-hover/poster:scale-105"
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-background/40 opacity-0 group-hover/poster:opacity-100 transition-opacity duration-300 rounded-lg">
-                  <div className="w-16 h-16 rounded-full bg-primary/90 backdrop-blur flex items-center justify-center">
-                    <Play className="w-8 h-8 text-primary-foreground ml-1" fill="currentColor" />
-                  </div>
-                </div>
-              </Link>
+          <div className="relative container mx-auto px-4 pt-32 lg:pt-40 pb-8">
+            <div className="max-w-3xl space-y-5">
+              {/* Title with Season */}
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+                {show.name} | Season {selectedSeason}
+              </h1>
 
-              {/* Info */}
-              <div className="flex-1 space-y-4">
-                <div>
-                  <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-2">
-                    {show.name}
-                  </h1>
-                  {show.tagline && (
-                    <p className="text-lg text-muted-foreground italic">
-                      "{show.tagline}"
-                    </p>
-                  )}
+              {/* Meta Row: Rating, Status, Year, Genre */}
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <div className="flex items-center gap-1 text-amber-400">
+                  <Star className="w-4 h-4" fill="currentColor" />
+                  <span className="font-semibold">{show.vote_average?.toFixed(1)}/10</span>
                 </div>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  isOngoing 
+                    ? "bg-green-500/20 text-green-400 border border-green-500/30" 
+                    : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                }`}>
+                  {statusText}
+                </span>
+                <span className="text-muted-foreground">{year}</span>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-muted-foreground">{genres}</span>
+              </div>
 
-                {/* Meta */}
-                <div className="flex flex-wrap items-center gap-4 text-sm">
-                  <div className="rating-badge high">
-                    <Star className="w-3 h-3" fill="currentColor" />
-                    {show.vote_average?.toFixed(1)}
-                  </div>
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Film className="w-4 h-4" />
-                    {show.number_of_seasons} Seasons
-                  </span>
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    {show.first_air_date}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs">
-                    {show.status}
-                  </span>
-                </div>
+              {/* Overview */}
+              <p className="text-muted-foreground leading-relaxed text-sm md:text-base max-w-2xl line-clamp-3">
+                {show.overview}
+              </p>
 
-                {/* Genres */}
-                <div className="flex flex-wrap gap-2">
-                  {show.genres?.map((genre) => (
-                    <Link
-                      key={genre.id}
-                      to={`/tv?genre=${genre.id}`}
-                      className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-primary hover:text-primary-foreground transition-colors"
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <Link to={getWatchTVUrl(show.name, selectedSeason, 1)}>
+                  <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6">
+                    <Play className="w-4 h-4" fill="currentColor" />
+                    Watch Now
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  className="gap-2 rounded-full px-6 border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background/80"
+                  onClick={handleWatchlist}
+                >
+                  <Plus className="w-4 h-4" />
+                  {show && isInWatchlist(show.id, "tv") ? "In Watchlist" : "My Wishlist"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="rounded-full border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background/80"
+                  onClick={handleShare}
+                >
+                  <Share2 className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Episode List Section */}
+              <div className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold text-foreground">List Episodes</h2>
+                    <span className="text-muted-foreground text-sm">({episodeCount} Eps)</span>
+                    <Select
+                      value={String(selectedSeason)}
+                      onValueChange={(v) => setSelectedSeason(parseInt(v))}
                     >
-                      {genre.name}
+                      <SelectTrigger className="w-32 h-8 text-xs bg-background/50 border-border/50">
+                        <SelectValue placeholder="Season" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {seasons.map((season) => (
+                          <SelectItem key={season.season_number} value={String(season.season_number)}>
+                            Season {season.season_number}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="hidden md:flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full bg-background/50 hover:bg-background/80"
+                      onClick={() => scrollEpisodes("left")}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full bg-background/50 hover:bg-background/80"
+                      onClick={() => scrollEpisodes("right")}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Horizontal Episode Cards */}
+                <div
+                  ref={episodeScrollRef}
+                  className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
+                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                >
+                  {seasonData?.episodes?.map((episode) => (
+                    <Link
+                      key={episode.id}
+                      to={getWatchTVUrl(show.name, selectedSeason, episode.episode_number)}
+                      className="flex-shrink-0 w-36 md:w-44 snap-start group"
+                    >
+                      <div className="relative aspect-video rounded-lg overflow-hidden bg-card mb-2">
+                        {episode.still_path ? (
+                          <img
+                            src={getImageUrl(episode.still_path, "w300")}
+                            alt={episode.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-muted">
+                            <Film className="w-8 h-8 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                          <Play className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="currentColor" />
+                        </div>
+                      </div>
+                      <p className="text-xs text-foreground font-medium line-clamp-2 group-hover:text-primary transition-colors">
+                        S{selectedSeason} E{episode.episode_number} - {episode.name}
+                      </p>
                     </Link>
                   ))}
                 </div>
-
-                {/* Overview */}
-                <p className="text-muted-foreground leading-relaxed max-w-2xl">
-                  {show.overview}
-                </p>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-4 pt-4">
-                  <Link to={getWatchTVUrl(show.name, 1, 1)}>
-                    <Button variant="hero" size="lg" className="gap-2">
-                      <Play className="w-5 h-5" fill="currentColor" />
-                      Watch Now
-                    </Button>
-                  </Link>
-                  {trailer && (
-                    <a
-                      href={`https://www.youtube.com/watch?v=${trailer.key}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button variant="glass" size="lg" className="gap-2">
-                        <Play className="w-5 h-5" />
-                        Watch Trailer
-                      </Button>
-                    </a>
-                  )}
-                </div>
               </div>
+
+              {/* Videos Section */}
+              {trailer && (
+                <div className="pt-4">
+                  <h2 className="text-lg font-semibold text-foreground mb-3">
+                    Videos: <span className="text-muted-foreground font-normal text-sm">(Trailers, Teasers, Featurettes)</span>
+                  </h2>
+                  <a
+                    href={`https://www.youtube.com/watch?v=${trailer.key}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block"
+                  >
+                    <div className="relative w-36 md:w-44 aspect-video rounded-lg overflow-hidden bg-card group">
+                      <img
+                        src={`https://img.youtube.com/vi/${trailer.key}/mqdefault.jpg`}
+                        alt="Trailer"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                          <Play className="w-5 h-5 text-black ml-0.5" fill="currentColor" />
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
-        {/* Episodes */}
-        <section className="container mx-auto px-4 py-8">
-          <div className="flex items-center gap-4 mb-6">
-            <h2 className="text-2xl font-bold text-foreground">Episodes</h2>
-            <Select
-              value={String(selectedSeason)}
-              onValueChange={(v) => setSelectedSeason(parseInt(v))}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select Season" />
-              </SelectTrigger>
-              <SelectContent>
-                {seasons.map((season) => (
-                  <SelectItem key={season.season_number} value={String(season.season_number)}>
-                    Season {season.season_number}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid gap-4">
-            {seasonData?.episodes?.map((episode) => (
-              <Link
-                key={episode.id}
-                to={getWatchTVUrl(show.name, selectedSeason, episode.episode_number)}
-                className="flex gap-4 p-4 rounded-lg bg-card hover:bg-cinema-hover transition-colors group"
-              >
-                <div className="flex-shrink-0 w-40 aspect-video rounded overflow-hidden bg-secondary">
-                  {episode.still_path ? (
-                    <img
-                      src={getImageUrl(episode.still_path, "w300")}
-                      alt={episode.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      <Film className="w-8 h-8" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm text-muted-foreground">
-                      E{episode.episode_number}
-                    </span>
-                    {episode.vote_average > 0 && (
-                      <div className="rating-badge text-[10px]">
-                        <Star className="w-2 h-2" fill="currentColor" />
-                        {episode.vote_average.toFixed(1)}
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                    {episode.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                    {episode.overview || "No description available."}
-                  </p>
-                  {episode.runtime && (
-                    <span className="text-xs text-muted-foreground mt-2 inline-block">
-                      {episode.runtime} min
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center">
-                  <Play className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* Cast */}
+        {/* Cast Section */}
         {cast.length > 0 && (
           <section className="container mx-auto px-4 py-8">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Cast</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">Cast</h2>
             <div className="flex flex-wrap gap-2">
               {cast.map((person) => {
                 const actorSlug = generateSlug(person.name);
@@ -289,7 +342,7 @@ export default function TVDetails() {
           </section>
         )}
 
-        {/* Similar */}
+        {/* Similar Shows */}
         <section className="container mx-auto px-4">
           {show.similar?.results && show.similar.results.length > 0 && (
             <MovieRow
