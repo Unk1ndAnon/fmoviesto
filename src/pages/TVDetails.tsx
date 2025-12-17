@@ -11,7 +11,7 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { TVShowJsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Star, Calendar, ChevronRight, ChevronLeft, Share2, Plus, Film, Clock } from "lucide-react";
+import { Play, Star, Calendar, ChevronRight, ChevronLeft, Share2, Plus, Film, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { useWatchlist } from "@/hooks/useUserLists";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ export default function TVDetails() {
   const { slug } = useParams<{ slug: string }>();
   const searchTitle = slugToTitle(slug || "");
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [showAllEpisodes, setShowAllEpisodes] = useState(false);
   const episodeScrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
@@ -217,7 +218,7 @@ export default function TVDetails() {
                     <span className="text-muted-foreground text-sm">({episodeCount} Eps)</span>
                     <Select
                       value={String(selectedSeason)}
-                      onValueChange={(v) => setSelectedSeason(parseInt(v))}
+                      onValueChange={(v) => { setSelectedSeason(parseInt(v)); setShowAllEpisodes(false); }}
                     >
                       <SelectTrigger className="w-32 h-8 text-xs bg-background/50 border-border/50">
                         <SelectValue placeholder="Season" />
@@ -257,7 +258,7 @@ export default function TVDetails() {
                   className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
-                  {seasonData?.episodes?.slice(0, 8).map((episode) => (
+                  {(showAllEpisodes ? seasonData?.episodes : seasonData?.episodes?.slice(0, 8))?.map((episode) => (
                     <Link
                       key={episode.id}
                       to={getWatchTVUrl(show.name, selectedSeason, episode.episode_number)}
@@ -296,6 +297,27 @@ export default function TVDetails() {
                     </Link>
                   ))}
                 </div>
+                
+                {/* View All Episodes Button */}
+                {seasonData?.episodes && seasonData.episodes.length > 8 && (
+                  <Button
+                    variant="outline"
+                    className="mt-3 gap-2 rounded-full px-6 border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background/80"
+                    onClick={() => setShowAllEpisodes(!showAllEpisodes)}
+                  >
+                    {showAllEpisodes ? (
+                      <>
+                        <ChevronUp className="w-4 h-4" />
+                        Show Less
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-4 h-4" />
+                        View All {seasonData.episodes.length} Episodes
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
 
             </div>
