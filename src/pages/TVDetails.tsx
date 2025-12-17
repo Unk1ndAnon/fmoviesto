@@ -11,7 +11,7 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { TVShowJsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Star, Calendar, ChevronRight, ChevronLeft, Share2, Plus, Film } from "lucide-react";
+import { Play, Star, Calendar, ChevronRight, ChevronLeft, Share2, Plus, Film, Clock } from "lucide-react";
 import { useWatchlist } from "@/hooks/useUserLists";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -279,9 +279,20 @@ export default function TVDetails() {
                           <Play className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="currentColor" />
                         </div>
                       </div>
-                      <p className="text-xs text-foreground font-medium line-clamp-2 group-hover:text-primary transition-colors">
+                      <p className="text-xs text-foreground font-medium line-clamp-1 group-hover:text-primary transition-colors">
                         S{selectedSeason} E{episode.episode_number} - {episode.name}
                       </p>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                        {episode.air_date && (
+                          <span>{new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        )}
+                        {episode.runtime && (
+                          <span className="flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5" />
+                            {episode.runtime}m
+                          </span>
+                        )}
+                      </div>
                     </Link>
                   ))}
                 </div>
