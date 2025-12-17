@@ -108,9 +108,6 @@ export default function TVDetails() {
   }
 
   const showSlug = generateSlug(show.name);
-  const trailer = show.videos?.results?.find(
-    (v) => v.type === "Trailer" && v.site === "YouTube"
-  );
   const cast = show.credits?.cast?.slice(0, 8) || [];
   const seasons = show.seasons?.filter((s) => s.season_number > 0) || [];
   const isOngoing = show.status === "Returning Series" || show.status === "In Production";
@@ -200,7 +197,7 @@ export default function TVDetails() {
                   onClick={handleWatchlist}
                 >
                   <Plus className="w-4 h-4" />
-                  {show && isInWatchlist(show.id, "tv") ? "In Watchlist" : "My Wishlist"}
+                  {show && isInWatchlist(show.id, "tv") ? "In Watchlist" : "My Watchlist"}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -260,7 +257,7 @@ export default function TVDetails() {
                   className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
-                  {seasonData?.episodes?.map((episode) => (
+                  {seasonData?.episodes?.slice(0, 8).map((episode) => (
                     <Link
                       key={episode.id}
                       to={getWatchTVUrl(show.name, selectedSeason, episode.episode_number)}
@@ -290,33 +287,6 @@ export default function TVDetails() {
                 </div>
               </div>
 
-              {/* Videos Section */}
-              {trailer && (
-                <div className="pt-4">
-                  <h2 className="text-lg font-semibold text-foreground mb-3">
-                    Videos: <span className="text-muted-foreground font-normal text-sm">(Trailers, Teasers, Featurettes)</span>
-                  </h2>
-                  <a
-                    href={`https://www.youtube.com/watch?v=${trailer.key}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block"
-                  >
-                    <div className="relative w-36 md:w-44 aspect-video rounded-lg overflow-hidden bg-card group">
-                      <img
-                        src={`https://img.youtube.com/vi/${trailer.key}/mqdefault.jpg`}
-                        alt="Trailer"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center">
-                        <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
-                          <Play className="w-5 h-5 text-black ml-0.5" fill="currentColor" />
-                        </div>
-                      </div>
-                    </div>
-                  </a>
-                </div>
-              )}
             </div>
           </div>
         </section>
