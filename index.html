@@ -25,7 +25,8 @@
     <meta name="theme-color" content="#0a0b0f" />
     
     <!-- Preconnect to critical origins for LCP optimization -->
-    <link rel="preconnect" href="https://image.tmdb.org" />
+    <!-- crossorigin needed for CORS image requests -->
+    <link rel="preconnect" href="https://image.tmdb.org" crossorigin />
     <link rel="dns-prefetch" href="https://image.tmdb.org" />
     <link rel="preconnect" href="https://fblsoqabliezhxtswfah.supabase.co" />
     <link rel="dns-prefetch" href="https://fblsoqabliezhxtswfah.supabase.co" />
