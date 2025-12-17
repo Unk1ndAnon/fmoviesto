@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { tmdb, getImageUrl } from "@/lib/tmdb";
 import { adminStorage, adminAuth, AdminMovie, CustomEmbed } from "@/lib/admin";
+import { validateEmbedUrl } from "@/lib/url-validation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -146,12 +147,19 @@ export default function Admin() {
       return;
     }
 
+    // Validate URL for security
+    const validation = validateEmbedUrl(newEmbed.url);
+    if (!validation.valid) {
+      toast.error(validation.error || "Invalid URL");
+      return;
+    }
+
     const tempEmbed: CustomEmbed = {
       id: `temp-${Date.now()}`,
-      name: newEmbed.name,
-      url: newEmbed.url,
-      quality: newEmbed.quality || undefined,
-      language: newEmbed.language || undefined,
+      name: newEmbed.name.trim(),
+      url: newEmbed.url.trim(),
+      quality: newEmbed.quality?.trim() || undefined,
+      language: newEmbed.language?.trim() || undefined,
       created_at: new Date().toISOString(),
     };
 

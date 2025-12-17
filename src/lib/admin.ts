@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { validateEmbedUrl } from "@/lib/url-validation";
 
 export interface CustomEmbed {
   id: string;
@@ -119,6 +120,13 @@ export const adminStorage = {
   },
 
   addEmbed: async (tmdbId: number, type: "movie" | "tv", embed: { name: string; url: string; quality?: string; language?: string }): Promise<boolean> => {
+    // Validate URL server-side for security
+    const validation = validateEmbedUrl(embed.url);
+    if (!validation.valid) {
+      console.error('Invalid embed URL:', validation.error);
+      return false;
+    }
+
     // First ensure the admin_movie exists
     let movie = await adminStorage.get(tmdbId, type);
     
@@ -137,10 +145,10 @@ export const adminStorage = {
       .from('custom_embeds')
       .insert({
         admin_movie_id: movie.id,
-        name: embed.name,
-        url: embed.url,
-        quality: embed.quality,
-        language: embed.language
+        name: embed.name.trim(),
+        url: embed.url.trim(),
+        quality: embed.quality?.trim(),
+        language: embed.language?.trim()
       });
 
     if (error) {
