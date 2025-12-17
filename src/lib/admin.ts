@@ -202,7 +202,7 @@ export const adminStorage = {
   },
 };
 
-// Admin authentication using Supabase auth and user_roles table
+// Admin authentication using Supabase auth and is_admin() RPC function
 export const adminAuth = {
   isAuthenticated: async (): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -211,19 +211,16 @@ export const adminAuth = {
       return false;
     }
 
-    // Check if user has admin role
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
+    // Check if user has admin role using server-side RPC function
+    // This is more secure as it doesn't expose the user_roles table structure
+    const { data, error } = await supabase.rpc('is_admin');
 
-    if (error || !data) {
+    if (error) {
+      console.error('Error checking admin status:', error);
       return false;
     }
 
-    return true;
+    return data === true;
   },
 
   getCurrentUser: async () => {
