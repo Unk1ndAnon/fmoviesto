@@ -252,17 +252,19 @@ export default function TVDetails() {
                   </div>
                 </div>
 
-                {/* Horizontal Episode Cards */}
+                {/* Episodes: swipe row on mobile; on desktop show up to 8 at once, and use a denser grid when expanded */}
                 <div
                   ref={episodeScrollRef}
-                  className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
+                  className={`flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:grid md:overflow-visible md:snap-none ${
+                    showAllEpisodes ? "md:grid-cols-4 lg:grid-cols-5" : "md:grid-cols-8"
+                  }`}
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                   {(showAllEpisodes ? seasonData?.episodes : seasonData?.episodes?.slice(0, 8))?.map((episode) => (
                     <Link
                       key={episode.id}
                       to={getWatchTVUrl(show.name, selectedSeason, episode.episode_number)}
-                      className="flex-shrink-0 w-36 md:w-44 snap-start group"
+                      className="flex-shrink-0 w-36 md:w-auto snap-start group"
                     >
                       <div className="relative aspect-video rounded-lg overflow-hidden bg-card mb-2">
                         {episode.still_path ? (
@@ -270,6 +272,7 @@ export default function TVDetails() {
                             src={getImageUrl(episode.still_path, "w300")}
                             alt={episode.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-muted">
@@ -285,7 +288,13 @@ export default function TVDetails() {
                       </p>
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                         {episode.air_date && (
-                          <span>{new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          <span>
+                            {new Date(episode.air_date).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
                         )}
                         {episode.runtime && (
                           <span className="flex items-center gap-0.5">
