@@ -11,7 +11,8 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { TVShowJsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Star, Calendar, ChevronRight, ChevronLeft, Share2, Plus, Film, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Play, Star, Calendar, ChevronRight, ChevronLeft, Plus, Film, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { SharePopover } from "@/components/SharePopover";
 import { useWatchlist } from "@/hooks/useUserLists";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -79,17 +80,6 @@ export default function TVDetails() {
     }
   };
 
-  const handleShare = async () => {
-    try {
-      await navigator.share({
-        title: show?.name,
-        url: window.location.href,
-      });
-    } catch {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied to clipboard");
-    }
-  };
 
   if (isLoading) {
     return (
@@ -200,14 +190,7 @@ export default function TVDetails() {
                   <Plus className="w-4 h-4" />
                   {show && isInWatchlist(show.id, "tv") ? "In Watchlist" : "My Watchlist"}
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="rounded-full border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background/80"
-                  onClick={handleShare}
-                >
-                  <Share2 className="w-4 h-4" />
-                </Button>
+                <SharePopover title={show?.name || ""} />
               </div>
 
               {/* Episode List Section */}
