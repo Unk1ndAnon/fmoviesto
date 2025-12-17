@@ -53,6 +53,7 @@ export function HeroSlider({ movies }: HeroSliderProps) {
             src={getBackdropUrl(movie.backdrop_path, "w1280")}
             alt={movie.title}
             className="w-full h-full object-cover"
+            fetchPriority={index === 0 ? "high" : "auto"}
           />
           <div className="absolute inset-0 hero-gradient" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
