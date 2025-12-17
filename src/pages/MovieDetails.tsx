@@ -9,7 +9,8 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { MovieJsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
-import { Play, Star, Clock, Calendar, Share2, Plus } from "lucide-react";
+import { Play, Star, Clock, Calendar, Plus } from "lucide-react";
+import { SharePopover } from "@/components/SharePopover";
 import { useWatchlist } from "@/hooks/useUserLists";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -58,17 +59,6 @@ export default function MovieDetails() {
     }
   };
 
-  const handleShare = async () => {
-    try {
-      await navigator.share({
-        title: movie?.title,
-        url: window.location.href,
-      });
-    } catch {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied to clipboard");
-    }
-  };
 
   if (isLoading) {
     return (
@@ -236,14 +226,7 @@ export default function MovieDetails() {
                   <Plus className="w-4 h-4" />
                   {movie && isInWatchlist(movie.id, "movie") ? "In Watchlist" : "My Watchlist"}
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="rounded-full border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background/80"
-                  onClick={handleShare}
-                >
-                  <Share2 className="w-4 h-4" />
-                </Button>
+                <SharePopover title={movie?.title || ""} />
               </div>
             </div>
           </div>
