@@ -27,7 +27,7 @@ export function MovieCard({ item, type, className }: MovieCardProps) {
       <div className="relative aspect-[2/3] bg-secondary rounded-lg overflow-hidden">
         {/* Poster */}
         <img
-          src={getImageUrl(item.poster_path, "w342")}
+          src={getImageUrl(item.poster_path, "w185")}
           alt={title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
