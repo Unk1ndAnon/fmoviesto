@@ -31,7 +31,7 @@ export function MovieRow({ title, items, type, viewMoreLink, isLoading }: MovieR
   const showSkeleton = isLoading || !items || items.length === 0;
 
   return (
-    <section className="py-6 min-h-[340px]">
+    <section className="py-6 min-h-[442px]">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl md:text-2xl font-bold text-foreground">{title}</h2>
         {viewMoreLink && (
@@ -78,9 +78,13 @@ export function MovieRow({ title, items, type, viewMoreLink, isLoading }: MovieR
             // Skeleton placeholders to reserve space
             Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="flex-shrink-0 w-[150px] md:w-[180px]">
-                <Skeleton className="w-full aspect-[2/3] rounded-lg" />
-                <Skeleton className="h-4 w-3/4 mt-2" />
-                <Skeleton className="h-3 w-1/2 mt-1" />
+                <div className="aspect-[2/3] rounded-lg overflow-hidden">
+                  <Skeleton className="w-full h-full" />
+                </div>
+                <div className="pt-3 space-y-1">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
               </div>
             ))
           ) : (

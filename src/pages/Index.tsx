@@ -51,7 +51,7 @@ export default function Index() {
         <main className="flex-1">
           {/* Hero Section */}
           {trendingLoading ? (
-            <div className="h-[85vh] bg-card animate-pulse" />
+            <div className="h-[70vh] md:h-[85vh] bg-card animate-pulse" />
           ) : (
             <HeroSlider movies={trending?.results?.slice(0, 5) || []} />
           )}
