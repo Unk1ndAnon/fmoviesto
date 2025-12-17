@@ -255,8 +255,8 @@ export default function TVDetails() {
                 {/* Episodes: swipe row on mobile; on desktop show up to 8 at once, and use a denser grid when expanded */}
                 <div
                   ref={episodeScrollRef}
-                  className={`flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:grid md:overflow-visible md:snap-none ${
-                    showAllEpisodes ? "md:grid-cols-4 lg:grid-cols-5" : "md:grid-cols-8"
+                  className={`flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:grid md:overflow-visible md:snap-none ${
+                    showAllEpisodes ? "md:grid-cols-3 lg:grid-cols-4" : "md:grid-cols-4 lg:grid-cols-5"
                   }`}
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
@@ -264,12 +264,12 @@ export default function TVDetails() {
                     <Link
                       key={episode.id}
                       to={getWatchTVUrl(show.name, selectedSeason, episode.episode_number)}
-                      className="flex-shrink-0 w-36 md:w-auto snap-start group"
+                      className="flex-shrink-0 w-44 md:w-auto snap-start group"
                     >
                       <div className="relative aspect-video rounded-lg overflow-hidden bg-card mb-2">
                         {episode.still_path ? (
                           <img
-                            src={getImageUrl(episode.still_path, "w300")}
+                            src={getImageUrl(episode.still_path, "w500")}
                             alt={episode.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
