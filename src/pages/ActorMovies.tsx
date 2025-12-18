@@ -26,7 +26,8 @@ export default function ActorMovies() {
 
   const isLoading = personLoading || creditsLoading;
 
-  if (isLoading) {
+  // Show loading if we have a valid personId but data is still loading
+  if (personId && isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -37,10 +38,15 @@ export default function ActorMovies() {
     );
   }
 
-  if (!person) {
+  // Show not found only when personId is invalid or data fetch completed with no result
+  if (!personId || !person) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Person not found</p>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground">Person not found</p>
+        </div>
+        <Footer />
       </div>
     );
   }
