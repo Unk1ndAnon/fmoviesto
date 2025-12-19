@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getImageUrl, getBackdropUrl } from "@/lib/tmdb";
@@ -8,6 +9,7 @@ import { Footer } from "@/components/layout/Footer";
 import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { MovieJsonLd } from "@/components/seo/JsonLd";
+import { TrailerDialog } from "@/components/movie/TrailerDialog";
 import { Button } from "@/components/ui/button";
 import { Play, Star, Clock, Calendar, Plus } from "lucide-react";
 import { SharePopover } from "@/components/SharePopover";
@@ -20,6 +22,7 @@ export default function MovieDetails() {
   const searchTitle = slugToTitle(slug || "");
   const { user } = useAuth();
   const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
+  const [trailerOpen, setTrailerOpen] = useState(false);
 
   // Search for movie by title to get TMDB ID
   const { data: searchResult, isLoading: isSearching } = useQuery({
@@ -204,19 +207,14 @@ export default function MovieDetails() {
                   </Button>
                 </Link>
                 {trailer && (
-                  <a
-                    href={`https://www.youtube.com/watch?v=${trailer.key}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 rounded-full px-6 border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background/80"
+                    onClick={() => setTrailerOpen(true)}
                   >
-                    <Button 
-                      variant="outline" 
-                      className="gap-2 rounded-full px-6 border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background/80"
-                    >
-                      <Play className="w-4 h-4" />
-                      Trailer
-                    </Button>
-                  </a>
+                    <Play className="w-4 h-4" />
+                    Trailer
+                  </Button>
                 )}
                 <Button 
                   variant="outline" 
@@ -274,6 +272,15 @@ export default function MovieDetails() {
 
         <Footer />
       </div>
+
+      {trailer && (
+        <TrailerDialog
+          open={trailerOpen}
+          onOpenChange={setTrailerOpen}
+          trailerKey={trailer.key}
+          title={movie.title}
+        />
+      )}
     </>
   );
 }

@@ -9,6 +9,7 @@ import { Footer } from "@/components/layout/Footer";
 import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { TVShowJsonLd } from "@/components/seo/JsonLd";
+import { TrailerDialog } from "@/components/movie/TrailerDialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, Star, Calendar, ChevronRight, ChevronLeft, Plus, Film, Clock, ChevronDown, ChevronUp } from "lucide-react";
@@ -22,6 +23,7 @@ export default function TVDetails() {
   const searchTitle = slugToTitle(slug || "");
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [showAllEpisodes, setShowAllEpisodes] = useState(false);
+  const [trailerOpen, setTrailerOpen] = useState(false);
   const episodeScrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
@@ -106,6 +108,9 @@ export default function TVDetails() {
   const year = show.first_air_date?.split("-")[0];
   const genres = show.genres?.map(g => g.name).join(", ") || "";
   const episodeCount = seasonData?.episodes?.length || 0;
+  const trailer = show.videos?.results?.find(
+    (v) => v.type === "Trailer" && v.site === "YouTube"
+  );
 
   const seoKeywords = generateTVKeywords({
     title: show.name,
@@ -182,6 +187,16 @@ export default function TVDetails() {
                     Watch Now
                   </Button>
                 </Link>
+                {trailer && (
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 rounded-full px-6 border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background/80"
+                    onClick={() => setTrailerOpen(true)}
+                  >
+                    <Play className="w-4 h-4" />
+                    Trailer
+                  </Button>
+                )}
                 <Button 
                   variant="outline" 
                   className="gap-2 rounded-full px-6 border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background/80"
@@ -350,6 +365,15 @@ export default function TVDetails() {
 
         <Footer />
       </div>
+
+      {trailer && (
+        <TrailerDialog
+          open={trailerOpen}
+          onOpenChange={setTrailerOpen}
+          trailerKey={trailer.key}
+          title={show.name}
+        />
+      )}
     </>
   );
 }
