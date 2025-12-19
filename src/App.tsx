@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
+import TelegramChat from "@/components/TelegramChat";
 import Index from "./pages/Index";
 
 // Lazy load all other pages for code splitting
@@ -86,6 +87,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+            <TelegramChat />
           </AnalyticsWrapper>
         </BrowserRouter>
       </TooltipProvider>
