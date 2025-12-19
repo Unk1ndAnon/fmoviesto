@@ -239,7 +239,7 @@ export default function TVDetails() {
                 <div
                   ref={episodeScrollRef}
                   className={`flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:grid md:overflow-visible md:snap-none ${
-                    showAllEpisodes ? "md:grid-cols-3 lg:grid-cols-4" : "md:grid-cols-4 lg:grid-cols-5"
+                    showAllEpisodes ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-3 lg:grid-cols-4"
                   }`}
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
