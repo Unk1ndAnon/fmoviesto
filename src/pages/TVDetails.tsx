@@ -247,7 +247,7 @@ export default function TVDetails() {
                     <Link
                       key={episode.id}
                       to={getWatchTVUrl(show.name, selectedSeason, episode.episode_number)}
-                      className="flex-shrink-0 w-44 md:w-auto snap-start group"
+                      className="flex-shrink-0 w-56 md:w-auto snap-start group"
                     >
                       <div className="relative aspect-video rounded-lg overflow-hidden bg-card mb-2">
                         {episode.still_path ? (
