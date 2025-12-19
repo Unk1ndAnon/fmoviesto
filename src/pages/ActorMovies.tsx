@@ -1,16 +1,28 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getImageUrl, Movie, TVShow } from "@/lib/tmdb";
+import { slugToTitle } from "@/lib/slug";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { SEOHead } from "@/components/seo/SEOHead";
 
 export default function ActorMovies() {
-  const { slug } = useParams<{ slug: string }>();
+  const { id } = useParams<{ id: string }>();
   
-  // Check if slug is a numeric ID (from PopularPeople page)
-  const personId = slug && /^\d+$/.test(slug) ? parseInt(slug, 10) : null;
+  // Check if id is numeric (direct ID) or a slug (name-based)
+  const isNumericId = id && /^\d+$/.test(id);
+  const directPersonId = isNumericId ? parseInt(id, 10) : null;
+  const searchName = !isNumericId && id ? slugToTitle(id) : null;
+
+  // Search for person by name if we have a slug
+  const { data: searchResult } = useQuery({
+    queryKey: ["personSearch", searchName],
+    queryFn: () => tmdb.searchPerson(searchName!),
+    enabled: !!searchName,
+  });
+
+  const personId = directPersonId || searchResult?.id;
 
   const { data: person, isLoading: personLoading } = useQuery({
     queryKey: ["person", personId],
@@ -26,8 +38,8 @@ export default function ActorMovies() {
 
   const isLoading = personLoading || creditsLoading;
 
-  // Show loading if we have a valid personId but data is still loading
-  if (personId && isLoading) {
+  // Show loading state
+  if (isLoading || (!directPersonId && searchName && !searchResult)) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -38,8 +50,8 @@ export default function ActorMovies() {
     );
   }
 
-  // Show not found only when personId is invalid or data fetch completed with no result
-  if (!personId || !person) {
+  // Show not found when data fetch completed with no result
+  if (!person) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />

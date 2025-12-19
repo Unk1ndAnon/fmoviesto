@@ -238,6 +238,11 @@ export const tmdb = {
 
   getPopularPeople: (page: number = 1) =>
     fetchTMDB<{ results: Array<{ id: number; name: string; profile_path: string | null; known_for_department: string; known_for: Array<{ title?: string; name?: string }> }> }>("/person/popular", { page: String(page) }),
+
+  searchPerson: async (query: string): Promise<{ id: number; name: string; profile_path: string | null } | null> => {
+    const result = await fetchTMDB<{ results: Array<{ id: number; name: string; profile_path: string | null }> }>("/search/person", { query });
+    return result.results[0] || null;
+  },
 };
 
 export const EMBED_SOURCES = [
