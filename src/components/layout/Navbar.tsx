@@ -62,6 +62,12 @@ function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem asChild>
+          <Link to="/profile" className="flex items-center gap-2">
+            <User className="w-4 h-4" />
+            My Profile
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link to="/favorites" className="flex items-center gap-2">
             <Heart className="w-4 h-4" />
             My Favorites
