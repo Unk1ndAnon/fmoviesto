@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SITE_URL = 'https://filmoteka.me'; // Update this to your actual site URL
+const SITE_URL = 'https://fmov.online';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -43,9 +43,9 @@ serve(async (req) => {
       
       if (!query) {
         await sendTelegramMessage(botToken, chatId, 
-          '🎬 *Kako koristiti /movies komandu:*\n\n' +
-          'Unesite naziv filma ili serije nakon komande.\n\n' +
-          '*Primeri:*\n' +
+          '🎬 *How to use /movies command:*\n\n' +
+          'Enter the name of a movie or TV show after the command.\n\n' +
+          '*Examples:*\n' +
           '`/movies Inception`\n' +
           '`/movies Breaking Bad`\n' +
           '`/movies Avatar 2`',
@@ -58,13 +58,13 @@ serve(async (req) => {
 
       // Search TMDB for movies/shows
       if (!tmdbApiKey) {
-        await sendTelegramMessage(botToken, chatId, '❌ Greška: TMDB API nije konfigurisan.');
+        await sendTelegramMessage(botToken, chatId, '❌ Error: TMDB API is not configured.');
         return new Response(JSON.stringify({ ok: true }), { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         });
       }
 
-      const searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${tmdbApiKey}&query=${encodeURIComponent(query)}&language=sr-RS&include_adult=false`;
+      const searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${tmdbApiKey}&query=${encodeURIComponent(query)}&language=en-US&include_adult=false`;
       const searchResponse = await fetch(searchUrl);
       const searchData = await searchResponse.json();
 
@@ -72,7 +72,7 @@ serve(async (req) => {
 
       if (!searchData.results || searchData.results.length === 0) {
         await sendTelegramMessage(botToken, chatId, 
-          `🔍 Nema rezultata za: *${query}*\n\nProbajte drugačiji naziv.`,
+          `🔍 No results found for: *${query}*\n\nTry a different title.`,
           'Markdown'
         );
         return new Response(JSON.stringify({ ok: true }), { 
@@ -87,7 +87,7 @@ serve(async (req) => {
 
       if (results.length === 0) {
         await sendTelegramMessage(botToken, chatId, 
-          `🔍 Nema filmova ili serija za: *${query}*`,
+          `🔍 No movies or TV shows found for: *${query}*`,
           'Markdown'
         );
         return new Response(JSON.stringify({ ok: true }), { 
@@ -96,12 +96,12 @@ serve(async (req) => {
       }
 
       // Build response message with links
-      let responseText = `🎬 *Rezultati za "${query}":*\n\n`;
+      let responseText = `🎬 *Results for "${query}":*\n\n`;
       
       for (const item of results) {
         const title = item.title || item.name;
         const year = (item.release_date || item.first_air_date || '').substring(0, 4);
-        const type = item.media_type === 'movie' ? 'film' : 'serija';
+        const type = item.media_type === 'movie' ? 'Movie' : 'TV Show';
         const rating = item.vote_average ? `⭐ ${item.vote_average.toFixed(1)}` : '';
         const slug = createSlug(title);
         const url = item.media_type === 'movie' 
@@ -118,9 +118,9 @@ serve(async (req) => {
     // Handle /start command
     if (text === '/start') {
       await sendTelegramMessage(botToken, chatId,
-        '👋 *Dobrodošli u Filmoteka Bot!*\n\n' +
-        '🎬 Koristite `/movies` komandu da pronađete filmove i serije.\n\n' +
-        '*Primer:* `/movies Inception`',
+        '👋 *Welcome to Fmov Bot!*\n\n' +
+        '🎬 Use the `/movies` command to find movies and TV shows.\n\n' +
+        '*Example:* `/movies Inception`',
         'Markdown'
       );
     }
@@ -128,10 +128,10 @@ serve(async (req) => {
     // Handle /help command
     if (text === '/help') {
       await sendTelegramMessage(botToken, chatId,
-        '📖 *Dostupne komande:*\n\n' +
-        '`/movies [naziv]` - Pretražite filmove i serije\n' +
-        '`/start` - Pokrenite bota\n' +
-        '`/help` - Prikažite ovu pomoć',
+        '📖 *Available commands:*\n\n' +
+        '`/movies [title]` - Search for movies and TV shows\n' +
+        '`/start` - Start the bot\n' +
+        '`/help` - Show this help message',
         'Markdown'
       );
     }
