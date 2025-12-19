@@ -125,7 +125,7 @@ export default function MovieDetails() {
         <Navbar />
 
         {/* Hero Section - Matching TV Shows Design */}
-        <section className="relative min-h-[70vh] lg:min-h-[80vh]">
+        <section className="relative">
           {movie.backdrop_path && (
             <>
               <img
