@@ -105,8 +105,8 @@ serve(async (req) => {
         const rating = item.vote_average ? `⭐ ${item.vote_average.toFixed(1)}` : '';
         const slug = createSlug(title);
         const url = item.media_type === 'movie' 
-          ? `${SITE_URL}/movie/${item.id}/${slug}`
-          : `${SITE_URL}/tv/${item.id}/${slug}`;
+          ? `${SITE_URL}/movie/${slug}`
+          : `${SITE_URL}/tvshow/${slug}`;
         
         responseText += `🎥 *${title}* ${year ? `(${year})` : ''} - ${type} ${rating}\n`;
         responseText += `🔗 ${url}\n\n`;
