@@ -313,7 +313,7 @@ export default function TVDetails() {
                       <div className="relative aspect-video rounded-lg overflow-hidden bg-card mb-2">
                         {episode.still_path ? (
                           <img
-                            src={getImageUrl(episode.still_path, "w500")}
+                            src={getImageUrl(episode.still_path, "w780")}
                             alt={episode.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"

@@ -82,7 +82,7 @@ export default function Watchlist() {
                         <div className="relative aspect-[2/3] bg-card rounded-lg overflow-hidden">
                           {item.poster_path ? (
                             <img
-                              src={getImageUrl(item.poster_path, "w342")}
+                              src={getImageUrl(item.poster_path, "w780")}
                               alt={item.title}
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                             />

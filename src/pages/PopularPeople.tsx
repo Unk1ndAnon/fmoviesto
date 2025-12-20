@@ -55,7 +55,7 @@ export default function PopularPeople() {
                       <div className="aspect-[2/3] rounded-lg overflow-hidden bg-card relative">
                         {person.profile_path ? (
                           <img
-                            src={getImageUrl(person.profile_path, "w500")}
+                            src={getImageUrl(person.profile_path, "w780")}
                             alt={person.name}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                             loading="lazy"

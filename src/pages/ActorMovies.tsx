@@ -71,7 +71,7 @@ export default function ActorMovies() {
       <SEOHead
         title={`${person.name} - Movies & TV Shows`}
         description={person.biography?.slice(0, 160) || `Explore movies and TV shows featuring ${person.name}`}
-        image={getImageUrl(person.profile_path, "w500")}
+        image={getImageUrl(person.profile_path, "w780")}
       />
 
       <div className="min-h-screen flex flex-col bg-background">
@@ -82,7 +82,7 @@ export default function ActorMovies() {
           <div className="flex items-center gap-6 mb-8">
             {person.profile_path && (
               <img
-                src={getImageUrl(person.profile_path, "w185")}
+                src={getImageUrl(person.profile_path, "w500")}
                 alt={person.name}
                 className="w-24 h-24 rounded-full object-cover"
               />
