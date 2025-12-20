@@ -121,6 +121,7 @@ const movieCategories = [
 
 const tvCategories = [
   { title: "Discover", description: "Unearth new TV shows and hidden gems in television.", href: "/tv", icon: Sparkles, isNew: true },
+  { title: "New Episodes", description: "Watch the latest episodes airing today and this week.", href: "/new-episodes", icon: Calendar, isNew: true },
   { title: "Popular", description: "Dive into the world of popular TV shows that captured hearts.", href: "/tv?category=popular", icon: TrendingUp },
   { title: "Trending", description: "Don't miss out on the latest trending shows everyone's watching.", href: "/tv?category=trending", icon: Play },
   { title: "Top Rated", description: "Explore the pinnacle of television excellence with top picks.", href: "/tv?category=top-rated", icon: Star },
