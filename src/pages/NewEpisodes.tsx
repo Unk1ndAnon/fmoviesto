@@ -184,6 +184,14 @@ function TVShowCard({ show, details, isFollowing, badge }: TVShowCardProps) {
   const lastEpisode = details?.last_episode_to_air;
   const episode = nextEpisode || lastEpisode;
 
+  // Build episode code for URL
+  const seasonNum = episode?.season_number || 1;
+  const episodeNum = episode?.episode_number || 1;
+  const episodeCode = `s${String(seasonNum).padStart(2, '0')}e${String(episodeNum).padStart(2, '0')}`;
+  
+  // Link directly to watch page with episode
+  const watchUrl = `/watch/${slug}-${episodeCode}`;
+
   const formatAirDate = (dateStr: string) => {
     try {
       const date = parseISO(dateStr);
@@ -197,7 +205,7 @@ function TVShowCard({ show, details, isFollowing, badge }: TVShowCardProps) {
 
   return (
     <Link
-      to={`/tvshow/${slug}`}
+      to={watchUrl}
       className="group relative block overflow-hidden rounded-lg bg-card transition-transform hover:scale-105"
     >
       <div className="aspect-[2/3] relative">
