@@ -12,9 +12,10 @@ import { TVShowJsonLd } from "@/components/seo/JsonLd";
 import { TrailerDialog } from "@/components/movie/TrailerDialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Star, Calendar, ChevronRight, ChevronLeft, Plus, Film, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Play, Star, Calendar, ChevronRight, ChevronLeft, Plus, Film, Clock, ChevronDown, ChevronUp, Bell, BellOff } from "lucide-react";
 import { SharePopover } from "@/components/SharePopover";
 import { useWatchlist } from "@/hooks/useUserLists";
+import { useTVFollows } from "@/hooks/useTVFollows";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -27,6 +28,7 @@ export default function TVDetails() {
   const episodeScrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
+  const { isFollowing, followShow, unfollowShow, getFollow } = useTVFollows();
 
   // Search for TV show by title to get TMDB ID
   const { data: searchResult, isLoading: isSearching } = useQuery({
@@ -82,6 +84,29 @@ export default function TVDetails() {
     }
   };
 
+  const handleFollow = () => {
+    if (!user) {
+      toast.error("Please sign in to follow shows");
+      return;
+    }
+    if (!show) return;
+
+    const following = isFollowing(show.id);
+    if (following) {
+      unfollowShow.mutate(show.id);
+    } else {
+      const latestSeason = show.number_of_seasons || 1;
+      const latestEpisode = seasonData?.episodes?.[seasonData.episodes.length - 1];
+      followShow.mutate({
+        tmdb_id: show.id,
+        title: show.name,
+        poster_path: show.poster_path,
+        last_season: latestSeason,
+        last_episode: latestEpisode?.episode_number || 1,
+        last_air_date: latestEpisode?.air_date,
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -204,6 +229,27 @@ export default function TVDetails() {
                 >
                   <Plus className="w-4 h-4" />
                   {show && isInWatchlist(show.id, "tv") ? "In Watchlist" : "My Watchlist"}
+                </Button>
+                <Button 
+                  variant={show && isFollowing(show.id) ? "default" : "outline"}
+                  className={`gap-2 rounded-full px-6 ${
+                    show && isFollowing(show.id) 
+                      ? "bg-primary text-primary-foreground" 
+                      : "border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background/80"
+                  }`}
+                  onClick={handleFollow}
+                >
+                  {show && isFollowing(show.id) ? (
+                    <>
+                      <BellOff className="w-4 h-4" />
+                      Following
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="w-4 h-4" />
+                      Follow
+                    </>
+                  )}
                 </Button>
                 <SharePopover title={show?.name || ""} />
               </div>
