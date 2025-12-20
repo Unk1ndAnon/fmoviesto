@@ -364,7 +364,7 @@ export default function Watch() {
               {/* Poster */}
               <div className="rounded-lg overflow-hidden mb-4">
                 <img 
-                  src={getImageUrl(item.poster_path, "w342")}
+                  src={getImageUrl(item.poster_path, "w780")}
                   alt={title}
                   className="w-full aspect-[2/3] object-cover"
                 />

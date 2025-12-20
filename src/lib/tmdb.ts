@@ -141,13 +141,19 @@ export interface SearchResult {
   total_results: number;
 }
 
-export const getImageUrl = (path: string | null, size: string = "w500"): string => {
+export const getImageUrl = (path: string | null, size: string = "w780"): string => {
   if (!path) return "/placeholder.svg";
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 };
 
 export const getBackdropUrl = (path: string | null, size: string = "original"): string => {
   if (!path) return "";
+  return `${TMDB_IMAGE_BASE}/${size}${path}`;
+};
+
+// High-quality poster for detail pages
+export const getPosterUrl = (path: string | null, size: "w342" | "w500" | "w780" | "original" = "w780"): string => {
+  if (!path) return "/placeholder.svg";
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 };
 
