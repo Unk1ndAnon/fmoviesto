@@ -310,7 +310,7 @@ export default function Watch() {
                         <div className="flex-shrink-0 w-32 aspect-video rounded overflow-hidden bg-secondary">
                           {ep.still_path ? (
                             <img
-                              src={getImageUrl(ep.still_path, "w300")}
+                              src={getImageUrl(ep.still_path, "w780")}
                               alt={ep.name}
                               className="w-full h-full object-cover"
                             />

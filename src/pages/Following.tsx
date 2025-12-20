@@ -128,7 +128,7 @@ export default function Following() {
                   <Link to={getTVShowUrl(item.title)} className="relative block">
                     <div className="aspect-video relative overflow-hidden">
                       <img
-                        src={getImageUrl(show?.backdrop_path || item.poster_path, "w500")}
+                        src={getImageUrl(show?.backdrop_path || item.poster_path, "w780")}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
