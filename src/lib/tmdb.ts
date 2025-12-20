@@ -195,6 +195,12 @@ export const tmdb = {
   getTopRatedTV: (page: number = 1) =>
     fetchTMDB<{ results: TVShow[]; total_pages: number }>("/tv/top_rated", { page: String(page) }),
 
+  getOnTheAirTV: (page: number = 1) =>
+    fetchTMDB<{ results: TVShow[]; total_pages: number }>("/tv/on_the_air", { page: String(page) }),
+
+  getAiringTodayTV: (page: number = 1) =>
+    fetchTMDB<{ results: TVShow[]; total_pages: number }>("/tv/airing_today", { page: String(page) }),
+
   getTVDetails: (id: number) =>
     fetchTMDB<TVShow>(`/tv/${id}`, { append_to_response: "videos,credits,similar" }),
 

@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { HeroSlider } from "@/components/movie/HeroSlider";
 import { MovieRow } from "@/components/movie/MovieRow";
+import { NewEpisodesSection } from "@/components/movie/NewEpisodesSection";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -58,6 +59,9 @@ export default function Index() {
 
           {/* Content Rows */}
           <div className="container mx-auto px-4 py-8 space-y-4">
+            {/* New Episodes Section */}
+            <NewEpisodesSection />
+
             <MovieRow
               title="Trending This Week"
               items={trending?.results || []}

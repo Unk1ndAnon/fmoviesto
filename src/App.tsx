@@ -29,6 +29,7 @@ const Watchlist = lazy(() => import("./pages/Watchlist"));
 const PopularPeople = lazy(() => import("./pages/PopularPeople"));
 const RandomMovies = lazy(() => import("./pages/RandomMovies"));
 const Profile = lazy(() => import("./pages/Profile"));
+const Following = lazy(() => import("./pages/Following"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -79,6 +80,7 @@ const App = () => (
                 <Route path="/people" element={<PopularPeople />} />
                 <Route path="/random" element={<RandomMovies />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/following" element={<Following />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/dmca" element={<DMCA />} />
                 <Route path="/terms" element={<Terms />} />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Shuffle, Heart, Bookmark, LogIn, LogOut, User, Shield } from "lucide-react";
+import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Shuffle, Heart, Bookmark, LogIn, LogOut, User, Shield, Bell } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { NotificationBell } from "@/components/NotificationBell";
 
 function UserMenu() {
   const { user, signOut, loading } = useAuth();
@@ -77,6 +78,12 @@ function UserMenu() {
           <Link to="/watchlist" className="flex items-center gap-2">
             <Bookmark className="w-4 h-4" />
             My Watchlist
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/following" className="flex items-center gap-2">
+            <Bell className="w-4 h-4" />
+            Following
           </Link>
         </DropdownMenuItem>
         {isAdmin && (
@@ -405,6 +412,9 @@ export function Navbar() {
                 />
               </div>
             </form>
+
+            {/* Notification Bell */}
+            <NotificationBell />
 
             {/* User Menu */}
             <UserMenu />
