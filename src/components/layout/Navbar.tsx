@@ -463,60 +463,109 @@ export function Navbar() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden py-4 border-t border-border/50 animate-fade-in max-h-[80vh] overflow-y-auto">
-            <div className="flex flex-col gap-1">
-              <Link
-                to="/"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                  location.pathname === "/"
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                )}
-              >
-                <Home className="w-5 h-5" />
-                Home
-              </Link>
+          <div className="lg:hidden py-4 border-t border-border/50 animate-fade-in max-h-[80vh] overflow-y-auto bg-background/95 backdrop-blur-lg">
+            <div className="flex flex-col gap-1 px-2">
+              {/* Main Navigation */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <Link
+                  to="/"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl text-sm font-medium transition-all",
+                    location.pathname === "/"
+                      ? "text-primary bg-primary/15 border border-primary/30"
+                      : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
+                  )}
+                >
+                  <Home className="w-6 h-6" />
+                  <span>Home</span>
+                </Link>
+                
+                <Link
+                  to="/movies"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl text-sm font-medium transition-all",
+                    location.pathname === "/movies"
+                      ? "text-primary bg-primary/15 border border-primary/30"
+                      : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
+                  )}
+                >
+                  <Film className="w-6 h-6" />
+                  <span>Movies</span>
+                </Link>
+                
+                <Link
+                  to="/tv"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl text-sm font-medium transition-all",
+                    location.pathname === "/tv"
+                      ? "text-primary bg-primary/15 border border-primary/30"
+                      : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
+                  )}
+                >
+                  <Tv className="w-6 h-6" />
+                  <span>TV Shows</span>
+                </Link>
+                
+                <Link
+                  to="/new-episodes"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl text-sm font-medium transition-all relative",
+                    location.pathname === "/new-episodes"
+                      ? "text-primary bg-primary/15 border border-primary/30"
+                      : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
+                  )}
+                >
+                  <Calendar className="w-6 h-6" />
+                  <span>New Episodes</span>
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary animate-pulse" />
+                </Link>
+              </div>
+
+              {/* Quick Links */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">Quick Links</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <Link
+                    to="/movies?category=trending"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/30 hover:bg-secondary transition-colors"
+                  >
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    <span className="text-xs text-foreground">Trending</span>
+                  </Link>
+                  <Link
+                    to="/people"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/30 hover:bg-secondary transition-colors"
+                  >
+                    <Users className="w-5 h-5 text-primary" />
+                    <span className="text-xs text-foreground">People</span>
+                  </Link>
+                  <Link
+                    to="/random"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/30 hover:bg-secondary transition-colors"
+                  >
+                    <Shuffle className="w-5 h-5 text-primary" />
+                    <span className="text-xs text-foreground">Random</span>
+                  </Link>
+                </div>
+              </div>
               
-              <Link
-                to="/movies"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                  location.pathname === "/movies"
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                )}
-              >
-                <Film className="w-5 h-5" />
-                Movies
-              </Link>
-              
-              <Link
-                to="/tv"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                  location.pathname === "/tv"
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                )}
-              >
-                <Tv className="w-5 h-5" />
-                TV Shows
-              </Link>
-              
-              {/* Mobile Genres */}
-              <div className="px-4 py-3">
-                <p className="text-xs font-semibold text-muted-foreground mb-2">Movie Genres</p>
-                <div className="flex flex-wrap gap-2">
-                  {movieGenres?.genres?.slice(0, 8).map((genre) => (
+              {/* Movie Genres */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">Movie Genres</p>
+                <div className="flex flex-wrap gap-1.5 px-1">
+                  {movieGenres?.genres?.slice(0, 10).map((genre) => (
                     <Button
                       key={genre.id}
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="text-xs"
+                      className="text-xs h-8 rounded-full border-border/50 hover:border-primary hover:text-primary"
                       onClick={() => {
                         navigate(`/movies?genre=${genre.id}`);
                         setIsMobileMenuOpen(false);
@@ -528,15 +577,16 @@ export function Navbar() {
                 </div>
               </div>
               
-              <div className="px-4 py-3">
-                <p className="text-xs font-semibold text-muted-foreground mb-2">TV Genres</p>
-                <div className="flex flex-wrap gap-2">
-                  {tvGenres?.genres?.slice(0, 8).map((genre) => (
+              {/* TV Genres */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">TV Show Genres</p>
+                <div className="flex flex-wrap gap-1.5 px-1">
+                  {tvGenres?.genres?.slice(0, 10).map((genre) => (
                     <Button
                       key={genre.id}
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="text-xs"
+                      className="text-xs h-8 rounded-full border-border/50 hover:border-primary hover:text-primary"
                       onClick={() => {
                         navigate(`/tv?genre=${genre.id}`);
                         setIsMobileMenuOpen(false);
