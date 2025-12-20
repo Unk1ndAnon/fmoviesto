@@ -250,13 +250,22 @@ function TVShowCard({ show, details, isFollowing, badge }: TVShowCardProps) {
         {/* Episode Info Overlay */}
         {episode && (
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background/90 to-transparent p-2 pt-6">
-            <div className="flex items-center gap-1 text-primary font-semibold text-xs">
-              <span>S{String(episode.season_number).padStart(2, '0')}E{String(episode.episode_number).padStart(2, '0')}</span>
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-primary font-semibold text-xs">
+                S{String(episode.season_number).padStart(2, '0')}E{String(episode.episode_number).padStart(2, '0')}
+              </span>
+              {episode.runtime && (
+                <span className="text-muted-foreground text-[10px]">
+                  {episode.runtime}min
+                </span>
+              )}
             </div>
             {episode.air_date && (
-              <div className="flex items-center gap-1 text-muted-foreground text-[10px] mt-0.5">
-                <Clock className="w-3 h-3" />
+              <div className="flex items-center gap-1.5 text-foreground text-[11px] mt-1 font-medium">
+                <Calendar className="w-3 h-3 text-primary" />
                 <span>{formatAirDate(episode.air_date)}</span>
+                <Clock className="w-3 h-3 text-muted-foreground ml-1" />
+                <span className="text-muted-foreground">Check local listings</span>
               </div>
             )}
           </div>
