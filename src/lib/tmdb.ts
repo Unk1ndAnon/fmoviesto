@@ -27,6 +27,17 @@ export interface Movie {
   recommendations?: { results: Movie[] };
 }
 
+export interface NextEpisode {
+  id: number;
+  name: string;
+  overview: string;
+  episode_number: number;
+  season_number: number;
+  air_date: string;
+  still_path: string | null;
+  runtime: number | null;
+}
+
 export interface TVShow {
   id: number;
   name: string;
@@ -49,6 +60,8 @@ export interface TVShow {
   videos?: { results: Video[] };
   credits?: { cast: Cast[]; crew: Crew[] };
   similar?: { results: TVShow[] };
+  next_episode_to_air?: NextEpisode | null;
+  last_episode_to_air?: NextEpisode | null;
 }
 
 export interface Genre {

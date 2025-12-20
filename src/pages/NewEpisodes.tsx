@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { tmdb, getImageUrl } from "@/lib/tmdb";
+import { useQuery, useQueries } from "@tanstack/react-query";
+import { tmdb, getImageUrl, TVShow as TMDBTVShow } from "@/lib/tmdb";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
@@ -7,19 +7,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { generateSlug } from "@/lib/slug";
 import { useTVFollows } from "@/hooks/useTVFollows";
-import { Calendar, Play, Star } from "lucide-react";
+import { Calendar, Clock, Play, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, parseISO, isToday, isTomorrow } from "date-fns";
 
-interface TVShow {
-  id: number;
-  name: string;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  vote_average: number;
-  first_air_date: string;
-  overview: string;
-}
+type TVShowWithDetails = TMDBTVShow;
 
 export default function NewEpisodes() {
   const { isFollowing } = useTVFollows();
@@ -34,7 +26,37 @@ export default function NewEpisodes() {
     queryFn: () => tmdb.getOnTheAirTV(),
   });
 
+  // Fetch detailed info for airing today shows
+  const airingTodayDetails = useQueries({
+    queries: (airingToday?.results || []).slice(0, 20).map((show) => ({
+      queryKey: ["tvDetails", show.id],
+      queryFn: () => tmdb.getTVDetails(show.id),
+      staleTime: 1000 * 60 * 10, // 10 minutes
+    })),
+  });
+
+  // Fetch detailed info for on the air shows
+  const onTheAirDetails = useQueries({
+    queries: (onTheAir?.results || []).slice(0, 20).map((show) => ({
+      queryKey: ["tvDetails", show.id],
+      queryFn: () => tmdb.getTVDetails(show.id),
+      staleTime: 1000 * 60 * 10, // 10 minutes
+    })),
+  });
+
   const isLoading = airingLoading || onTheAirLoading;
+  const detailsLoading = airingTodayDetails.some(q => q.isLoading) || onTheAirDetails.some(q => q.isLoading);
+
+  // Create maps for quick lookup
+  const airingTodayMap = new Map<number, TVShowWithDetails>();
+  airingTodayDetails.forEach(q => {
+    if (q.data) airingTodayMap.set(q.data.id, q.data as TVShowWithDetails);
+  });
+
+  const onTheAirMap = new Map<number, TVShowWithDetails>();
+  onTheAirDetails.forEach(q => {
+    if (q.data) onTheAirMap.set(q.data.id, q.data as TVShowWithDetails);
+  });
 
   return (
     <>
@@ -69,7 +91,7 @@ export default function NewEpisodes() {
                 </Badge>
               </div>
 
-              {isLoading ? (
+              {isLoading || detailsLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <div key={i} className="space-y-2">
@@ -81,10 +103,11 @@ export default function NewEpisodes() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {airingToday?.results?.map((show: TVShow) => (
+                  {airingToday?.results?.slice(0, 20).map((show) => (
                     <TVShowCard
                       key={show.id}
                       show={show}
+                      details={airingTodayMap.get(show.id)}
                       isFollowing={isFollowing(show.id)}
                       badge="TODAY"
                     />
@@ -108,7 +131,7 @@ export default function NewEpisodes() {
                 </h2>
               </div>
 
-              {isLoading ? (
+              {isLoading || detailsLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                   {Array.from({ length: 18 }).map((_, i) => (
                     <div key={i} className="space-y-2">
@@ -120,10 +143,11 @@ export default function NewEpisodes() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {onTheAir?.results?.map((show: TVShow) => (
+                  {onTheAir?.results?.slice(0, 20).map((show) => (
                     <TVShowCard
                       key={show.id}
                       show={show}
+                      details={onTheAirMap.get(show.id)}
                       isFollowing={isFollowing(show.id)}
                     />
                   ))}
@@ -146,13 +170,30 @@ export default function NewEpisodes() {
 }
 
 interface TVShowCardProps {
-  show: TVShow;
+  show: TMDBTVShow;
+  details?: TVShowWithDetails;
   isFollowing: boolean;
   badge?: string;
 }
 
-function TVShowCard({ show, isFollowing, badge }: TVShowCardProps) {
+function TVShowCard({ show, details, isFollowing, badge }: TVShowCardProps) {
   const slug = generateSlug(show.name);
+  
+  // Get episode info from next_episode_to_air or last_episode_to_air
+  const nextEpisode = details?.next_episode_to_air;
+  const lastEpisode = details?.last_episode_to_air;
+  const episode = nextEpisode || lastEpisode;
+
+  const formatAirDate = (dateStr: string) => {
+    try {
+      const date = parseISO(dateStr);
+      if (isToday(date)) return "Today";
+      if (isTomorrow(date)) return "Tomorrow";
+      return format(date, "MMM d");
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
     <Link
@@ -198,6 +239,21 @@ function TVShowCard({ show, isFollowing, badge }: TVShowCardProps) {
           </div>
         )}
 
+        {/* Episode Info Overlay */}
+        {episode && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background/90 to-transparent p-2 pt-6">
+            <div className="flex items-center gap-1 text-primary font-semibold text-xs">
+              <span>S{String(episode.season_number).padStart(2, '0')}E{String(episode.episode_number).padStart(2, '0')}</span>
+            </div>
+            {episode.air_date && (
+              <div className="flex items-center gap-1 text-muted-foreground text-[10px] mt-0.5">
+                <Clock className="w-3 h-3" />
+                <span>{formatAirDate(episode.air_date)}</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Play button on hover */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center">
@@ -211,9 +267,9 @@ function TVShowCard({ show, isFollowing, badge }: TVShowCardProps) {
         <h3 className="font-medium text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">
           {show.name}
         </h3>
-        {show.first_air_date && (
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {format(new Date(show.first_air_date), "yyyy")}
+        {episode && (
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+            {episode.name || `Episode ${episode.episode_number}`}
           </p>
         )}
       </div>
