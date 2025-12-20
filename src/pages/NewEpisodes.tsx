@@ -5,7 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
-import { generateSlug } from "@/lib/slug";
+import { generateSlug, getWatchTVUrl } from "@/lib/slug";
 import { useTVFollows } from "@/hooks/useTVFollows";
 import { Calendar, Clock, Play, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -184,13 +184,12 @@ function TVShowCard({ show, details, isFollowing, badge }: TVShowCardProps) {
   const lastEpisode = details?.last_episode_to_air;
   const episode = nextEpisode || lastEpisode;
 
-  // Build episode code for URL
+  // Get season/episode numbers for URL
   const seasonNum = episode?.season_number || 1;
   const episodeNum = episode?.episode_number || 1;
-  const episodeCode = `s${String(seasonNum).padStart(2, '0')}e${String(episodeNum).padStart(2, '0')}`;
   
-  // Link directly to watch page with episode
-  const watchUrl = `/watch/${slug}-${episodeCode}`;
+  // Link directly to watch page with correct URL format
+  const watchUrl = getWatchTVUrl(show.name, seasonNum, episodeNum);
 
   const formatAirDate = (dateStr: string) => {
     try {
