@@ -210,7 +210,7 @@ function TVShowCard({ show, details, isFollowing, badge }: TVShowCardProps) {
       <div className="aspect-[2/3] relative">
         {show.poster_path ? (
           <img
-            src={getImageUrl(show.poster_path, "w342")}
+            src={getImageUrl(show.poster_path, "w500")}
             alt={show.name}
             className="w-full h-full object-cover"
             loading="lazy"

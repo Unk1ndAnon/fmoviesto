@@ -107,7 +107,7 @@ export function NewEpisodesSection() {
             >
               <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-card">
                 <img
-                  src={getImageUrl(show.poster_path, "w342")}
+                  src={getImageUrl(show.poster_path, "w500")}
                   alt={show.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
