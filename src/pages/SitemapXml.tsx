@@ -8,10 +8,18 @@ const sanitizeUrlPart = (str: string): string => {
   return str.replace(/[^a-zA-Z0-9\-_./]/g, "");
 };
 
+interface SitemapUrl {
+  loc: string;
+  priority: string;
+  changefreq: string;
+}
+
 export default function SitemapXml() {
-  const [episodeUrls, setEpisodeUrls] = useState<Array<{ loc: string; priority: string; changefreq: string }>>([]);
+  const [episodeUrls, setEpisodeUrls] = useState<SitemapUrl[]>([]);
+  const [seasonUrls, setSeasonUrls] = useState<SitemapUrl[]>([]);
   const containerRef = useRef<HTMLPreElement>(null);
 
+  // Fetch more movies for comprehensive sitemap
   const { data: popularMovies } = useQuery({
     queryKey: ["sitemapMovies"],
     queryFn: async () => {
@@ -21,15 +29,26 @@ export default function SitemapXml() {
         tmdb.getPopular(3),
         tmdb.getPopular(4),
         tmdb.getPopular(5),
+        tmdb.getPopular(6),
+        tmdb.getPopular(7),
+        tmdb.getPopular(8),
+        tmdb.getPopular(9),
+        tmdb.getPopular(10),
         tmdb.getTopRated(1),
         tmdb.getTopRated(2),
         tmdb.getTopRated(3),
+        tmdb.getTopRated(4),
+        tmdb.getTopRated(5),
+        tmdb.getTrending("day"),
+        tmdb.getTrending("week"),
+        tmdb.getNowPlaying(1),
       ]);
       const allMovies = pages.flatMap((p) => p.results);
       return [...new Map(allMovies.map((m) => [m.id, m])).values()];
     },
   });
 
+  // Fetch more TV shows
   const { data: popularTV } = useQuery({
     queryKey: ["sitemapTV"],
     queryFn: async () => {
@@ -39,9 +58,19 @@ export default function SitemapXml() {
         tmdb.getPopularTV(3),
         tmdb.getPopularTV(4),
         tmdb.getPopularTV(5),
+        tmdb.getPopularTV(6),
+        tmdb.getPopularTV(7),
+        tmdb.getPopularTV(8),
+        tmdb.getPopularTV(9),
+        tmdb.getPopularTV(10),
         tmdb.getTopRatedTV(1),
         tmdb.getTopRatedTV(2),
         tmdb.getTopRatedTV(3),
+        tmdb.getTopRatedTV(4),
+        tmdb.getTopRatedTV(5),
+        tmdb.getTrendingTV("day"),
+        tmdb.getTrendingTV("week"),
+        tmdb.getOnTheAirTV(1),
       ]);
       const allShows = pages.flatMap((p) => p.results);
       return [...new Map(allShows.map((s) => [s.id, s])).values()];
@@ -58,32 +87,38 @@ export default function SitemapXml() {
     queryFn: () => tmdb.getTVGenres(),
   });
 
-  // Fetch episode data for TV shows
+  // Fetch comprehensive episode data for TV shows
   useEffect(() => {
     if (!popularTV) return;
 
     const fetchEpisodes = async () => {
-      const episodes: Array<{ loc: string; priority: string; changefreq: string }> = [];
+      const episodes: SitemapUrl[] = [];
+      const seasons: SitemapUrl[] = [];
       
-      // Limit to top 30 shows to avoid too many API calls
-      const topShows = popularTV.slice(0, 30);
+      // Process top 50 shows for comprehensive coverage
+      const topShows = popularTV.slice(0, 50);
       
       for (const show of topShows) {
         try {
           const details = await tmdb.getTVDetails(show.id);
           const slug = generateSlug(show.name);
           
-          // Add episodes for each season (limit to first 3 seasons for performance)
-          const seasonsToProcess = details.seasons
-            .filter(s => s.season_number > 0)
-            .slice(0, 3);
+          // Add all seasons
+          const allSeasons = details.seasons?.filter(s => s.season_number > 0) || [];
           
-          for (const season of seasonsToProcess) {
+          for (const season of allSeasons) {
+            // Add season URL
+            seasons.push({
+              loc: sanitizeUrlPart(`/tvshow/${slug}?season=${season.season_number}`),
+              priority: "0.7",
+              changefreq: "weekly",
+            });
+            
             try {
               const seasonData = await tmdb.getSeasonDetails(show.id, season.season_number);
               
               for (const episode of seasonData.episodes || []) {
-                // New URL format: /watch/{slug}/{season}-{episode}
+                // Episode watch URL: /watch/{slug}/{season}-{episode}
                 episodes.push({
                   loc: sanitizeUrlPart(`/watch/${slug}/${season.season_number}-${episode.episode_number}`),
                   priority: "0.7",
@@ -100,6 +135,7 @@ export default function SitemapXml() {
       }
       
       setEpisodeUrls(episodes);
+      setSeasonUrls(seasons);
     };
 
     fetchEpisodes();
@@ -108,14 +144,18 @@ export default function SitemapXml() {
   useEffect(() => {
     if (!popularMovies || !popularTV || !movieGenres || !tvGenres || !containerRef.current) return;
 
-    const baseUrl = window.location.origin;
+    const baseUrl = "https://fmovies-sigma.vercel.app";
     const today = new Date().toISOString().split("T")[0];
 
-    const staticPages = [
+    // Static pages
+    const staticPages: SitemapUrl[] = [
       { loc: "/", priority: "1.0", changefreq: "daily" },
       { loc: "/movies", priority: "0.9", changefreq: "daily" },
       { loc: "/tv", priority: "0.9", changefreq: "daily" },
-      { loc: "/search", priority: "0.7", changefreq: "weekly" },
+      { loc: "/new-episodes", priority: "0.9", changefreq: "daily" },
+      { loc: "/search", priority: "0.8", changefreq: "weekly" },
+      { loc: "/people", priority: "0.7", changefreq: "weekly" },
+      { loc: "/random", priority: "0.6", changefreq: "weekly" },
       { loc: "/sitemap", priority: "0.5", changefreq: "weekly" },
       { loc: "/privacy", priority: "0.3", changefreq: "monthly" },
       { loc: "/dmca", priority: "0.3", changefreq: "monthly" },
@@ -123,27 +163,28 @@ export default function SitemapXml() {
     ];
 
     // Movie detail pages: /movie/{slug}
-    const movieUrls = popularMovies.map((movie) => ({
+    const movieUrls: SitemapUrl[] = popularMovies.map((movie) => ({
       loc: sanitizeUrlPart(`/movie/${generateSlug(movie.title)}`),
       priority: "0.8",
       changefreq: "weekly",
     }));
 
     // Movie watch pages: /watch/{slug}
-    const movieWatchUrls = popularMovies.map((movie) => ({
+    const movieWatchUrls: SitemapUrl[] = popularMovies.map((movie) => ({
       loc: sanitizeUrlPart(`/watch/${generateSlug(movie.title)}`),
       priority: "0.8",
       changefreq: "weekly",
     }));
 
     // TV show detail pages: /tvshow/{slug}
-    const tvUrls = popularTV.map((show) => ({
+    const tvUrls: SitemapUrl[] = popularTV.map((show) => ({
       loc: sanitizeUrlPart(`/tvshow/${generateSlug(show.name)}`),
       priority: "0.8",
       changefreq: "weekly",
     }));
 
-    const genreUrls = [
+    // Genre pages
+    const genreUrls: SitemapUrl[] = [
       ...movieGenres.genres.map((g) => ({
         loc: sanitizeUrlPart(`/movies?genre=${g.id}`),
         priority: "0.6",
@@ -156,10 +197,39 @@ export default function SitemapXml() {
       })),
     ];
 
-    const allUrls = [...staticPages, ...movieUrls, ...movieWatchUrls, ...tvUrls, ...episodeUrls, ...genreUrls];
+    // Year filter pages
+    const currentYear = new Date().getFullYear();
+    const yearUrls: SitemapUrl[] = [];
+    for (let year = currentYear; year >= currentYear - 10; year--) {
+      yearUrls.push({
+        loc: sanitizeUrlPart(`/movies?year=${year}`),
+        priority: "0.5",
+        changefreq: "monthly",
+      });
+      yearUrls.push({
+        loc: sanitizeUrlPart(`/tv?year=${year}`),
+        priority: "0.5",
+        changefreq: "monthly",
+      });
+    }
 
+    // Combine all URLs
+    const allUrls = [
+      ...staticPages, 
+      ...movieUrls, 
+      ...movieWatchUrls, 
+      ...tvUrls, 
+      ...seasonUrls,
+      ...episodeUrls, 
+      ...genreUrls,
+      ...yearUrls,
+    ];
+
+    // Generate XML
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
 ${allUrls
   .map(
     (url) => `  <url>
@@ -175,7 +245,7 @@ ${allUrls
     // Use textContent instead of innerHTML to prevent XSS
     containerRef.current.textContent = xml;
     document.title = "Sitemap XML - fmovies";
-  }, [popularMovies, popularTV, movieGenres, tvGenres, episodeUrls]);
+  }, [popularMovies, popularTV, movieGenres, tvGenres, episodeUrls, seasonUrls]);
 
   return (
     <pre 
@@ -191,7 +261,7 @@ ${allUrls
         minHeight: "100vh"
       }}
     >
-      Generating sitemap...
+      Generating comprehensive sitemap with movies, TV shows, seasons, and episodes...
     </pre>
   );
 }
