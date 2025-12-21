@@ -10,6 +10,7 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { TVShowJsonLd } from "@/components/seo/JsonLd";
 import { TrailerDialog } from "@/components/movie/TrailerDialog";
+import { RelatedGenreLinks, Breadcrumbs, QuickLinks } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, Star, Calendar, ChevronRight, ChevronLeft, Plus, Film, Clock, ChevronDown, ChevronUp, Bell, BellOff } from "lucide-react";
@@ -146,6 +147,12 @@ export default function TVDetails() {
     latestSeason: show.number_of_seasons,
   });
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "TV Shows", href: "/tv" },
+    { label: show.name },
+  ];
+
   return (
     <>
       <SEOHead
@@ -160,6 +167,10 @@ export default function TVDetails() {
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
 
+        {/* Breadcrumbs for SEO */}
+        <div className="container mx-auto px-4 pt-20">
+          <Breadcrumbs items={breadcrumbs} />
+        </div>
         {/* Hero Section - Desktop Design */}
         <section className="relative min-h-[70vh] lg:min-h-[80vh]">
           {show.backdrop_path && (
@@ -407,6 +418,12 @@ export default function TVDetails() {
               type="tv"
             />
           )}
+        </section>
+
+        {/* Internal Links for SEO */}
+        <section className="container mx-auto px-4">
+          <RelatedGenreLinks genres={show.genres} type="tv" />
+          <QuickLinks currentType="tv" />
         </section>
 
         <Footer />

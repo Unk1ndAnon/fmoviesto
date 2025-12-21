@@ -10,6 +10,7 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { MovieJsonLd } from "@/components/seo/JsonLd";
 import { TrailerDialog } from "@/components/movie/TrailerDialog";
+import { RelatedGenreLinks, Breadcrumbs, QuickLinks } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
 import { Play, Star, Clock, Calendar, Plus } from "lucide-react";
 import { SharePopover } from "@/components/SharePopover";
@@ -113,6 +114,12 @@ export default function MovieDetails() {
     cast: cast.map(c => c.name),
   });
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Movies", href: "/movies" },
+    { label: movie.title },
+  ];
+
   return (
     <>
       <SEOHead
@@ -126,6 +133,11 @@ export default function MovieDetails() {
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
+        
+        {/* Breadcrumbs for SEO */}
+        <div className="container mx-auto px-4 pt-20">
+          <Breadcrumbs items={breadcrumbs} />
+        </div>
 
         {/* Hero Section - Matching TV Shows Design */}
         <section className="relative">
@@ -268,6 +280,12 @@ export default function MovieDetails() {
               type="movie"
             />
           )}
+        </section>
+
+        {/* Internal Links for SEO */}
+        <section className="container mx-auto px-4">
+          <RelatedGenreLinks genres={movie.genres} type="movie" />
+          <QuickLinks currentType="movie" />
         </section>
 
         <Footer />

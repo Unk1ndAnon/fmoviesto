@@ -1,4 +1,48 @@
+# robots.txt for fmovies
+# Allow all crawlers to access all content
+
 User-agent: *
-Disallow: /admin/
 Allow: /
-Sitemap: https://www.fmov.online/sitemap.xml
+
+# Sitemap location
+Sitemap: https://fmovies-sigma.vercel.app/sitemap.xml
+
+# Crawl-delay (optional, be respectful to servers)
+Crawl-delay: 1
+
+# Allow important bots explicitly
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# Disallow private user pages from indexing
+User-agent: *
+Disallow: /admin
+Disallow: /auth
+Disallow: /profile
+Disallow: /favorites
+Disallow: /watchlist
+Disallow: /following
