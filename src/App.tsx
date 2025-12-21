@@ -87,8 +87,8 @@ const App = () => (
                 <Route path="/following" element={<Following />} />
                 <Route path="/new-episodes" element={<NewEpisodes />} />
                 <Route path="/genres" element={<Genres />} />
-                <Route path="/genre/movies/:genreId" element={<GenreMovies />} />
-                <Route path="/genre/tv/:genreId" element={<GenreTV />} />
+                <Route path="/genre/movies/:genreSlug" element={<GenreMovies />} />
+                <Route path="/genre/tv/:genreSlug" element={<GenreTV />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/dmca" element={<DMCA />} />
                 <Route path="/terms" element={<Terms />} />

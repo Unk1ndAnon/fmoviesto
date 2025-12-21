@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { tmdb } from "@/lib/tmdb";
-import { getMovieGenreInfo, getTVGenreInfo, getDefaultGenreInfo } from "@/lib/genre-descriptions";
+import { getMovieGenreInfo, getTVGenreInfo, getDefaultGenreInfo, getMovieGenreSlugFromId, getTVGenreSlugFromId } from "@/lib/genre-descriptions";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
@@ -71,10 +71,11 @@ export default function Genres() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {movieGenres?.genres.map((genre) => {
                     const info = getMovieGenreInfo(genre.id) || getDefaultGenreInfo(genre.id, genre.name, "movie");
+                    const slug = getMovieGenreSlugFromId(genre.id);
                     return (
                       <Link
                         key={genre.id}
-                        to={`/genre/movies/${genre.id}`}
+                        to={`/genre/movies/${slug}`}
                         className="group relative p-5 rounded-xl bg-card border border-border/50 hover:border-primary/50 hover:bg-card/80 transition-all duration-300"
                       >
                         <div className="flex items-center justify-between">
@@ -104,10 +105,11 @@ export default function Genres() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {tvGenres?.genres.map((genre) => {
                     const info = getTVGenreInfo(genre.id) || getDefaultGenreInfo(genre.id, genre.name, "tv");
+                    const slug = getTVGenreSlugFromId(genre.id);
                     return (
                       <Link
                         key={genre.id}
-                        to={`/genre/tv/${genre.id}`}
+                        to={`/genre/tv/${slug}`}
                         className="group relative p-5 rounded-xl bg-card border border-border/50 hover:border-primary/50 hover:bg-card/80 transition-all duration-300"
                       >
                         <div className="flex items-center justify-between">

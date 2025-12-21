@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb } from "@/lib/tmdb";
 import { generateSlug } from "@/lib/slug";
+import { getMovieGenreSlugFromId, getTVGenreSlugFromId } from "@/lib/genre-descriptions";
 
 // Sanitize string to prevent XSS - only allow safe characters for URLs
 const sanitizeUrlPart = (str: string): string => {
@@ -184,15 +185,15 @@ export default function SitemapXml() {
       changefreq: "weekly",
     }));
 
-    // Dedicated genre pages (SEO-optimized)
+    // Dedicated genre pages (SEO-optimized with slugs)
     const dedicatedGenreUrls: SitemapUrl[] = [
       ...movieGenres.genres.map((g) => ({
-        loc: sanitizeUrlPart(`/genre/movies/${g.id}`),
+        loc: sanitizeUrlPart(`/genre/movies/${getMovieGenreSlugFromId(g.id)}`),
         priority: "0.8",
         changefreq: "weekly",
       })),
       ...tvGenres.genres.map((g) => ({
-        loc: sanitizeUrlPart(`/genre/tv/${g.id}`),
+        loc: sanitizeUrlPart(`/genre/tv/${getTVGenreSlugFromId(g.id)}`),
         priority: "0.8",
         changefreq: "weekly",
       })),
