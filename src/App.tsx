@@ -6,8 +6,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import Index from "./pages/Index";
+import GenreMovies from "./pages/GenreMovies";
+import GenreTV from "./pages/GenreTV";
 
 // Lazy load all other pages for code splitting
 const Movies = lazy(() => import("./pages/Movies"));
@@ -32,8 +35,6 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Following = lazy(() => import("./pages/Following"));
 const NewEpisodes = lazy(() => import("./pages/NewEpisodes"));
 const Genres = lazy(() => import("./pages/Genres"));
-const GenreMovies = lazy(() => import("./pages/GenreMovies"));
-const GenreTV = lazy(() => import("./pages/GenreTV"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -66,38 +67,39 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AnalyticsWrapper>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/movies" element={<Movies />} />
-                <Route path="/tv" element={<TVShows />} />
-                <Route path="/movie/:slug" element={<MovieDetails />} />
-                <Route path="/tvshow/:slug" element={<TVDetails />} />
-                <Route path="/watch/:slug" element={<Watch />} />
-                <Route path="/watch/:slug/:seasonEpisode" element={<Watch />} />
-                <Route path="/search" element={<Search />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/actor/:id" element={<ActorMovies />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/favorites" element={<Favorites />} />
-                <Route path="/watchlist" element={<Watchlist />} />
-                <Route path="/people" element={<PopularPeople />} />
-                <Route path="/random" element={<RandomMovies />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/following" element={<Following />} />
-                <Route path="/new-episodes" element={<NewEpisodes />} />
-                <Route path="/genres" element={<Genres />} />
-                <Route path="/genre/movies/:genreSlug" element={<GenreMovies />} />
-                <Route path="/genre/tv/:genreSlug" element={<GenreTV />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/dmca" element={<DMCA />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/sitemap" element={<Sitemap />} />
-                <Route path="/sitemap.xml" element={<SitemapXml />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-            
+            <ErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/movies" element={<Movies />} />
+                  <Route path="/tv" element={<TVShows />} />
+                  <Route path="/movie/:slug" element={<MovieDetails />} />
+                  <Route path="/tvshow/:slug" element={<TVDetails />} />
+                  <Route path="/watch/:slug" element={<Watch />} />
+                  <Route path="/watch/:slug/:seasonEpisode" element={<Watch />} />
+                  <Route path="/search" element={<Search />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/actor/:id" element={<ActorMovies />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/favorites" element={<Favorites />} />
+                  <Route path="/watchlist" element={<Watchlist />} />
+                  <Route path="/people" element={<PopularPeople />} />
+                  <Route path="/random" element={<RandomMovies />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/following" element={<Following />} />
+                  <Route path="/new-episodes" element={<NewEpisodes />} />
+                  <Route path="/genres" element={<Genres />} />
+                  <Route path="/genre/movies/:genreSlug" element={<GenreMovies />} />
+                  <Route path="/genre/tv/:genreSlug" element={<GenreTV />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/dmca" element={<DMCA />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/sitemap" element={<Sitemap />} />
+                  <Route path="/sitemap.xml" element={<SitemapXml />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
           </AnalyticsWrapper>
         </BrowserRouter>
       </TooltipProvider>

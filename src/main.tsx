@@ -4,6 +4,12 @@ import { injectSpeedInsights } from "@vercel/speed-insights";
 import App from "./App.tsx";
 import "./index.css";
 
+// If a user has an old cached build (PWA/edge cache), dynamic chunks can fail to load.
+// Vite emits this event; reloading fixes the asset map.
+window.addEventListener("vite:preloadError", () => {
+  window.location.reload();
+});
+
 inject();
 injectSpeedInsights();
 
