@@ -263,8 +263,14 @@ function TVShowCard({ show, details, isFollowing, badge }: TVShowCardProps) {
               <div className="flex items-center gap-1.5 text-foreground text-[11px] mt-1 font-medium">
                 <Calendar className="w-3 h-3 text-primary" />
                 <span>{formatAirDate(episode.air_date)}</span>
-                <Clock className="w-3 h-3 text-muted-foreground ml-1" />
-                <span className="text-muted-foreground">Check local listings</span>
+                {details?.networks && details.networks.length > 0 && (
+                  <>
+                    <Clock className="w-3 h-3 text-muted-foreground ml-1" />
+                    <span className="text-muted-foreground truncate max-w-[80px]">
+                      {details.networks[0].name}
+                    </span>
+                  </>
+                )}
               </div>
             )}
           </div>

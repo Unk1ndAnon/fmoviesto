@@ -38,6 +38,13 @@ export interface NextEpisode {
   runtime: number | null;
 }
 
+export interface Network {
+  id: number;
+  name: string;
+  logo_path: string | null;
+  origin_country: string;
+}
+
 export interface TVShow {
   id: number;
   name: string;
@@ -62,6 +69,8 @@ export interface TVShow {
   similar?: { results: TVShow[] };
   next_episode_to_air?: NextEpisode | null;
   last_episode_to_air?: NextEpisode | null;
+  networks?: Network[];
+  origin_country?: string[];
 }
 
 export interface Genre {
