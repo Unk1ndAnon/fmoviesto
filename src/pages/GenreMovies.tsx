@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb } from "@/lib/tmdb";
-import { getMovieGenreInfo, getDefaultGenreInfo } from "@/lib/genre-descriptions";
+import { getMovieGenreInfo, getDefaultGenreInfo, getMovieGenreIdFromSlug, getMovieGenreSlugFromId } from "@/lib/genre-descriptions";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieGrid } from "@/components/movie/MovieGrid";
@@ -23,11 +23,12 @@ const sortOptions = [
 ];
 
 export default function GenreMovies() {
-  const { genreId } = useParams<{ genreId: string }>();
+  const { genreSlug } = useParams<{ genreSlug: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
 
-  const genreIdNum = parseInt(genreId || "0");
+  // Convert slug to ID
+  const genreIdNum = getMovieGenreIdFromSlug(genreSlug || "") || 0;
   const page = parseInt(searchParams.get("page") || "1");
   const year = searchParams.get("year") || "";
   const sortBy = searchParams.get("sort") || "popularity.desc";
@@ -219,20 +220,20 @@ export default function GenreMovies() {
               </h2>
               <div className="flex flex-wrap gap-2">
                 {otherGenres.map((genre) => (
-                  <a
+                  <Link
                     key={genre.id}
-                    href={`/genre/movies/${genre.id}`}
+                    to={`/genre/movies/${getMovieGenreSlugFromId(genre.id)}`}
                     className="px-4 py-2 rounded-full bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition-colors text-sm"
                   >
                     {genre.name}
-                  </a>
+                  </Link>
                 ))}
-                <a
-                  href="/movies"
+                <Link
+                  to="/movies"
                   className="px-4 py-2 rounded-full bg-card border border-border text-foreground hover:bg-primary hover:text-primary-foreground transition-colors text-sm"
                 >
                   All Movies →
-                </a>
+                </Link>
               </div>
             </section>
           )}
