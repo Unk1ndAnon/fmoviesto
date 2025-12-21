@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Github, Twitter, Mail } from "lucide-react";
+import { Twitter, Mail, Send } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export function Footer() {
@@ -80,13 +80,13 @@ export function Footer() {
             © {currentYear} Fmov.online All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+            <a href="https://twitter.com/Zabranjeniforum" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Twitter">
               <Twitter className="w-5 h-5" />
             </a>
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-              <Github className="w-5 h-5" />
+            <a href="https://t.me/+RZrnNXoMFkwzMWM0" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Telegram">
+              <Send className="w-5 h-5" />
             </a>
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+            <a href="mailto:fmov.online@proton.me" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Email">
               <Mail className="w-5 h-5" />
             </a>
           </div>
