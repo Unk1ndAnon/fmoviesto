@@ -34,6 +34,10 @@ export default function GenreMovies() {
   const sortBy = searchParams.get("sort") || "popularity.desc";
   const minRating = searchParams.get("rating") || "";
 
+  // Radix SelectItem doesn't allow empty string values
+  const yearSelectValue = year || "all";
+  const ratingSelectValue = minRating || "all";
+
   // Fetch genre list to get the genre name
   const { data: genres, isLoading: genresLoading } = useQuery({
     queryKey: ["movieGenres"],
@@ -135,24 +139,32 @@ export default function GenreMovies() {
             </Button>
 
             <div className={`flex flex-wrap gap-3 ${showFilters ? "flex" : "hidden md:flex"}`}>
-              <Select value={year} onValueChange={(v) => updateFilter("year", v)}>
+              <Select
+                value={yearSelectValue}
+                onValueChange={(v) => updateFilter("year", v === "all" ? "" : v)}
+              >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Year" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Years</SelectItem>
+                  <SelectItem value="all">All Years</SelectItem>
                   {years.map((y) => (
-                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={minRating} onValueChange={(v) => updateFilter("rating", v)}>
+              <Select
+                value={ratingSelectValue}
+                onValueChange={(v) => updateFilter("rating", v === "all" ? "" : v)}
+              >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Rating" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any Rating</SelectItem>
+                  <SelectItem value="all">Any Rating</SelectItem>
                   <SelectItem value="9">9+ Stars</SelectItem>
                   <SelectItem value="8">8+ Stars</SelectItem>
                   <SelectItem value="7">7+ Stars</SelectItem>
