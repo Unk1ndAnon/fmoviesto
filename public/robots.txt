@@ -5,7 +5,7 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://fmovies-sigma.vercel.app/sitemap.xml
+Sitemap: https://fmov.online/sitemap.xml
 
 # Crawl-delay (optional, be respectful to servers)
 Crawl-delay: 1
