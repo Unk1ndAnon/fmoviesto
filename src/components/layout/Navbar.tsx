@@ -574,48 +574,6 @@ export function Navbar() {
                   </Link>
                 </div>
               </div>
-
-              {/* Movie Genres */}
-              <div className="mb-4">
-                <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">Movie Genres</p>
-                <div className="flex flex-wrap gap-1.5 px-1">
-                  {movieGenres?.genres?.slice(0, 10).map((genre) => (
-                    <Button
-                      key={genre.id}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-8 rounded-full border-border/50 hover:border-primary hover:text-primary"
-                      onClick={() => {
-                        navigate(`/movies?genre=${genre.id}`);
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      {genre.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* TV Genres */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">TV Show Genres</p>
-                <div className="flex flex-wrap gap-1.5 px-1">
-                  {tvGenres?.genres?.slice(0, 10).map((genre) => (
-                    <Button
-                      key={genre.id}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-8 rounded-full border-border/50 hover:border-primary hover:text-primary"
-                      onClick={() => {
-                        navigate(`/tv?genre=${genre.id}`);
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      {genre.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         )}
