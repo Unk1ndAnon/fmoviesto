@@ -403,16 +403,6 @@ export function Navbar() {
                             <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">Can't decide what to watch? Let us pick some random movies for you!</p>
                           </div>
                         </Link>
-                        <Link
-                          to="/sitemap"
-                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
-                        >
-                          <LayoutGrid className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
-                          <div>
-                            <span className="font-medium text-sm">Sitemap</span>
-                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">Browse our complete site structure and find content easily.</p>
-                          </div>
-                        </Link>
                       </div>
                     </div>
                   </NavigationMenuContent>
