@@ -145,7 +145,7 @@ export default function SitemapXml() {
   useEffect(() => {
     if (!popularMovies || !popularTV || !movieGenres || !tvGenres || !containerRef.current) return;
 
-    const baseUrl = "https://fmovies-sigma.vercel.app";
+    const baseUrl = "https://fmov.online";
     const today = new Date().toISOString().split("T")[0];
 
     // Static pages
