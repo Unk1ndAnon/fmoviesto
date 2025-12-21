@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useSearchParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb } from "@/lib/tmdb";
 import { getMovieGenreInfo, getDefaultGenreInfo, getMovieGenreIdFromSlug, getMovieGenreSlugFromId } from "@/lib/genre-descriptions";
@@ -28,27 +28,33 @@ export default function GenreMovies() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Convert slug to ID
-  const genreIdNum = getMovieGenreIdFromSlug(genreSlug || "") || 0;
+  const genreIdNum = getMovieGenreIdFromSlug(genreSlug || "");
   const page = parseInt(searchParams.get("page") || "1");
   const year = searchParams.get("year") || "";
   const sortBy = searchParams.get("sort") || "popularity.desc";
   const minRating = searchParams.get("rating") || "";
 
   // Fetch genre list to get the genre name
-  const { data: genres } = useQuery({
+  const { data: genres, isLoading: genresLoading } = useQuery({
     queryKey: ["movieGenres"],
     queryFn: () => tmdb.getMovieGenres(),
   });
 
-  const genreName = genres?.genres.find(g => g.id === genreIdNum)?.name || "Genre";
-  const genreInfo = getMovieGenreInfo(genreIdNum) || getDefaultGenreInfo(genreIdNum, genreName, "movie");
+  // Redirect to genres page if invalid slug
+  if (!genreSlug || (genreIdNum === null && !genresLoading)) {
+    return <Navigate to="/genres" replace />;
+  }
+
+  const validGenreId = genreIdNum || 0;
+  const genreName = genres?.genres.find(g => g.id === validGenreId)?.name || "Genre";
+  const genreInfo = getMovieGenreInfo(validGenreId) || getDefaultGenreInfo(validGenreId, genreName, "movie");
 
   // Fetch movies for this genre
   const { data: movies, isLoading } = useQuery({
-    queryKey: ["genreMovies", genreIdNum, page, year, sortBy, minRating],
+    queryKey: ["genreMovies", validGenreId, page, year, sortBy, minRating],
     queryFn: () => {
       const params: Record<string, string> = {
-        with_genres: String(genreIdNum),
+        with_genres: String(validGenreId),
         page: String(page),
         sort_by: sortBy,
       };
@@ -56,11 +62,11 @@ export default function GenreMovies() {
       if (minRating) params["vote_average.gte"] = minRating;
       return tmdb.discoverMovies(params);
     },
-    enabled: genreIdNum > 0,
+    enabled: validGenreId > 0,
   });
 
   // Fetch other genres for internal linking
-  const otherGenres = genres?.genres.filter(g => g.id !== genreIdNum).slice(0, 8) || [];
+  const otherGenres = genres?.genres.filter(g => g.id !== validGenreId).slice(0, 8) || [];
 
   const updateFilter = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);
