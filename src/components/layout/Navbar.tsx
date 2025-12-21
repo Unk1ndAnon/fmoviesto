@@ -477,119 +477,102 @@ export function Navbar() {
           <div className="lg:hidden py-4 border-t border-border/50 animate-fade-in max-h-[80vh] overflow-y-auto bg-background/95 backdrop-blur-lg">
             <div className="flex flex-col gap-1 px-2">
               {/* Main Navigation */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="grid grid-cols-2 gap-2 mb-4">
                 <Link
                   to="/"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all",
+                    "flex flex-col items-center gap-2 p-4 rounded-xl text-sm font-medium transition-all",
                     location.pathname === "/"
                       ? "text-primary bg-primary/15 border border-primary/30"
                       : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
                   )}
                 >
-                  <Home className="w-5 h-5" />
-                  <span className="text-xs">Home</span>
+                  <Home className="w-6 h-6" />
+                  <span>Home</span>
                 </Link>
                 
                 <Link
                   to="/movies"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all",
+                    "flex flex-col items-center gap-2 p-4 rounded-xl text-sm font-medium transition-all",
                     location.pathname === "/movies"
                       ? "text-primary bg-primary/15 border border-primary/30"
                       : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
                   )}
                 >
-                  <Film className="w-5 h-5" />
-                  <span className="text-xs">Movies</span>
+                  <Film className="w-6 h-6" />
+                  <span>Movies</span>
                 </Link>
                 
                 <Link
                   to="/tv"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all",
+                    "flex flex-col items-center gap-2 p-4 rounded-xl text-sm font-medium transition-all",
                     location.pathname === "/tv"
                       ? "text-primary bg-primary/15 border border-primary/30"
                       : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
                   )}
                 >
-                  <Tv className="w-5 h-5" />
-                  <span className="text-xs">TV Shows</span>
-                </Link>
-                
-                <Link
-                  to="/genres"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all",
-                    location.pathname === "/genres"
-                      ? "text-primary bg-primary/15 border border-primary/30"
-                      : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
-                  )}
-                >
-                  <LayoutGrid className="w-5 h-5" />
-                  <span className="text-xs">Genres</span>
-                </Link>
-                
-                <Link
-                  to="/movies?category=trending"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all",
-                    location.search.includes("trending")
-                      ? "text-primary bg-primary/15 border border-primary/30"
-                      : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
-                  )}
-                >
-                  <TrendingUp className="w-5 h-5" />
-                  <span className="text-xs">Trending</span>
-                </Link>
-                
-                <Link
-                  to="/random"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all",
-                    location.pathname === "/random"
-                      ? "text-primary bg-primary/15 border border-primary/30"
-                      : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
-                  )}
-                >
-                  <Shuffle className="w-5 h-5" />
-                  <span className="text-xs">Random</span>
-                </Link>
-                
-                <Link
-                  to="/people"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all",
-                    location.pathname === "/people"
-                      ? "text-primary bg-primary/15 border border-primary/30"
-                      : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
-                  )}
-                >
-                  <Users className="w-5 h-5" />
-                  <span className="text-xs">People</span>
+                  <Tv className="w-6 h-6" />
+                  <span>TV Shows</span>
                 </Link>
                 
                 <Link
                   to="/new-episodes"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all relative",
+                    "flex flex-col items-center gap-2 p-4 rounded-xl text-sm font-medium transition-all relative",
                     location.pathname === "/new-episodes"
                       ? "text-primary bg-primary/15 border border-primary/30"
                       : "text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
                   )}
                 >
-                  <Calendar className="w-5 h-5" />
-                  <span className="text-xs">New Eps</span>
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <Calendar className="w-6 h-6" />
+                  <span>New Episodes</span>
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary animate-pulse" />
                 </Link>
+              </div>
+
+              {/* Quick Links */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">Quick Links</p>
+                <div className="grid grid-cols-4 gap-2">
+                  <Link
+                    to="/genres"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/30 hover:bg-secondary transition-colors"
+                  >
+                    <LayoutGrid className="w-5 h-5 text-primary" />
+                    <span className="text-xs text-foreground">Genres</span>
+                  </Link>
+                  <Link
+                    to="/movies?category=trending"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/30 hover:bg-secondary transition-colors"
+                  >
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    <span className="text-xs text-foreground">Trending</span>
+                  </Link>
+                  <Link
+                    to="/random"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/30 hover:bg-secondary transition-colors"
+                  >
+                    <Shuffle className="w-5 h-5 text-primary" />
+                    <span className="text-xs text-foreground">Random</span>
+                  </Link>
+                  <Link
+                    to="/people"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/30 hover:bg-secondary transition-colors"
+                  >
+                    <Users className="w-5 h-5 text-primary" />
+                    <span className="text-xs text-foreground">People</span>
+                  </Link>
+                </div>
               </div>
 
               {/* Movie Genres */}
