@@ -371,6 +371,19 @@ export function Navbar() {
                       
                       <div className="grid grid-cols-2 gap-2">
                         <Link
+                          to="/genres"
+                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
+                        >
+                          <LayoutGrid className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">Browse Genres</span>
+                              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-primary text-primary-foreground">NEW</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">Explore movies and TV shows by genre with curated collections.</p>
+                          </div>
+                        </Link>
+                        <Link
                           to="/people"
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                         >
@@ -388,6 +401,16 @@ export function Navbar() {
                           <div>
                             <span className="font-medium text-sm">Random Movies</span>
                             <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">Can't decide what to watch? Let us pick some random movies for you!</p>
+                          </div>
+                        </Link>
+                        <Link
+                          to="/sitemap"
+                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
+                        >
+                          <LayoutGrid className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
+                          <div>
+                            <span className="font-medium text-sm">Sitemap</span>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">Browse our complete site structure and find content easily.</p>
                           </div>
                         </Link>
                       </div>

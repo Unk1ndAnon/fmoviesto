@@ -31,6 +31,9 @@ const RandomMovies = lazy(() => import("./pages/RandomMovies"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Following = lazy(() => import("./pages/Following"));
 const NewEpisodes = lazy(() => import("./pages/NewEpisodes"));
+const Genres = lazy(() => import("./pages/Genres"));
+const GenreMovies = lazy(() => import("./pages/GenreMovies"));
+const GenreTV = lazy(() => import("./pages/GenreTV"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -83,6 +86,9 @@ const App = () => (
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/following" element={<Following />} />
                 <Route path="/new-episodes" element={<NewEpisodes />} />
+                <Route path="/genres" element={<Genres />} />
+                <Route path="/genre/movies/:genreId" element={<GenreMovies />} />
+                <Route path="/genre/tv/:genreId" element={<GenreTV />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/dmca" element={<DMCA />} />
                 <Route path="/terms" element={<Terms />} />
