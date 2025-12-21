@@ -116,7 +116,7 @@ const movieCategories = [
   { title: "Now Playing", description: "Catch the latest movies now playing in theaters near you.", href: "/movies?category=now-playing", icon: Play },
   { title: "Upcoming", description: "Be the first to watch the latest movies before they hit big screen.", href: "/movies?category=upcoming", icon: Calendar },
   { title: "Top Rated", description: "Explore the pinnacle of cinematic excellence with our collection.", href: "/movies?category=top-rated", icon: Star },
-  { title: "Anime", description: "Embark on an epic journey with our handpicked collection of anime.", href: "/movies?genre=16", icon: Clapperboard },
+  { title: "Anime", description: "Embark on an epic journey with our handpicked collection of anime.", href: "/genre/movies/animation", icon: Clapperboard },
 ];
 
 const tvCategories = [
@@ -125,7 +125,7 @@ const tvCategories = [
   { title: "Popular", description: "Dive into the world of popular TV shows that captured hearts.", href: "/tv?category=popular", icon: TrendingUp },
   { title: "Trending", description: "Don't miss out on the latest trending shows everyone's watching.", href: "/tv?category=trending", icon: Play },
   { title: "Top Rated", description: "Explore the pinnacle of television excellence with top picks.", href: "/tv?category=top-rated", icon: Star },
-  { title: "Anime TV Shows", description: "Dive into the vast world of anime series, from hits to classics.", href: "/tv?genre=16", icon: Clapperboard },
+  { title: "Anime TV Shows", description: "Dive into the vast world of anime series, from hits to classics.", href: "/genre/tv/animation", icon: Clapperboard },
 ];
 
 const trendingCategories = [
@@ -195,11 +195,9 @@ export function Navbar() {
               <NavigationMenuList>
                 {/* Home */}
                 <NavigationMenuItem>
-                  <Link to="/">
-                    <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
-                      <Home className="w-4 h-4 mr-2" />
-                      Home
-                    </NavigationMenuLink>
+                  <Link to="/" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                    <Home className="w-4 h-4 mr-2" />
+                    Home
                   </Link>
                 </NavigationMenuItem>
 
