@@ -90,6 +90,9 @@ export function QuickLinks({ currentType }: QuickLinksProps) {
         >
           TV Shows
         </Link>
+        <Link to="/genres" className="text-foreground hover:text-primary transition-colors">
+          Genres
+        </Link>
         <Link to="/new-episodes" className="text-foreground hover:text-primary transition-colors">
           New Episodes
         </Link>

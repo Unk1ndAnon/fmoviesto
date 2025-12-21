@@ -152,6 +152,7 @@ export default function SitemapXml() {
       { loc: "/", priority: "1.0", changefreq: "daily" },
       { loc: "/movies", priority: "0.9", changefreq: "daily" },
       { loc: "/tv", priority: "0.9", changefreq: "daily" },
+      { loc: "/genres", priority: "0.9", changefreq: "weekly" },
       { loc: "/new-episodes", priority: "0.9", changefreq: "daily" },
       { loc: "/search", priority: "0.8", changefreq: "weekly" },
       { loc: "/people", priority: "0.7", changefreq: "weekly" },
@@ -183,7 +184,21 @@ export default function SitemapXml() {
       changefreq: "weekly",
     }));
 
-    // Genre pages
+    // Dedicated genre pages (SEO-optimized)
+    const dedicatedGenreUrls: SitemapUrl[] = [
+      ...movieGenres.genres.map((g) => ({
+        loc: sanitizeUrlPart(`/genre/movies/${g.id}`),
+        priority: "0.8",
+        changefreq: "weekly",
+      })),
+      ...tvGenres.genres.map((g) => ({
+        loc: sanitizeUrlPart(`/genre/tv/${g.id}`),
+        priority: "0.8",
+        changefreq: "weekly",
+      })),
+    ];
+
+    // Legacy genre filter pages
     const genreUrls: SitemapUrl[] = [
       ...movieGenres.genres.map((g) => ({
         loc: sanitizeUrlPart(`/movies?genre=${g.id}`),
@@ -221,6 +236,7 @@ export default function SitemapXml() {
       ...tvUrls, 
       ...seasonUrls,
       ...episodeUrls, 
+      ...dedicatedGenreUrls,
       ...genreUrls,
       ...yearUrls,
     ];
