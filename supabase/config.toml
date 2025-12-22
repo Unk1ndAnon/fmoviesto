@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.tmdb-proxy]
 verify_jwt = false
+
+[functions.ai-tag-movie]
+verify_jwt = false
+
+[functions.batch-tag-movies]
+verify_jwt = false
