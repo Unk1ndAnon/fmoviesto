@@ -215,6 +215,24 @@ export default function TVDetails() {
                 {show.overview}
               </p>
 
+              {/* Creator Info */}
+              {show.created_by && show.created_by.length > 0 && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Created by: </span>
+                  {show.created_by.map((creator, index) => (
+                    <span key={creator.id}>
+                      <Link 
+                        to={`/director/${generateSlug(creator.name)}`}
+                        className="text-foreground font-medium hover:text-primary transition-colors"
+                      >
+                        {creator.name}
+                      </Link>
+                      {index < show.created_by!.length - 1 && ", "}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link to={getWatchTVUrl(show.name, selectedSeason, 1)}>
