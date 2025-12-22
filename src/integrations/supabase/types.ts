@@ -214,6 +214,39 @@ export type Database = {
         }
         Relationships: []
       }
+      movie_meta: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_fetch_at: string | null
+          media_type: string
+          tag_count: number | null
+          tagged_at: string | null
+          tmdb_id: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_fetch_at?: string | null
+          media_type?: string
+          tag_count?: number | null
+          tagged_at?: string | null
+          tmdb_id: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_fetch_at?: string | null
+          media_type?: string
+          tag_count?: number | null
+          tagged_at?: string | null
+          tmdb_id?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       movie_tags: {
         Row: {
           confidence: number | null

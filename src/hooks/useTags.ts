@@ -81,14 +81,14 @@ export function useTag(slug: string | undefined) {
         .from("tags")
         .select("*")
         .eq("slug", slug)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching tag:", error);
         return null;
       }
 
-      return data as Tag;
+      return data as Tag | null;
     },
     enabled: !!slug,
   });
@@ -192,14 +192,48 @@ export function usePopularTags(limit: number = 20) {
   });
 }
 
-// Admin: Trigger batch tagging
+// Check if a movie is already tagged
+export function useMovieTagStatus(tmdbId: number | undefined, mediaType: string = "movie") {
+  return useQuery({
+    queryKey: ["movieTagStatus", tmdbId, mediaType],
+    queryFn: async () => {
+      if (!tmdbId) return null;
+      
+      const { data, error } = await supabase
+        .from("movie_meta")
+        .select("*")
+        .eq("tmdb_id", tmdbId)
+        .eq("media_type", mediaType)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking movie tag status:", error);
+        return null;
+      }
+
+      return data;
+    },
+    enabled: !!tmdbId,
+  });
+}
+
+// Admin: Trigger batch tagging (works with TMDB directly - no local movie storage)
 export function useBatchTagging() {
   const queryClient = useQueryClient();
 
-  const queueMovies = useMutation({
-    mutationFn: async (limit: number = 50) => {
+  // Queue movies from TMDB trending/popular
+  const queueFromTMDB = useMutation({
+    mutationFn: async ({ 
+      limit = 20, 
+      mediaType = "movie",
+      source = "trending" 
+    }: { 
+      limit?: number; 
+      mediaType?: string;
+      source?: "trending" | "popular";
+    }) => {
       const { data, error } = await supabase.functions.invoke("batch-tag-movies", {
-        body: { action: "queue", limit }
+        body: { action: "queue", limit, media_type: mediaType, source }
       });
 
       if (error) throw error;
@@ -207,6 +241,51 @@ export function useBatchTagging() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tagJobStats"] });
+    }
+  });
+
+  // Queue specific TMDB IDs
+  const queueByIds = useMutation({
+    mutationFn: async ({ 
+      tmdbIds, 
+      mediaType = "movie" 
+    }: { 
+      tmdbIds: number[]; 
+      mediaType?: string;
+    }) => {
+      const { data, error } = await supabase.functions.invoke("batch-tag-movies", {
+        body: { action: "queue", tmdb_ids: tmdbIds, media_type: mediaType }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tagJobStats"] });
+    }
+  });
+
+  // Tag a single movie immediately
+  const tagSingle = useMutation({
+    mutationFn: async ({ 
+      tmdbId, 
+      mediaType = "movie" 
+    }: { 
+      tmdbId: number; 
+      mediaType?: string;
+    }) => {
+      const { data, error } = await supabase.functions.invoke("batch-tag-movies", {
+        body: { action: "tag_single", tmdb_id: tmdbId, media_type: mediaType }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["tagJobStats"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      queryClient.invalidateQueries({ queryKey: ["movieTags", variables.tmdbId] });
+      queryClient.invalidateQueries({ queryKey: ["movieTagStatus", variables.tmdbId] });
     }
   });
 
@@ -235,11 +314,13 @@ export function useBatchTagging() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 5000, // Poll every 5 seconds when on admin page
+    refetchInterval: 5000,
   });
 
   return {
-    queueMovies,
+    queueFromTMDB,
+    queueByIds,
+    tagSingle,
     processJobs,
     stats: getStats.data,
     isLoading: getStats.isLoading
