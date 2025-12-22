@@ -80,6 +80,7 @@ const App = () => (
                   <Route path="/search" element={<Search />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/actor/:id" element={<ActorMovies />} />
+                  <Route path="/director/:id" element={<ActorMovies />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/favorites" element={<Favorites />} />
                   <Route path="/watchlist" element={<Watchlist />} />
