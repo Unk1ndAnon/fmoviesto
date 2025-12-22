@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Play, Star, Clock, Calendar, Plus } from "lucide-react";
 import { SharePopover } from "@/components/SharePopover";
 import { useWatchlist } from "@/hooks/useUserLists";
+import { useAutoTag } from "@/hooks/useAutoTag";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -42,6 +43,9 @@ export default function MovieDetails() {
   });
 
   const isLoading = isSearching || isLoadingDetails;
+
+  // Auto-tag movie on page view if not already tagged
+  useAutoTag({ tmdbId: movie?.id, mediaType: "movie" });
 
   const handleWatchlist = () => {
     if (!user) {
