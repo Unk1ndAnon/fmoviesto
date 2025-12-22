@@ -149,6 +149,22 @@ export function HeroSlider({ movies }: HeroSliderProps) {
 
             {/* Center: Movie Info */}
             <div className="col-span-5 lg:col-span-6 animate-slide-up">
+              {/* Title */}
+              <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground mb-3 leading-tight font-display">
+                {currentMovie.title}
+              </h1>
+
+              {/* Metadata */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                <span>{year}</span>
+                {runtime && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
+                    <span>{runtime}</span>
+                  </>
+                )}
+              </div>
+
               {/* Genre Badges */}
               {genres.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -162,22 +178,6 @@ export function HeroSlider({ movies }: HeroSliderProps) {
                   ))}
                 </div>
               )}
-
-              {/* Title */}
-              <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground mb-3 leading-tight font-display">
-                {currentMovie.title}
-              </h1>
-
-              {/* Metadata */}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                <span>{year}</span>
-                {runtime && (
-                  <>
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
-                    <span>{runtime}</span>
-                  </>
-                )}
-              </div>
 
               {/* Overview */}
               <p className="text-base lg:text-lg text-muted-foreground mb-6 line-clamp-3 max-w-xl">
@@ -202,7 +202,7 @@ export function HeroSlider({ movies }: HeroSliderProps) {
                     className="gap-2 border-white/30 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-foreground px-8"
                   >
                     <Plus className="w-5 h-5" />
-                    Add to wishlist
+                    More Info
                   </Button>
                 </Link>
               </div>
