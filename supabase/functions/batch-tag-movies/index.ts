@@ -18,27 +18,61 @@ serve(async (req) => {
   }
 
   try {
-    const { action, limit = 10, tmdb_ids } = await req.json();
+    const { action, limit = 10, tmdb_ids, media_type = "movie", source = "trending" } = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (action === "queue") {
-      // Queue movies for tagging from admin_movies table
-      const { data: movies, error } = await supabase
-        .from("admin_movies")
-        .select("tmdb_id, media_type")
-        .limit(limit);
+      // Queue movies for tagging - fetch from TMDB directly or use provided IDs
+      let moviesToQueue: { tmdb_id: number; media_type: string }[] = [];
 
-      if (error) throw error;
+      if (tmdb_ids && Array.isArray(tmdb_ids)) {
+        // Use provided TMDB IDs
+        moviesToQueue = tmdb_ids.map(id => ({ tmdb_id: id, media_type }));
+      } else {
+        // Fetch from TMDB based on source
+        const endpoint = source === "popular" 
+          ? (media_type === "tv" ? "/tv/popular" : "/movie/popular")
+          : (media_type === "tv" ? "/trending/tv/week" : "/trending/movie/week");
+
+        const tmdbResponse = await fetch(`${supabaseUrl}/functions/v1/tmdb-proxy`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+          },
+          body: JSON.stringify({ endpoint, params: {} })
+        });
+
+        if (tmdbResponse.ok) {
+          const tmdbData = await tmdbResponse.json();
+          moviesToQueue = (tmdbData.results || [])
+            .slice(0, limit)
+            .map((item: any) => ({ 
+              tmdb_id: item.id, 
+              media_type 
+            }));
+        }
+      }
+
+      // Filter out already tagged movies
+      const { data: existingMeta } = await supabase
+        .from("movie_meta")
+        .select("tmdb_id")
+        .eq("media_type", media_type)
+        .not("tagged_at", "is", null);
+
+      const existingIds = new Set((existingMeta || []).map(m => m.tmdb_id));
+      moviesToQueue = moviesToQueue.filter(m => !existingIds.has(m.tmdb_id));
 
       // Add to job queue (skip if already exists)
-      const jobs = movies?.map(m => ({
+      const jobs = moviesToQueue.map(m => ({
         tmdb_id: m.tmdb_id,
         media_type: m.media_type,
         status: "pending"
-      })) || [];
+      }));
 
       if (jobs.length > 0) {
         const { error: insertError } = await supabase
@@ -49,13 +83,61 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true, queued: jobs.length }),
+        JSON.stringify({ success: true, queued: jobs.length, source }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "queue_page") {
+      // Queue multiple pages from TMDB for batch processing
+      const { pages = 1 } = await req.json();
+      let totalQueued = 0;
+
+      for (let page = 1; page <= Math.min(pages, 10); page++) {
+        const endpoint = source === "popular" 
+          ? (media_type === "tv" ? "/tv/popular" : "/movie/popular")
+          : (media_type === "tv" ? "/trending/tv/week" : "/trending/movie/week");
+
+        const tmdbResponse = await fetch(`${supabaseUrl}/functions/v1/tmdb-proxy`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+          },
+          body: JSON.stringify({ endpoint, params: { page: String(page) } })
+        });
+
+        if (tmdbResponse.ok) {
+          const tmdbData = await tmdbResponse.json();
+          const items = (tmdbData.results || []).map((item: any) => ({
+            tmdb_id: item.id,
+            media_type,
+            status: "pending"
+          }));
+
+          if (items.length > 0) {
+            const { error } = await supabase
+              .from("tag_jobs")
+              .upsert(items, { onConflict: "tmdb_id,media_type", ignoreDuplicates: true });
+
+            if (!error) {
+              totalQueued += items.length;
+            }
+          }
+        }
+
+        // Small delay between pages
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, queued: totalQueued }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (action === "process") {
-      // Process pending jobs
+      // Process pending jobs - fetch from TMDB and tag
       const { data: pendingJobs, error: fetchError } = await supabase
         .from("tag_jobs")
         .select("*")
@@ -66,7 +148,6 @@ serve(async (req) => {
       if (fetchError) throw fetchError;
 
       const results = [];
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
       for (const job of pendingJobs || []) {
         try {
@@ -95,7 +176,7 @@ serve(async (req) => {
 
           const movieData = await tmdbResponse.json();
 
-          // Build metadata
+          // Build metadata for AI tagging
           const metadata = {
             tmdb_id: job.tmdb_id,
             media_type: job.media_type,
@@ -132,7 +213,18 @@ serve(async (req) => {
           }
 
           // Save tags to database
-          await saveTags(supabase, job.tmdb_id, job.media_type, tagResult.tags);
+          const tagCount = await saveTags(supabase, job.tmdb_id, job.media_type, tagResult.tags);
+
+          // Update movie_meta to track tagging status
+          await supabase
+            .from("movie_meta")
+            .upsert({
+              tmdb_id: job.tmdb_id,
+              media_type: job.media_type,
+              tagged_at: new Date().toISOString(),
+              last_fetch_at: new Date().toISOString(),
+              tag_count: tagCount
+            }, { onConflict: "tmdb_id,media_type" });
 
           // Mark job as completed
           await supabase
@@ -147,9 +239,12 @@ serve(async (req) => {
 
           results.push({ 
             tmdb_id: job.tmdb_id, 
+            title: metadata.title,
             success: true, 
             tags_count: tagResult.tags.length 
           });
+
+          console.log(`Tagged: ${metadata.title} (${job.tmdb_id}) - ${tagResult.tags.length} tags`);
 
           // Rate limit - wait between requests
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -162,7 +257,7 @@ serve(async (req) => {
             .update({ 
               status: job.retries >= 2 ? "failed" : "pending",
               error_message: error instanceof Error ? error.message : "Unknown error",
-              retries: job.retries + 1
+              retries: (job.retries || 0) + 1
             })
             .eq("id", job.id);
 
@@ -200,19 +295,116 @@ serve(async (req) => {
         .from("movie_tags")
         .select("*", { count: "exact", head: true });
 
+      const { count: taggedMoviesCount } = await supabase
+        .from("movie_meta")
+        .select("*", { count: "exact", head: true })
+        .not("tagged_at", "is", null);
+
       return new Response(
         JSON.stringify({ 
           success: true, 
           jobs: stats,
           total_tags: tagCount,
-          total_movie_tags: movieTagCount
+          total_movie_tags: movieTagCount,
+          tagged_movies: taggedMoviesCount
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "tag_single") {
+      // Tag a single movie/TV show by TMDB ID
+      const { tmdb_id: singleId, media_type: singleType = "movie" } = await req.json();
+      
+      if (!singleId) {
+        return new Response(
+          JSON.stringify({ error: "Missing tmdb_id" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Fetch from TMDB
+      const tmdbResponse = await fetch(`${supabaseUrl}/functions/v1/tmdb-proxy`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+        },
+        body: JSON.stringify({
+          endpoint: singleType === "tv" ? `/tv/${singleId}` : `/movie/${singleId}`,
+          params: { append_to_response: "keywords,credits" }
+        })
+      });
+
+      if (!tmdbResponse.ok) {
+        throw new Error(`TMDB fetch failed: ${tmdbResponse.status}`);
+      }
+
+      const movieData = await tmdbResponse.json();
+
+      const metadata = {
+        tmdb_id: singleId,
+        media_type: singleType,
+        title: movieData.title || movieData.name,
+        overview: movieData.overview,
+        genres: movieData.genres?.map((g: any) => g.name) || [],
+        keywords: movieData.keywords?.keywords?.map((k: any) => k.name) || 
+                 movieData.keywords?.results?.map((k: any) => k.name) || [],
+        cast: movieData.credits?.cast?.slice(0, 5).map((c: any) => c.name) || [],
+        director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
+        tagline: movieData.tagline,
+        year: (movieData.release_date || movieData.first_air_date)?.split("-")[0]
+      };
+
+      // Call AI tagging
+      const tagResponse = await fetch(`${supabaseUrl}/functions/v1/ai-tag-movie`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+        },
+        body: JSON.stringify({ metadata })
+      });
+
+      if (!tagResponse.ok) {
+        const errorText = await tagResponse.text();
+        throw new Error(`AI tagging failed: ${errorText}`);
+      }
+
+      const tagResult = await tagResponse.json();
+
+      if (!tagResult.success || !tagResult.tags) {
+        throw new Error("No tags generated");
+      }
+
+      // Save tags
+      const tagCount = await saveTags(supabase, singleId, singleType, tagResult.tags);
+
+      // Update movie_meta
+      await supabase
+        .from("movie_meta")
+        .upsert({
+          tmdb_id: singleId,
+          media_type: singleType,
+          tagged_at: new Date().toISOString(),
+          last_fetch_at: new Date().toISOString(),
+          tag_count: tagCount
+        }, { onConflict: "tmdb_id,media_type" });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          tmdb_id: singleId,
+          title: metadata.title,
+          tags: tagResult.tags,
+          tag_count: tagCount
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
-      JSON.stringify({ error: "Invalid action. Use: queue, process, or stats" }),
+      JSON.stringify({ error: "Invalid action. Use: queue, queue_page, process, stats, or tag_single" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
@@ -230,7 +422,9 @@ async function saveTags(
   tmdb_id: number, 
   media_type: string,
   tags: TagResult[]
-) {
+): Promise<number> {
+  let savedCount = 0;
+
   for (const tag of tags) {
     // Generate slug from name
     const slug = tag.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -240,7 +434,7 @@ async function saveTags(
       .from("tags")
       .select("id")
       .eq("slug", slug)
-      .single();
+      .maybeSingle();
 
     let tagId: string;
 
@@ -266,7 +460,7 @@ async function saveTags(
     }
 
     // Link tag to movie
-    await supabase
+    const { error: linkError } = await supabase
       .from("movie_tags")
       .upsert({
         tmdb_id,
@@ -275,5 +469,11 @@ async function saveTags(
         confidence: tag.confidence,
         source: tag.type === 'genre' ? 'tmdb_import' : 'ai_batch'
       }, { onConflict: "tmdb_id,media_type,tag_id" });
+
+    if (!linkError) {
+      savedCount++;
+    }
   }
+
+  return savedCount;
 }

@@ -33,18 +33,24 @@ interface EditableMovie {
   embeds: CustomEmbed[];
 }
 
-// AI Tagging Panel Component
+// AI Tagging Panel Component - Works with TMDB directly (no local movie storage)
 function AITaggingPanel() {
-  const { queueMovies, processJobs, stats, isLoading } = useBatchTagging();
-  const [queueLimit, setQueueLimit] = useState("50");
+  const { queueFromTMDB, processJobs, stats, isLoading } = useBatchTagging();
+  const [queueLimit, setQueueLimit] = useState("20");
   const [processLimit, setProcessLimit] = useState("5");
+  const [mediaType, setMediaType] = useState<"movie" | "tv">("movie");
+  const [source, setSource] = useState<"trending" | "popular">("trending");
 
   const handleQueue = async () => {
     try {
-      const result = await queueMovies.mutateAsync(parseInt(queueLimit));
-      toast.success(`Queued ${result.queued} movies for tagging`);
+      const result = await queueFromTMDB.mutateAsync({ 
+        limit: parseInt(queueLimit),
+        mediaType,
+        source 
+      });
+      toast.success(`Queued ${result.queued} ${mediaType}s from TMDB ${source}`);
     } catch (error) {
-      toast.error("Failed to queue movies");
+      toast.error("Failed to queue from TMDB");
     }
   };
 
@@ -71,7 +77,7 @@ function AITaggingPanel() {
             AI Tagging Statistics
           </CardTitle>
           <CardDescription>
-            Monitor and control AI-powered tag generation
+            Tag movies directly from TMDB - no local storage required
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -93,7 +99,7 @@ function AITaggingPanel() {
               )}
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
                   <div className="flex items-center gap-2 mb-2">
                     <Clock className="w-4 h-4 text-amber-500" />
@@ -122,16 +128,23 @@ function AITaggingPanel() {
                   </div>
                   <p className="text-2xl font-bold text-red-500">{stats?.jobs?.failed || 0}</p>
                 </div>
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Film className="w-4 h-4 text-primary" />
+                    <span className="text-sm text-muted-foreground">Tagged</span>
+                  </div>
+                  <p className="text-2xl font-bold text-primary">{stats?.tagged_movies || 0}</p>
+                </div>
               </div>
 
               {/* Total Tags */}
               <div className="flex items-center gap-6 pt-4 border-t">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Tags</p>
+                  <p className="text-sm text-muted-foreground">Unique Tags</p>
                   <p className="text-xl font-semibold">{stats?.total_tags || 0}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Movie-Tag Links</p>
+                  <p className="text-sm text-muted-foreground">Tag Assignments</p>
                   <p className="text-xl font-semibold">{stats?.total_movie_tags || 0}</p>
                 </div>
               </div>
@@ -142,37 +155,63 @@ function AITaggingPanel() {
 
       {/* Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Queue Movies */}
+        {/* Queue from TMDB */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Queue Movies</CardTitle>
+            <CardTitle className="text-lg">Queue from TMDB</CardTitle>
             <CardDescription>
-              Add movies from admin_movies table to the tagging queue
+              Fetch trending or popular content from TMDB and queue for tagging
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="mediaType">Content Type</Label>
+                <select
+                  id="mediaType"
+                  value={mediaType}
+                  onChange={(e) => setMediaType(e.target.value as "movie" | "tv")}
+                  className="w-full h-10 px-3 rounded-md border bg-background"
+                >
+                  <option value="movie">Movies</option>
+                  <option value="tv">TV Shows</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="source">Source</Label>
+                <select
+                  id="source"
+                  value={source}
+                  onChange={(e) => setSource(e.target.value as "trending" | "popular")}
+                  className="w-full h-10 px-3 rounded-md border bg-background"
+                >
+                  <option value="trending">Trending</option>
+                  <option value="popular">Popular</option>
+                </select>
+              </div>
+            </div>
             <div>
-              <Label htmlFor="queueLimit">Number of movies to queue</Label>
+              <Label htmlFor="queueLimit">Number to queue</Label>
               <Input
                 id="queueLimit"
                 type="number"
                 value={queueLimit}
                 onChange={(e) => setQueueLimit(e.target.value)}
                 min="1"
-                max="500"
+                max="100"
               />
             </div>
             <Button 
               onClick={handleQueue}
-              disabled={queueMovies.isPending}
+              disabled={queueFromTMDB.isPending}
               className="w-full gap-2"
             >
-              {queueMovies.isPending ? (
+              {queueFromTMDB.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Plus className="w-4 h-4" />
               )}
-              Queue Movies
+              Queue from TMDB
             </Button>
           </CardContent>
         </Card>
@@ -182,7 +221,7 @@ function AITaggingPanel() {
           <CardHeader>
             <CardTitle className="text-lg">Process Jobs</CardTitle>
             <CardDescription>
-              Run AI tagging on queued movies (uses Lovable AI credits)
+              Run AI tagging on queued items (uses Lovable AI credits)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
