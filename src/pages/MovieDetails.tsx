@@ -10,6 +10,7 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { MovieJsonLd } from "@/components/seo/JsonLd";
 import { TrailerDialog } from "@/components/movie/TrailerDialog";
+import { MovieTags } from "@/components/movie/MovieTags";
 import { RelatedGenreLinks, Breadcrumbs, QuickLinks } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
 import { Play, Star, Clock, Calendar, Plus } from "lucide-react";
@@ -246,6 +247,13 @@ export default function MovieDetails() {
             </div>
           </div>
         </section>
+
+        {/* AI-Generated Tags */}
+        {movie && (
+          <section className="container mx-auto px-4 py-4">
+            <MovieTags tmdbId={movie.id} mediaType="movie" maxTags={10} />
+          </section>
+        )}
 
         {/* Cast Section */}
         {cast.length > 0 && (

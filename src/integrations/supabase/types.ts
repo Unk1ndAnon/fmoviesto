@@ -56,6 +56,90 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_tags: {
+        Row: {
+          collection_id: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_tags_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          cover_image: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          is_published: boolean | null
+          name: string
+          noindex: boolean | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          cover_image?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_published?: boolean | null
+          name: string
+          noindex?: boolean | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          cover_image?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_published?: boolean | null
+          name?: string
+          noindex?: boolean | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       custom_embeds: {
         Row: {
           admin_movie_id: string
@@ -130,6 +214,44 @@ export type Database = {
         }
         Relationships: []
       }
+      movie_tags: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          id: string
+          media_type: string
+          source: string
+          tag_id: string
+          tmdb_id: number
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          media_type?: string
+          source?: string
+          tag_id: string
+          tmdb_id: number
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          media_type?: string
+          source?: string
+          tag_id?: string
+          tmdb_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movie_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -195,6 +317,96 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tag_jobs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          input_data: Json | null
+          media_type: string
+          output_tags: Json | null
+          processed_at: string | null
+          retries: number | null
+          status: string
+          tmdb_id: number
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          media_type?: string
+          output_tags?: Json | null
+          processed_at?: string | null
+          retries?: number | null
+          status?: string
+          tmdb_id: number
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          media_type?: string
+          output_tags?: Json | null
+          processed_at?: string | null
+          retries?: number | null
+          status?: string
+          tmdb_id?: number
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_featured: boolean | null
+          movie_count: number | null
+          name: string
+          noindex: boolean | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          source: string | null
+          tag_type: string
+          tmdb_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_featured?: boolean | null
+          movie_count?: number | null
+          name: string
+          noindex?: boolean | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          source?: string | null
+          tag_type?: string
+          tmdb_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_featured?: boolean | null
+          movie_count?: number | null
+          name?: string
+          noindex?: boolean | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          source?: string | null
+          tag_type?: string
+          tmdb_id?: number | null
           updated_at?: string | null
         }
         Relationships: []
