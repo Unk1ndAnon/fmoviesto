@@ -310,13 +310,31 @@ serve(async (req) => {
         .select("*", { count: "exact", head: true })
         .not("tagged_at", "is", null);
 
+      // Get counts by media type for auto-tagging stats
+      const { count: taggedMoviesOnly } = await supabase
+        .from("movie_meta")
+        .select("*", { count: "exact", head: true })
+        .eq("media_type", "movie")
+        .not("tagged_at", "is", null);
+
+      const { count: taggedTVOnly } = await supabase
+        .from("movie_meta")
+        .select("*", { count: "exact", head: true })
+        .eq("media_type", "tv")
+        .not("tagged_at", "is", null);
+
       return new Response(
         JSON.stringify({ 
           success: true, 
           jobs: stats,
           total_tags: tagCount,
           total_movie_tags: movieTagCount,
-          tagged_movies: taggedMoviesCount
+          tagged_movies: taggedMoviesCount,
+          auto_tagged: {
+            movies: taggedMoviesOnly || 0,
+            tv_shows: taggedTVOnly || 0,
+            total: taggedMoviesCount || 0
+          }
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
