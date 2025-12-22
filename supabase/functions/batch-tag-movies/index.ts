@@ -18,7 +18,8 @@ serve(async (req) => {
   }
 
   try {
-    const { action, limit = 10, tmdb_ids, media_type = "movie", source = "trending" } = await req.json();
+    const body = await req.json();
+    const { action, limit = 10, tmdb_ids, media_type = "movie", source = "trending", tmdb_id, pages = 1 } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -90,7 +91,6 @@ serve(async (req) => {
 
     if (action === "queue_page") {
       // Queue multiple pages from TMDB for batch processing
-      const { pages = 1 } = await req.json();
       let totalQueued = 0;
 
       for (let page = 1; page <= Math.min(pages, 10); page++) {
@@ -324,7 +324,8 @@ serve(async (req) => {
 
     if (action === "tag_single") {
       // Tag a single movie/TV show by TMDB ID
-      const { tmdb_id: singleId, media_type: singleType = "movie" } = await req.json();
+      const singleId = tmdb_id;
+      const singleType = media_type;
       
       if (!singleId) {
         return new Response(
