@@ -193,7 +193,12 @@ export default function MovieDetails() {
                 {director && (
                   <div>
                     <span className="text-muted-foreground">Director: </span>
-                    <span className="text-foreground font-medium">{director.name}</span>
+                    <Link 
+                      to={`/director/${generateSlug(director.name)}`}
+                      className="text-foreground font-medium hover:text-primary transition-colors"
+                    >
+                      {director.name}
+                    </Link>
                   </div>
                 )}
                 {movie.budget > 0 && (
