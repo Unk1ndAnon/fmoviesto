@@ -13,7 +13,8 @@ import {
   XCircle, 
   ExternalLink,
   ArrowRight,
-  Loader2
+  Loader2,
+  Eye
 } from "lucide-react";
 
 interface DashboardStats {
@@ -26,6 +27,11 @@ interface DashboardStats {
   tagged_movies?: number;
   total_tags?: number;
   total_movie_tags?: number;
+  auto_tagged?: {
+    movies: number;
+    tv_shows: number;
+    total: number;
+  };
 }
 
 interface AdminDashboardProps {
@@ -127,8 +133,42 @@ export function AdminDashboard({
         ))}
       </div>
 
-      {/* Job Status */}
+      {/* Auto-Tagging Stats & Job Status */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Auto-Tagging on Page View */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Eye className="w-5 h-5 text-primary" />
+              Auto-Tagged on Page View
+            </CardTitle>
+            <CardDescription>Content tagged automatically when users view pages</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col items-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <Film className="w-6 h-6 text-blue-500 mb-2" />
+                <p className="text-2xl font-bold text-blue-500">{stats?.auto_tagged?.movies || 0}</p>
+                <p className="text-xs text-muted-foreground">Movies</p>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                <Tv className="w-6 h-6 text-purple-500 mb-2" />
+                <p className="text-2xl font-bold text-purple-500">{stats?.auto_tagged?.tv_shows || 0}</p>
+                <p className="text-xs text-muted-foreground">TV Shows</p>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <Sparkles className="w-6 h-6 text-green-500 mb-2" />
+                <p className="text-2xl font-bold text-green-500">{stats?.auto_tagged?.total || 0}</p>
+                <p className="text-xs text-muted-foreground">Total</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Items are tagged 2 seconds after a user views the detail page
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Job Status */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -183,62 +223,62 @@ export function AdminDashboard({
             </div>
           </CardContent>
         </Card>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-            <CardDescription>Common admin tasks</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button 
-              variant="outline" 
-              className="w-full justify-between"
-              onClick={() => onNavigate("search")}
-            >
-              <span className="flex items-center gap-2">
-                <Film className="w-4 h-4" />
-                Add New Content
-              </span>
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-between"
-              onClick={() => onNavigate("ai-tagging")}
-            >
-              <span className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                Queue TMDB Content
-              </span>
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-between"
-              onClick={() => onNavigate("tags")}
-            >
-              <span className="flex items-center gap-2">
-                <Tag className="w-4 h-4" />
-                Manage Tags
-              </span>
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-            <Link to="/tags" className="block">
-              <Button 
-                variant="outline" 
-                className="w-full justify-between"
-              >
-                <span className="flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  View Public Tags
-                </span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Quick Actions</CardTitle>
+          <CardDescription>Common admin tasks</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button 
+            variant="outline" 
+            className="w-full justify-between"
+            onClick={() => onNavigate("search")}
+          >
+            <span className="flex items-center gap-2">
+              <Film className="w-4 h-4" />
+              Add New Content
+            </span>
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            className="w-full justify-between"
+            onClick={() => onNavigate("ai-tagging")}
+          >
+            <span className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Queue TMDB Content
+            </span>
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            className="w-full justify-between"
+            onClick={() => onNavigate("tags")}
+          >
+            <span className="flex items-center gap-2">
+              <Tag className="w-4 h-4" />
+              Manage Tags
+            </span>
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+          <Link to="/tags" className="block">
+            <Button 
+              variant="outline" 
+              className="w-full justify-between"
+            >
+              <span className="flex items-center gap-2">
+                <ExternalLink className="w-4 h-4" />
+                View Public Tags
+              </span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
     </div>
   );
 }
