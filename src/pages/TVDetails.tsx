@@ -19,6 +19,7 @@ import { Play, Star, Calendar, ChevronRight, ChevronLeft, Plus, Film, Clock, Che
 import { SharePopover } from "@/components/SharePopover";
 import { useWatchlist } from "@/hooks/useUserLists";
 import { useTVFollows } from "@/hooks/useTVFollows";
+import { useAutoTag } from "@/hooks/useAutoTag";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -54,6 +55,9 @@ export default function TVDetails() {
   });
 
   const isLoading = isSearching || isLoadingDetails;
+
+  // Auto-tag TV show on page view if not already tagged
+  useAutoTag({ tmdbId: show?.id, mediaType: "tv" });
 
   const scrollEpisodes = (direction: "left" | "right") => {
     if (episodeScrollRef.current) {
