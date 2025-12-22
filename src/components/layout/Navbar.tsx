@@ -369,6 +369,19 @@ export function Navbar() {
                           </div>
                         </Link>
                         <Link
+                          to="/tags"
+                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
+                        >
+                          <Sparkles className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">Browse Tags</span>
+                              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-primary text-primary-foreground">AI</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">Discover content by mood, theme, setting, and style with AI-generated tags.</p>
+                          </div>
+                        </Link>
+                        <Link
                           to="/people"
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                         >
