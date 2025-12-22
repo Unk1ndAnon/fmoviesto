@@ -6,6 +6,7 @@ import { adminStorage, adminAuth, AdminMovie, CustomEmbed } from "@/lib/admin";
 import { validateEmbedUrl } from "@/lib/url-validation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBatchTagging } from "@/hooks/useTags";
+import { TagManagement } from "@/components/admin/TagManagement";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
@@ -555,6 +556,7 @@ export default function Admin() {
                 <TabsTrigger value="search">Search & Add</TabsTrigger>
                 <TabsTrigger value="managed">Managed Content ({managedMovies.length})</TabsTrigger>
                 <TabsTrigger value="ai-tagging">AI Tagging</TabsTrigger>
+                <TabsTrigger value="tag-management">Tag Management</TabsTrigger>
               </TabsList>
 
               {/* Search Tab */}
@@ -880,6 +882,11 @@ export default function Admin() {
               {/* AI Tagging Tab */}
               <TabsContent value="ai-tagging">
                 <AITaggingPanel />
+              </TabsContent>
+
+              {/* Tag Management Tab */}
+              <TabsContent value="tag-management">
+                <TagManagement />
               </TabsContent>
             </Tabs>
           </div>
