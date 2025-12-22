@@ -11,6 +11,7 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { TVShowJsonLd } from "@/components/seo/JsonLd";
 import { TrailerDialog } from "@/components/movie/TrailerDialog";
 import { MovieTags } from "@/components/movie/MovieTags";
+import { GenerateTagsButton } from "@/components/movie/GenerateTagsButton";
 import { RelatedGenreLinks, Breadcrumbs, QuickLinks } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -410,7 +411,10 @@ export default function TVDetails() {
         {/* AI-Generated Tags */}
         {show && (
           <section className="container mx-auto px-4 py-4">
-            <MovieTags tmdbId={show.id} mediaType="tv" maxTags={10} />
+            <div className="flex items-center gap-3 mb-2">
+              <MovieTags tmdbId={show.id} mediaType="tv" maxTags={10} />
+              <GenerateTagsButton tmdbId={show.id} mediaType="tv" title={show.name} />
+            </div>
           </section>
         )}
 

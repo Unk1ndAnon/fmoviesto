@@ -11,6 +11,7 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { MovieJsonLd } from "@/components/seo/JsonLd";
 import { TrailerDialog } from "@/components/movie/TrailerDialog";
 import { MovieTags } from "@/components/movie/MovieTags";
+import { GenerateTagsButton } from "@/components/movie/GenerateTagsButton";
 import { RelatedGenreLinks, Breadcrumbs, QuickLinks } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
 import { Play, Star, Clock, Calendar, Plus } from "lucide-react";
@@ -251,7 +252,10 @@ export default function MovieDetails() {
         {/* AI-Generated Tags */}
         {movie && (
           <section className="container mx-auto px-4 py-4">
-            <MovieTags tmdbId={movie.id} mediaType="movie" maxTags={10} />
+            <div className="flex items-center gap-3 mb-2">
+              <MovieTags tmdbId={movie.id} mediaType="movie" maxTags={10} />
+              <GenerateTagsButton tmdbId={movie.id} mediaType="movie" title={movie.title} />
+            </div>
           </section>
         )}
 
