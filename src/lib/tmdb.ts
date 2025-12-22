@@ -267,6 +267,19 @@ export const tmdb = {
   getPersonDetails: (id: number) =>
     fetchTMDB<{ id: number; name: string; biography: string; profile_path: string | null; known_for_department: string }>(`/person/${id}`),
   
+  getPersonFull: (id: number) =>
+    fetchTMDB<{ 
+      id: number; 
+      name: string; 
+      biography: string; 
+      profile_path: string | null; 
+      known_for_department: string;
+      birthday: string | null;
+      deathday: string | null;
+      place_of_birth: string | null;
+      also_known_as: string[];
+    }>(`/person/${id}`),
+  
   getPersonCredits: (id: number) =>
     fetchTMDB<{ cast: Array<{ id: number; title?: string; name?: string; poster_path: string | null; vote_average: number; release_date?: string; first_air_date?: string; media_type: string }> }>(`/person/${id}/combined_credits`),
 
