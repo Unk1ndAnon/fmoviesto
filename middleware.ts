@@ -88,7 +88,7 @@ export default async function middleware(request: Request) {
 
   if (shouldPrerender(url.pathname, userAgent)) {
     // Call our Supabase Edge Function to get pre-rendered content
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
     
     if (supabaseUrl) {
       try {
