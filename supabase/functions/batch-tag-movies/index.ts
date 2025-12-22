@@ -276,16 +276,26 @@ serve(async (req) => {
     }
 
     if (action === "stats") {
-      const { data: stats } = await supabase
+      console.log("Fetching stats...");
+      
+      // Get job counts by status
+      const { data: jobs, error: jobsError } = await supabase
         .from("tag_jobs")
-        .select("status")
-        .then(({ data }) => {
-          const counts = { pending: 0, processing: 0, completed: 0, failed: 0 };
-          data?.forEach(job => {
-            counts[job.status as keyof typeof counts]++;
-          });
-          return { data: counts };
-        });
+        .select("status");
+      
+      if (jobsError) {
+        console.error("Error fetching jobs:", jobsError);
+        throw jobsError;
+      }
+      
+      const stats = { pending: 0, processing: 0, completed: 0, failed: 0 };
+      jobs?.forEach(job => {
+        if (job.status in stats) {
+          stats[job.status as keyof typeof stats]++;
+        }
+      });
+      
+      console.log("Job stats:", stats);
 
       const { count: tagCount } = await supabase
         .from("tags")
