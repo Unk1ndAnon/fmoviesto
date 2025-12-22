@@ -3,12 +3,12 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Shuffle, Heart, Bookmark, LogIn, LogOut, User, Shield, Bell } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { tmdb, Genre, getImageUrl } from "@/lib/tmdb";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminAuth } from "@/lib/admin";
+import { LiveSearch } from "@/components/LiveSearch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -143,9 +143,7 @@ const streamingServices = [
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const navigate = useNavigate();
   const location = useLocation();
 
   const { data: movieGenres } = useQuery({
@@ -158,8 +156,6 @@ export function Navbar() {
     queryFn: tmdb.getTVGenres,
   });
 
-  
-
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
@@ -167,15 +163,6 @@ export function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setIsSearchOpen(false);
-      setSearchQuery("");
-    }
-  };
 
   return (
     <nav
@@ -412,18 +399,11 @@ export function Navbar() {
           {/* Search & Actions */}
           <div className="flex items-center gap-2">
             {/* Desktop Search */}
-            <form onSubmit={handleSearch} className="hidden md:flex items-center">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-48 lg:w-64 pl-10 bg-secondary/50 border-border/50 focus:bg-secondary"
-                />
-              </div>
-            </form>
+            <LiveSearch 
+              className="hidden md:block"
+              inputClassName="w-48 lg:w-64 bg-secondary/50 border-border/50 focus:bg-secondary"
+              placeholder="Search..."
+            />
 
             {/* Notification Bell */}
             <NotificationBell />
@@ -456,19 +436,12 @@ export function Navbar() {
         {/* Mobile Search */}
         {isSearchOpen && (
           <div className="md:hidden py-4 border-t border-border/50 animate-fade-in">
-            <form onSubmit={handleSearch}>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search movies, TV shows..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 bg-secondary border-border"
-                  autoFocus
-                />
-              </div>
-            </form>
+            <LiveSearch 
+              inputClassName="w-full bg-secondary border-border"
+              placeholder="Search movies, TV shows, people..."
+              onNavigate={() => setIsSearchOpen(false)}
+              autoFocus
+            />
           </div>
         )}
 
