@@ -39,6 +39,7 @@ const Genres = lazy(() => import("./pages/Genres"));
 const TagPage = lazy(() => import("./pages/TagPage"));
 const TagsIndex = lazy(() => import("./pages/TagsIndex"));
 const CollectionPage = lazy(() => import("./pages/CollectionPage"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -93,6 +94,7 @@ const App = () => (
                   <Route path="/people" element={<PopularPeople />} />
                   <Route path="/random" element={<RandomMovies />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/settings/notifications" element={<NotificationSettings />} />
                   <Route path="/following" element={<Following />} />
                   <Route path="/new-episodes" element={<NewEpisodes />} />
                   <Route path="/genres" element={<Genres />} />

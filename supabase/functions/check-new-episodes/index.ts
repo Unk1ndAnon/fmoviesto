@@ -108,6 +108,15 @@ serve(async (req) => {
       );
     }
 
+    // Get notification preferences for all users
+    const userIds = [...new Set(follows.map(f => f.user_id))];
+    const { data: preferences } = await supabase
+      .from("notification_preferences")
+      .select("*")
+      .in("user_id", userIds);
+    
+    const prefsMap = new Map(preferences?.map(p => [p.user_id, p]) || []);
+
     console.log(`Checking ${follows.length} follows for new episodes`);
 
     let notificationsCreated = 0;
@@ -116,6 +125,12 @@ serve(async (req) => {
     // Group follows by tmdb_id to avoid duplicate API calls
     const uniqueShows = new Map<number, TVFollow[]>();
     for (const follow of follows) {
+      // Check if user has new_episodes notifications enabled
+      const userPrefs = prefsMap.get(follow.user_id);
+      if (userPrefs && userPrefs.new_episodes === false) {
+        continue; // Skip this user, they disabled new episode notifications
+      }
+      
       const existing = uniqueShows.get(follow.tmdb_id) || [];
       existing.push(follow);
       uniqueShows.set(follow.tmdb_id, existing);

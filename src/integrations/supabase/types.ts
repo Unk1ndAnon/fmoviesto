@@ -323,6 +323,42 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_notifications: boolean
+          id: string
+          new_episodes: boolean
+          recommendations: boolean
+          show_updates: boolean
+          system_updates: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_notifications?: boolean
+          id?: string
+          new_episodes?: boolean
+          recommendations?: boolean
+          show_updates?: boolean
+          system_updates?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_notifications?: boolean
+          id?: string
+          new_episodes?: boolean
+          recommendations?: boolean
+          show_updates?: boolean
+          system_updates?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

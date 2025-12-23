@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Camera, Loader2, LogOut, Mail, Calendar } from "lucide-react";
+import { User, Camera, Loader2, LogOut, Mail, Calendar, Bell, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface Profile {
@@ -244,6 +244,28 @@ export default function Profile() {
                   )}
                 </Button>
               </CardContent>
+            </Card>
+
+            {/* Notification Settings Link */}
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <Link to="/settings/notifications" className="flex items-center justify-between group">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Bell className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base group-hover:text-primary transition-colors">
+                        Notification Settings
+                      </CardTitle>
+                      <CardDescription>
+                        Manage what notifications you receive
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </Link>
+              </CardHeader>
             </Card>
 
             {/* Account Info Section */}
