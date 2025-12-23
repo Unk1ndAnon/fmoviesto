@@ -12,8 +12,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Search, Save, Trash2, Merge, Tag, Loader2, X, Check, AlertTriangle } from "lucide-react";
+import { Search, Save, Trash2, Merge, Tag, Loader2, X, Check, AlertTriangle, Eye } from "lucide-react";
 import { getTagTypeColor } from "@/hooks/useTags";
+import { generateTagSEO } from "@/lib/tag-seo";
 
 interface TagData {
   id: string;
@@ -351,24 +352,58 @@ export function TagManagement() {
 
             {/* SEO Settings */}
             <div className="border-t pt-4">
-              <h4 className="font-medium mb-4">SEO Settings</h4>
+              <h4 className="font-medium mb-4 flex items-center gap-2">
+                SEO Settings
+                <Badge variant="outline" className="text-xs">
+                  {editedTag.seo_title || editedTag.seo_description ? "Custom" : "Auto-generated"}
+                </Badge>
+              </h4>
+              
+              {/* Auto SEO Preview */}
+              {(() => {
+                const autoSeo = generateTagSEO({
+                  name: editedTag.name || selectedTag.name,
+                  tagType: editedTag.tag_type || selectedTag.tag_type,
+                  movieCount: selectedTag.movie_count || 0,
+                  description: editedTag.description,
+                  seoTitle: editedTag.seo_title,
+                  seoDescription: editedTag.seo_description,
+                });
+                return (
+                  <div className="mb-4 p-3 bg-muted/50 rounded-lg space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Eye className="w-4 h-4" />
+                      <span className="font-medium">Preview (what will be shown):</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Title:</span>{" "}
+                      <span className="text-foreground">{autoSeo.title}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Description:</span>{" "}
+                      <span className="text-foreground line-clamp-2">{autoSeo.description}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="seoTitle">SEO Title (optional)</Label>
+                  <Label htmlFor="seoTitle">SEO Title (optional - overrides auto)</Label>
                   <Input
                     id="seoTitle"
                     value={editedTag.seo_title || ""}
                     onChange={(e) => setEditedTag({ ...editedTag, seo_title: e.target.value })}
-                    placeholder="Custom title for search engines"
+                    placeholder="Leave empty to use auto-generated title"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="seoDescription">SEO Description (optional)</Label>
+                  <Label htmlFor="seoDescription">SEO Description (optional - overrides auto)</Label>
                   <Textarea
                     id="seoDescription"
                     value={editedTag.seo_description || ""}
                     onChange={(e) => setEditedTag({ ...editedTag, seo_description: e.target.value })}
-                    placeholder="Custom meta description for search engines"
+                    placeholder="Leave empty to use auto-generated description"
                     rows={2}
                   />
                 </div>
