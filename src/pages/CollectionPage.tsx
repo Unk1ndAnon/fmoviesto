@@ -170,11 +170,13 @@ export default function CollectionPage() {
       "@type": "Movie",
       name: movie.title,
       datePublished: movie.release_date,
-      aggregateRating: {
+      aggregateRating: movie.vote_count > 0 ? {
         "@type": "AggregateRating",
-        ratingValue: movie.vote_average,
+        ratingValue: movie.vote_average?.toFixed(1),
+        bestRating: "10",
+        worstRating: "0",
         ratingCount: movie.vote_count,
-      },
+      } : undefined,
     })),
   };
 
