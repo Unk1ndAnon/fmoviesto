@@ -136,23 +136,14 @@ Only include tags with high confidence (>0.7). Limit to 8-12 most relevant tags.
       }
     }
 
-    // Also include TMDB genres as tags
-    const genreTags: TagResult[] = (metadata.genres || []).map(genre => ({
-      name: genre.toLowerCase().replace(/\s+/g, '-'),
-      type: 'genre',
-      confidence: 1.0
-    }));
-
-    const allTags = [...genreTags, ...tags];
-
-    console.log(`Generated ${allTags.length} tags for ${metadata.title}`);
+    console.log(`Generated ${tags.length} tags for ${metadata.title}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         tmdb_id: metadata.tmdb_id,
         media_type: metadata.media_type,
-        tags: allTags 
+        tags: tags 
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
