@@ -7,6 +7,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
+import { Breadcrumbs } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Film, Tv, User, Calendar, MapPin, ChevronDown, ChevronUp } from "lucide-react";
@@ -109,6 +111,12 @@ export default function ActorMovies() {
   const hasBio = person.biography && person.biography.length > 0;
   const bioIsLong = hasBio && person.biography.length > bioPreviewLength;
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Popular People", href: "/people" },
+    { label: person.name },
+  ];
+
   return (
     <>
       <SEOHead
@@ -116,13 +124,17 @@ export default function ActorMovies() {
         description={person.biography?.slice(0, 160) || `Explore the complete filmography of ${person.name}, including movies and TV shows.`}
         image={getImageUrl(person.profile_path, "w780")}
       />
+      <BreadcrumbJsonLd items={breadcrumbs} />
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
 
         <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
+          {/* Breadcrumbs */}
+          <Breadcrumbs items={breadcrumbs} />
+
           {/* Person Header */}
-          <div className="flex flex-col md:flex-row gap-8 mb-12">
+          <div className="flex flex-col md:flex-row gap-8 mb-12 mt-4">
             {/* Profile Image */}
             <div className="shrink-0">
               {person.profile_path ? (
