@@ -22,8 +22,9 @@ export default defineConfig(({ mode }) => ({
         description: "Your ultimate destination for free HD movies and TV shows streaming",
         theme_color: "#0a0b0f",
         background_color: "#0a0b0f",
-        display: "standalone",
-        orientation: "portrait",
+        display: "fullscreen",
+        display_override: ["fullscreen", "standalone", "minimal-ui"],
+        orientation: "any",
         scope: "/",
         start_url: "/",
         icons: [
