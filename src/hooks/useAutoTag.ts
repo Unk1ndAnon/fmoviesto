@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { adminAuth } from "@/lib/admin";
 
 interface UseAutoTagOptions {
   tmdbId: number | undefined;
@@ -21,10 +20,6 @@ export function useAutoTag({ tmdbId, mediaType, enabled = true }: UseAutoTagOpti
 
     const autoTag = async () => {
       try {
-        // Only admins can trigger auto-tagging (prevents 401s for normal visitors)
-        const isAdmin = await adminAuth.isAuthenticated();
-        if (!isAdmin) return;
-
         // Check if already tagged
         const { data: meta } = await supabase
           .from("movie_meta")
@@ -38,7 +33,7 @@ export function useAutoTag({ tmdbId, mediaType, enabled = true }: UseAutoTagOpti
         // Mark as triggered to prevent duplicate calls
         triggeredRef.current.add(key);
 
-        // Trigger background tagging (fire and forget)
+        // Trigger background tagging (fire and forget) - tag_single is public
         const { error } = await supabase.functions.invoke("batch-tag-movies", {
           body: { action: "tag_single", tmdb_id: tmdbId, media_type: mediaType },
         });
