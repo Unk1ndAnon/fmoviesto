@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Bell, Check, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,22 +11,50 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotifications, Notification } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { getImageUrl } from "@/lib/tmdb";
-import { generateSlug, getTVShowUrl } from "@/lib/slug";
+import { generateSlug } from "@/lib/slug";
 import { cn } from "@/lib/utils";
 
-function NotificationItem({ notification, onMarkRead, onDelete }: { 
+function NotificationItem({ notification, onMarkRead, onDelete, onNavigate }: { 
   notification: Notification; 
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
+  onNavigate: () => void;
 }) {
-  const slug = notification.tmdb_id ? generateSlug(notification.title) : "";
-  const url = notification.media_type === "tv" && notification.tmdb_id
-    ? getTVShowUrl(notification.title)
-    : "#";
+  const getNotificationUrl = () => {
+    if (!notification.tmdb_id) return null;
+    
+    if (notification.type === "new_episode" && notification.media_type === "tv") {
+      const slug = generateSlug(notification.title);
+      const season = notification.season_number || 1;
+      const episode = notification.episode_number || 1;
+      return `/watch/tv/${notification.tmdb_id}/${slug}?s=${season}&e=${episode}`;
+    }
+    
+    if (notification.media_type === "tv") {
+      const slug = generateSlug(notification.title);
+      return `/tv/${notification.tmdb_id}/${slug}`;
+    }
+    
+    if (notification.media_type === "movie") {
+      const slug = generateSlug(notification.title);
+      return `/movie/${notification.tmdb_id}/${slug}`;
+    }
+    
+    return null;
+  };
+
+  const url = getNotificationUrl();
+
+  const handleClick = () => {
+    if (!notification.is_read) {
+      onMarkRead(notification.id);
+    }
+    onNavigate();
+  };
 
   return (
     <div className={cn(
-      "flex gap-3 p-3 border-b border-border/50 hover:bg-secondary/50 transition-colors",
+      "flex gap-3 p-3 border-b border-border/50 hover:bg-secondary/50 transition-colors cursor-pointer",
       !notification.is_read && "bg-primary/5"
     )}>
       {notification.poster_path ? (
@@ -40,14 +68,17 @@ function NotificationItem({ notification, onMarkRead, onDelete }: {
           <Bell className="w-4 h-4 text-muted-foreground" />
         </div>
       )}
-      <div className="flex-1 min-w-0">
-        <Link 
-          to={url}
-          className="font-medium text-sm hover:text-primary line-clamp-1"
-          onClick={() => !notification.is_read && onMarkRead(notification.id)}
-        >
-          {notification.title}
-        </Link>
+      <div className="flex-1 min-w-0" onClick={handleClick}>
+        {url ? (
+          <Link 
+            to={url}
+            className="font-medium text-sm hover:text-primary line-clamp-1"
+          >
+            {notification.title}
+          </Link>
+        ) : (
+          <span className="font-medium text-sm line-clamp-1">{notification.title}</span>
+        )}
         <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
           {notification.message}
         </p>
@@ -143,6 +174,7 @@ export function NotificationBell() {
                 notification={notification}
                 onMarkRead={(id) => markAsRead.mutate(id)}
                 onDelete={(id) => deleteNotification.mutate(id)}
+                onNavigate={() => setOpen(false)}
               />
             ))
           )}
