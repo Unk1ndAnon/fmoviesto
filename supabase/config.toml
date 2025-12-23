@@ -7,7 +7,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.ai-tag-movie]
-verify_jwt = true
+verify_jwt = false
 
 [functions.batch-tag-movies]
 verify_jwt = false
