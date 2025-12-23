@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
+import { useCheckNewEpisodes } from "@/hooks/useCheckNewEpisodes";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import Index from "./pages/Index";
@@ -56,9 +57,10 @@ const PageLoader = () => (
   </div>
 );
 
-// Analytics wrapper component
-const AnalyticsWrapper = ({ children }: { children: React.ReactNode }) => {
+// Analytics and episode check wrapper component
+const AppWrapper = ({ children }: { children: React.ReactNode }) => {
   useGoogleAnalytics();
+  useCheckNewEpisodes();
   return <>{children}</>;
 };
 
@@ -69,7 +71,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AnalyticsWrapper>
+          <AppWrapper>
             <ErrorBoundary>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
@@ -108,7 +110,7 @@ const App = () => (
                 </Routes>
               </Suspense>
             </ErrorBoundary>
-          </AnalyticsWrapper>
+          </AppWrapper>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
