@@ -10,6 +10,12 @@ const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Input validation
+const MAX_SLUG_LENGTH = 100;
+const MAX_MOVIES = 100;
+const MAX_TITLE_LENGTH = 200;
+const SLUG_PATTERN = /^[a-z0-9-]+$/;
+
 interface TMDBSearchResult {
   id: number;
   title?: string;
@@ -17,6 +23,57 @@ interface TMDBSearchResult {
   release_date?: string;
   first_air_date?: string;
   popularity: number;
+}
+
+function validateInput(body: any): { valid: boolean; error?: string } {
+  if (!body.collection_slug || typeof body.collection_slug !== 'string') {
+    return { valid: false, error: "Missing or invalid collection_slug" };
+  }
+  if (body.collection_slug.length > MAX_SLUG_LENGTH) {
+    return { valid: false, error: `collection_slug must be max ${MAX_SLUG_LENGTH} characters` };
+  }
+  if (!SLUG_PATTERN.test(body.collection_slug)) {
+    return { valid: false, error: "collection_slug must contain only lowercase letters, numbers, and hyphens" };
+  }
+  if (!body.movies || !Array.isArray(body.movies)) {
+    return { valid: false, error: "movies must be an array" };
+  }
+  if (body.movies.length > MAX_MOVIES) {
+    return { valid: false, error: `movies array cannot exceed ${MAX_MOVIES} items` };
+  }
+  for (const movie of body.movies) {
+    if (typeof movie !== 'string' || movie.length === 0 || movie.length > MAX_TITLE_LENGTH) {
+      return { valid: false, error: `Each movie title must be a string between 1 and ${MAX_TITLE_LENGTH} characters` };
+    }
+  }
+  return { valid: true };
+}
+
+async function verifyAdmin(req: Request): Promise<{ isAdmin: boolean; error?: string }> {
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return { isAdmin: false, error: "Missing authorization header" };
+  }
+  
+  const token = authHeader.replace("Bearer ", "");
+  const supabase = createClient(SUPABASE_URL, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false }
+  });
+  
+  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !user) {
+    return { isAdmin: false, error: "Unauthorized" };
+  }
+  
+  const { data: isAdmin } = await supabase.rpc('is_admin');
+  if (!isAdmin) {
+    return { isAdmin: false, error: "Forbidden: Admin access required" };
+  }
+  
+  return { isAdmin: true };
 }
 
 async function searchMovie(title: string): Promise<TMDBSearchResult | null> {
@@ -33,14 +90,27 @@ serve(async (req) => {
   }
 
   try {
-    const { collection_slug, movies } = await req.json();
-
-    if (!collection_slug || !movies || !Array.isArray(movies)) {
+    // Verify admin access
+    const { isAdmin, error: authError } = await verifyAdmin(req);
+    if (!isAdmin) {
       return new Response(
-        JSON.stringify({ error: "Missing collection_slug or movies array" }),
+        JSON.stringify({ error: authError }),
+        { status: authError === "Unauthorized" ? 401 : 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const body = await req.json();
+    
+    // Validate input
+    const validation = validateInput(body);
+    if (!validation.valid) {
+      return new Response(
+        JSON.stringify({ error: validation.error }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const { collection_slug, movies } = body;
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

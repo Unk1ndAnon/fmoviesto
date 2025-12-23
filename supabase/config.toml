@@ -7,10 +7,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.ai-tag-movie]
-verify_jwt = false
+verify_jwt = true
 
 [functions.batch-tag-movies]
-verify_jwt = false
+verify_jwt = true
 
 [functions.populate-collection]
-verify_jwt = false
+verify_jwt = true
