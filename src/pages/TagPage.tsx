@@ -6,6 +6,8 @@ import { tmdb, getImageUrl, Movie, TVShow } from "@/lib/tmdb";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
+import { Breadcrumbs } from "@/components/seo/InternalLinks";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -108,6 +110,12 @@ export default function TagPage() {
 
   const pageTitle = page > 1 ? `${seo.title} - Page ${page}` : seo.title;
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Tags", href: "/tags" },
+    { label: tag.name },
+  ];
+
   return (
     <>
       <SEOHead
@@ -115,6 +123,7 @@ export default function TagPage() {
         description={seo.description}
         keywords={seo.keywords}
       />
+      <BreadcrumbJsonLd items={breadcrumbs} />
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
@@ -122,13 +131,7 @@ export default function TagPage() {
         <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
           {/* Header */}
           <header className="mb-8">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
-              <Link to="/" className="hover:text-foreground">Home</Link>
-              <ChevronRight className="w-4 h-4" />
-              <Link to="/tags" className="hover:text-foreground">Tags</Link>
-              <ChevronRight className="w-4 h-4" />
-              <span className="text-foreground capitalize">{tag.name}</span>
-            </div>
+            <Breadcrumbs items={breadcrumbs} />
 
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 rounded-full bg-primary/10">
