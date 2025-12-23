@@ -10,10 +10,10 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.batch-tag-movies]
-verify_jwt = true
+verify_jwt = false
 
 [functions.populate-collection]
-verify_jwt = true
+verify_jwt = false
 
 [functions.check-new-episodes]
 verify_jwt = true
