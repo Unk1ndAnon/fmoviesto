@@ -25,17 +25,97 @@ interface TagResult {
   confidence: number;
 }
 
+// Input validation
+const MAX_TITLE_LENGTH = 500;
+const MAX_OVERVIEW_LENGTH = 2000;
+const MAX_ARRAY_LENGTH = 50;
+
+function validateMetadata(metadata: any): { valid: boolean; error?: string } {
+  if (!metadata || typeof metadata !== 'object') {
+    return { valid: false, error: "Missing metadata object" };
+  }
+  if (!metadata.tmdb_id || typeof metadata.tmdb_id !== 'number' || metadata.tmdb_id < 1) {
+    return { valid: false, error: "Invalid or missing tmdb_id" };
+  }
+  if (metadata.media_type && !["movie", "tv"].includes(metadata.media_type)) {
+    return { valid: false, error: "media_type must be 'movie' or 'tv'" };
+  }
+  if (metadata.title && (typeof metadata.title !== 'string' || metadata.title.length > MAX_TITLE_LENGTH)) {
+    return { valid: false, error: `title must be a string with max ${MAX_TITLE_LENGTH} characters` };
+  }
+  if (metadata.overview && (typeof metadata.overview !== 'string' || metadata.overview.length > MAX_OVERVIEW_LENGTH)) {
+    return { valid: false, error: `overview must be a string with max ${MAX_OVERVIEW_LENGTH} characters` };
+  }
+  if (metadata.genres && (!Array.isArray(metadata.genres) || metadata.genres.length > MAX_ARRAY_LENGTH)) {
+    return { valid: false, error: `genres must be an array with max ${MAX_ARRAY_LENGTH} items` };
+  }
+  if (metadata.keywords && (!Array.isArray(metadata.keywords) || metadata.keywords.length > MAX_ARRAY_LENGTH)) {
+    return { valid: false, error: `keywords must be an array with max ${MAX_ARRAY_LENGTH} items` };
+  }
+  if (metadata.cast && (!Array.isArray(metadata.cast) || metadata.cast.length > MAX_ARRAY_LENGTH)) {
+    return { valid: false, error: `cast must be an array with max ${MAX_ARRAY_LENGTH} items` };
+  }
+  return { valid: true };
+}
+
+async function verifyAdmin(req: Request): Promise<{ isAdmin: boolean; error?: string }> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return { isAdmin: false, error: "Missing authorization header" };
+  }
+  
+  const token = authHeader.replace("Bearer ", "");
+  
+  // Allow internal service role calls
+  if (token === supabaseServiceKey) {
+    return { isAdmin: true };
+  }
+  
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false }
+  });
+  
+  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !user) {
+    return { isAdmin: false, error: "Unauthorized" };
+  }
+  
+  const { data: isAdmin } = await supabase.rpc('is_admin');
+  if (!isAdmin) {
+    return { isAdmin: false, error: "Forbidden: Admin access required" };
+  }
+  
+  return { isAdmin: true };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { metadata } = await req.json() as { metadata: MovieMetadata };
-
-    if (!metadata || !metadata.tmdb_id) {
+    // Verify admin access
+    const { isAdmin, error: authError } = await verifyAdmin(req);
+    if (!isAdmin) {
       return new Response(
-        JSON.stringify({ error: "Missing movie metadata" }),
+        JSON.stringify({ error: authError }),
+        { status: authError === "Unauthorized" ? 401 : 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const body = await req.json();
+    const { metadata } = body as { metadata: MovieMetadata };
+
+    // Validate input
+    const validation = validateMetadata(metadata);
+    if (!validation.valid) {
+      return new Response(
+        JSON.stringify({ error: validation.error }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

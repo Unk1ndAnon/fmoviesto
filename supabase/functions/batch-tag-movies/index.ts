@@ -12,13 +12,110 @@ interface TagResult {
   confidence: number;
 }
 
+// Input validation schemas
+const VALID_ACTIONS = ["queue", "queue_page", "process", "stats", "tag_single"];
+const VALID_MEDIA_TYPES = ["movie", "tv"];
+const VALID_SOURCES = ["trending", "popular"];
+const MAX_LIMIT = 50;
+const MAX_PAGES = 10;
+const MAX_TMDB_IDS = 100;
+
+function validateInput(body: any): { valid: boolean; error?: string } {
+  if (body.action && !VALID_ACTIONS.includes(body.action)) {
+    return { valid: false, error: `Invalid action. Must be one of: ${VALID_ACTIONS.join(", ")}` };
+  }
+  if (body.media_type && !VALID_MEDIA_TYPES.includes(body.media_type)) {
+    return { valid: false, error: `Invalid media_type. Must be one of: ${VALID_MEDIA_TYPES.join(", ")}` };
+  }
+  if (body.source && !VALID_SOURCES.includes(body.source)) {
+    return { valid: false, error: `Invalid source. Must be one of: ${VALID_SOURCES.join(", ")}` };
+  }
+  if (body.limit !== undefined) {
+    const limit = Number(body.limit);
+    if (isNaN(limit) || limit < 1 || limit > MAX_LIMIT) {
+      return { valid: false, error: `Invalid limit. Must be between 1 and ${MAX_LIMIT}` };
+    }
+  }
+  if (body.pages !== undefined) {
+    const pages = Number(body.pages);
+    if (isNaN(pages) || pages < 1 || pages > MAX_PAGES) {
+      return { valid: false, error: `Invalid pages. Must be between 1 and ${MAX_PAGES}` };
+    }
+  }
+  if (body.tmdb_ids) {
+    if (!Array.isArray(body.tmdb_ids)) {
+      return { valid: false, error: "tmdb_ids must be an array" };
+    }
+    if (body.tmdb_ids.length > MAX_TMDB_IDS) {
+      return { valid: false, error: `tmdb_ids array cannot exceed ${MAX_TMDB_IDS} items` };
+    }
+    if (!body.tmdb_ids.every((id: any) => typeof id === 'number' && id > 0)) {
+      return { valid: false, error: "All tmdb_ids must be positive numbers" };
+    }
+  }
+  if (body.tmdb_id !== undefined) {
+    const tmdbId = Number(body.tmdb_id);
+    if (isNaN(tmdbId) || tmdbId < 1) {
+      return { valid: false, error: "tmdb_id must be a positive number" };
+    }
+  }
+  return { valid: true };
+}
+
+async function verifyAdmin(req: Request): Promise<{ isAdmin: boolean; error?: string }> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return { isAdmin: false, error: "Missing authorization header" };
+  }
+  
+  const token = authHeader.replace("Bearer ", "");
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false }
+  });
+  
+  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !user) {
+    return { isAdmin: false, error: "Unauthorized" };
+  }
+  
+  const { data: isAdmin } = await supabase.rpc('is_admin');
+  if (!isAdmin) {
+    return { isAdmin: false, error: "Forbidden: Admin access required" };
+  }
+  
+  return { isAdmin: true };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Verify admin access
+    const { isAdmin, error: authError } = await verifyAdmin(req);
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ error: authError }),
+        { status: authError === "Unauthorized" ? 401 : 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const body = await req.json();
+    
+    // Validate input
+    const validation = validateInput(body);
+    if (!validation.valid) {
+      return new Response(
+        JSON.stringify({ error: validation.error }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { action, limit = 10, tmdb_ids, media_type = "movie", source = "trending", tmdb_id, pages = 1 } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -92,8 +189,9 @@ serve(async (req) => {
     if (action === "queue_page") {
       // Queue multiple pages from TMDB for batch processing
       let totalQueued = 0;
+      const maxPages = Math.min(pages, MAX_PAGES);
 
-      for (let page = 1; page <= Math.min(pages, 10); page++) {
+      for (let page = 1; page <= maxPages; page++) {
         const endpoint = source === "popular" 
           ? (media_type === "tv" ? "/tv/popular" : "/movie/popular")
           : (media_type === "tv" ? "/trending/tv/week" : "/trending/movie/week");
@@ -137,13 +235,14 @@ serve(async (req) => {
     }
 
     if (action === "process") {
+      const safeLimit = Math.min(limit, MAX_LIMIT);
       // Process pending jobs - fetch from TMDB and tag
       const { data: pendingJobs, error: fetchError } = await supabase
         .from("tag_jobs")
         .select("*")
         .eq("status", "pending")
         .order("created_at", { ascending: true })
-        .limit(limit);
+        .limit(safeLimit);
 
       if (fetchError) throw fetchError;
 
@@ -191,12 +290,12 @@ serve(async (req) => {
             year: (movieData.release_date || movieData.first_air_date)?.split("-")[0]
           };
 
-          // Call AI tagging function
+          // Call AI tagging function (internal call with service key)
           const tagResponse = await fetch(`${supabaseUrl}/functions/v1/ai-tag-movie`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+              "Authorization": `Bearer ${supabaseServiceKey}`,
             },
             body: JSON.stringify({ metadata })
           });
@@ -342,12 +441,12 @@ serve(async (req) => {
 
     if (action === "tag_single") {
       // Tag a single movie/TV show by TMDB ID
-      const singleId = tmdb_id;
+      const singleId = Number(tmdb_id);
       const singleType = media_type;
       
-      if (!singleId) {
+      if (!singleId || singleId < 1) {
         return new Response(
-          JSON.stringify({ error: "Missing tmdb_id" }),
+          JSON.stringify({ error: "Missing or invalid tmdb_id" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -385,12 +484,12 @@ serve(async (req) => {
         year: (movieData.release_date || movieData.first_air_date)?.split("-")[0]
       };
 
-      // Call AI tagging
+      // Call AI tagging (internal call with service key)
       const tagResponse = await fetch(`${supabaseUrl}/functions/v1/ai-tag-movie`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+          "Authorization": `Bearer ${supabaseServiceKey}`,
         },
         body: JSON.stringify({ metadata })
       });
@@ -433,7 +532,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: "Invalid action. Use: queue, queue_page, process, stats, or tag_single" }),
+      JSON.stringify({ error: `Invalid action. Use: ${VALID_ACTIONS.join(", ")}` }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
