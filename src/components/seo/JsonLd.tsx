@@ -2,14 +2,54 @@ import { Movie, TVShow, getImageUrl } from "@/lib/tmdb";
 
 interface MovieJsonLdProps {
   movie: Movie;
+  breadcrumbs?: { label: string; href?: string }[];
 }
 
 interface TVShowJsonLdProps {
   show: TVShow;
+  breadcrumbs?: { label: string; href?: string }[];
 }
 
-export function MovieJsonLd({ movie }: MovieJsonLdProps) {
-  const jsonLd = {
+interface CollectionJsonLdProps {
+  name: string;
+  description: string;
+  image?: string;
+  url: string;
+  breadcrumbs?: { label: string; href?: string }[];
+}
+
+interface BreadcrumbJsonLdProps {
+  items: { label: string; href?: string }[];
+}
+
+const BASE_URL = "https://fmov.online";
+
+function generateBreadcrumbList(items: { label: string; href?: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.label,
+      item: item.href ? `${BASE_URL}${item.href}` : undefined,
+    })),
+  };
+}
+
+export function BreadcrumbJsonLd({ items }: BreadcrumbJsonLdProps) {
+  const jsonLd = generateBreadcrumbList(items);
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
+}
+
+export function MovieJsonLd({ movie, breadcrumbs }: MovieJsonLdProps) {
+  const movieJsonLd = {
     "@context": "https://schema.org",
     "@type": "Movie",
     name: movie.title,
@@ -41,16 +81,20 @@ export function MovieJsonLd({ movie }: MovieJsonLdProps) {
     })),
   };
 
+  const jsonLdArray = breadcrumbs 
+    ? [generateBreadcrumbList(breadcrumbs), movieJsonLd]
+    : movieJsonLd;
+
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdArray) }}
     />
   );
 }
 
-export function TVShowJsonLd({ show }: TVShowJsonLdProps) {
-  const jsonLd = {
+export function TVShowJsonLd({ show, breadcrumbs }: TVShowJsonLdProps) {
+  const tvJsonLd = {
     "@context": "https://schema.org",
     "@type": "TVSeries",
     name: show.name,
@@ -77,10 +121,36 @@ export function TVShowJsonLd({ show }: TVShowJsonLdProps) {
     })),
   };
 
+  const jsonLdArray = breadcrumbs 
+    ? [generateBreadcrumbList(breadcrumbs), tvJsonLd]
+    : tvJsonLd;
+
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdArray) }}
+    />
+  );
+}
+
+export function CollectionJsonLd({ name, description, image, url, breadcrumbs }: CollectionJsonLdProps) {
+  const collectionJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name,
+    description,
+    image,
+    url,
+  };
+
+  const jsonLdArray = breadcrumbs 
+    ? [generateBreadcrumbList(breadcrumbs), collectionJsonLd]
+    : collectionJsonLd;
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdArray) }}
     />
   );
 }

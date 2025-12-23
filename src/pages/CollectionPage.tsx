@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { CollectionJsonLd } from "@/components/seo/JsonLd";
+import { Breadcrumbs } from "@/components/seo/InternalLinks";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -158,32 +160,16 @@ export default function CollectionPage() {
     );
   }
 
-  // Schema markup for collection
-  const collectionSchema = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: collection.seo_title || collection.name,
-    description: collection.seo_description || collection.description,
-    url: `${window.location.origin}/collection/${collection.slug}`,
-    numberOfItems: movies?.length || 0,
-    hasPart: movies?.slice(0, 10).map((movie) => ({
-      "@type": "Movie",
-      name: movie.title,
-      datePublished: movie.release_date,
-      aggregateRating: movie.vote_count > 0 ? {
-        "@type": "AggregateRating",
-        ratingValue: movie.vote_average?.toFixed(1),
-        bestRating: "10",
-        worstRating: "0",
-        ratingCount: movie.vote_count,
-      } : undefined,
-    })),
-  };
-
   const seoTitle = collection.seo_title || `${collection.name} - Watch Free Online`;
   const seoDescription = collection.seo_description || collection.description || `Watch the best ${collection.name.toLowerCase()} for free. Stream ${movies?.length || 0}+ movies online in HD quality with no signup required.`;
   const canonicalUrl = `https://fmov.online/collection/${collection.slug}`;
   const coverImage = collection.cover_image || (movies?.[0]?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movies[0].backdrop_path}` : undefined);
+
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Collections", href: "/collections" },
+    { label: collection.name },
+  ];
 
   return (
     <>
@@ -195,21 +181,23 @@ export default function CollectionPage() {
         type="website"
         keywords={`${collection.name}, ${collection.name.toLowerCase()} movies, watch ${collection.name.toLowerCase()} online free, stream ${collection.name.toLowerCase()}, best ${collection.name.toLowerCase()} movies`}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+      <CollectionJsonLd 
+        name={seoTitle}
+        description={seoDescription}
+        image={coverImage}
+        url={canonicalUrl}
+        breadcrumbs={breadcrumbs}
       />
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
 
         <main className="flex-1 container mx-auto px-4 py-8">
+          {/* Breadcrumbs for SEO */}
+          <Breadcrumbs items={breadcrumbs} />
+
           {/* Header */}
           <div className="mb-8">
-            <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-4 transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </Link>
             <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
               {slug === "christmas-movies" && <span>🎄</span>}
               {collection.name}

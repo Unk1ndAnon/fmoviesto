@@ -135,7 +135,7 @@ export default function MovieDetails() {
         type="video.movie"
         keywords={seoKeywords}
       />
-      <MovieJsonLd movie={movie} />
+      <MovieJsonLd movie={movie} breadcrumbs={breadcrumbs} />
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />

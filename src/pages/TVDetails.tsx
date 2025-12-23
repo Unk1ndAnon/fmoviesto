@@ -168,7 +168,7 @@ export default function TVDetails() {
         type="video.tv_show"
         keywords={seoKeywords}
       />
-      <TVShowJsonLd show={show} />
+      <TVShowJsonLd show={show} breadcrumbs={breadcrumbs} />
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
