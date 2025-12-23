@@ -6,6 +6,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
+import { Breadcrumbs } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -105,20 +107,29 @@ export default function Movies() {
 
   const hasActiveFilters = genreId || year || minRating || sortBy !== "popularity.desc";
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: currentGenre ? `${currentGenre.name} Movies` : "Movies" },
+  ];
+
   return (
     <>
       <SEOHead
         title={currentGenre ? `${currentGenre.name} Movies` : `${categories.find(c => c.id === category)?.label || 'Popular'} Movies`}
         description={`Browse ${currentGenre?.name || category} movies on Fmovies. Watch the best movies in HD quality for free.`}
       />
+      <BreadcrumbJsonLd items={breadcrumbs} />
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
 
         <main className="flex-1 pt-20">
           <div className="container mx-auto px-4 py-8">
+            {/* Breadcrumbs */}
+            <Breadcrumbs items={breadcrumbs} />
+
             {/* Header */}
-            <div className="mb-8">
+            <div className="mb-8 mt-4">
               <div className="flex items-center justify-between mb-4">
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground">
                   {currentGenre ? `${currentGenre.name} Movies` : "Movies"}
