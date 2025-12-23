@@ -15,7 +15,8 @@ import {
   Trash2, 
   Film, 
   Loader2,
-  Sparkles
+  Sparkles,
+  Search
 } from "lucide-react";
 import {
   Dialog,
@@ -52,10 +53,27 @@ export function CollectionManagement() {
   const queryClient = useQueryClient();
   const { data: collections, isLoading } = useCollections();
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
-  const [searchTmdbId, setSearchTmdbId] = useState("");
   const [isAddingMovie, setIsAddingMovie] = useState(false);
   const [movieDetails, setMovieDetails] = useState<MovieDetailsMap>({});
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Search movies by title
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const results = await tmdb.searchMovies(searchQuery);
+      setSearchResults(results.results?.slice(0, 10) || []);
+    } catch (error) {
+      toast.error("Search failed");
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   // Fetch movies for selected collection
   const { data: collectionMovies, isLoading: moviesLoading } = useQuery({
@@ -138,8 +156,8 @@ export function CollectionManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-collection-movies"] });
-      setSearchTmdbId("");
-      setIsAddingMovie(false);
+      setSearchQuery("");
+      setSearchResults([]);
       toast.success("Movie added to collection");
     },
     onError: (error: any) => {
@@ -323,40 +341,74 @@ export function CollectionManagement() {
                       Add Movie
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-lg">
                     <DialogHeader>
                       <DialogTitle>Add Movie to Collection</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 pt-4">
-                      <div className="space-y-2">
-                        <Label>TMDB ID</Label>
+                      <div className="flex gap-2">
                         <Input
-                          type="number"
-                          placeholder="Enter TMDB movie ID"
-                          value={searchTmdbId}
-                          onChange={(e) => setSearchTmdbId(e.target.value)}
+                          placeholder="Search movie by title..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                         />
-                        <p className="text-xs text-muted-foreground">
-                          Find the TMDB ID from themoviedb.org
-                        </p>
+                        <Button onClick={handleSearch} disabled={isSearching || !searchQuery.trim()}>
+                          {isSearching ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Search className="w-4 h-4" />
+                          )}
+                        </Button>
                       </div>
-                      <Button
-                        className="w-full"
-                        disabled={!searchTmdbId || addMovie.isPending}
-                        onClick={() => 
-                          addMovie.mutate({
-                            collectionId: selectedCollection.id,
-                            tmdbId: parseInt(searchTmdbId),
-                          })
-                        }
-                      >
-                        {addMovie.isPending ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <Plus className="w-4 h-4 mr-2" />
-                        )}
-                        Add Movie
-                      </Button>
+                      
+                      {searchResults.length > 0 && (
+                        <div className="max-h-[300px] overflow-y-auto space-y-2">
+                          {searchResults.map((movie) => (
+                            <div 
+                              key={movie.id} 
+                              className="flex items-center gap-3 p-2 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
+                              onClick={() => {
+                                addMovie.mutate({
+                                  collectionId: selectedCollection.id,
+                                  tmdbId: movie.id,
+                                });
+                              }}
+                            >
+                              {movie.poster_path ? (
+                                <img 
+                                  src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
+                                  alt={movie.title}
+                                  className="w-10 h-14 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                                  <Film className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">{movie.title}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {movie.release_date?.split("-")[0] || "Unknown year"}
+                                </p>
+                              </div>
+                              <Button size="sm" variant="ghost" disabled={addMovie.isPending}>
+                                {addMovie.isPending ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Plus className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {searchQuery && searchResults.length === 0 && !isSearching && (
+                        <p className="text-center text-muted-foreground py-4">
+                          No movies found. Try a different search term.
+                        </p>
+                      )}
                     </div>
                   </DialogContent>
                 </Dialog>
