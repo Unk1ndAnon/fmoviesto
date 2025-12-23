@@ -1,25 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCollections, Collection } from "@/hooks/useCollections";
+import { tmdb } from "@/lib/tmdb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { 
   Plus, 
   Trash2, 
-  Edit, 
   Film, 
-  Search, 
   Loader2,
-  Star,
-  Eye,
-  EyeOff,
   Sparkles
 } from "lucide-react";
 import {
@@ -46,12 +41,21 @@ interface CollectionMovie {
   display_order: number;
 }
 
+interface MovieDetails {
+  title: string;
+  poster_path: string | null;
+}
+
+type MovieDetailsMap = Record<number, MovieDetails>;
+
 export function CollectionManagement() {
   const queryClient = useQueryClient();
   const { data: collections, isLoading } = useCollections();
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [searchTmdbId, setSearchTmdbId] = useState("");
   const [isAddingMovie, setIsAddingMovie] = useState(false);
+  const [movieDetails, setMovieDetails] = useState<MovieDetailsMap>({});
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Fetch movies for selected collection
   const { data: collectionMovies, isLoading: moviesLoading } = useQuery({
@@ -69,6 +73,37 @@ export function CollectionManagement() {
     },
     enabled: !!selectedCollection,
   });
+
+  // Fetch movie details from TMDB
+  useEffect(() => {
+    if (!collectionMovies || collectionMovies.length === 0) return;
+    
+    const missingIds = collectionMovies
+      .filter(m => !movieDetails[m.tmdb_id])
+      .map(m => m.tmdb_id);
+    
+    if (missingIds.length === 0) return;
+
+    setLoadingDetails(true);
+    
+    Promise.all(
+      missingIds.map(async (tmdbId) => {
+        try {
+          const data = await tmdb.getMovieDetails(tmdbId);
+          return { tmdbId, title: data.title, poster_path: data.poster_path };
+        } catch {
+          return { tmdbId, title: `Movie #${tmdbId}`, poster_path: null };
+        }
+      })
+    ).then((results) => {
+      const newDetails: MovieDetailsMap = {};
+      results.forEach(r => {
+        newDetails[r.tmdbId] = { title: r.title, poster_path: r.poster_path };
+      });
+      setMovieDetails(prev => ({ ...prev, ...newDetails }));
+      setLoadingDetails(false);
+    });
+  }, [collectionMovies]);
 
   // Toggle collection published status
   const togglePublished = useMutation({
@@ -334,45 +369,72 @@ export function CollectionManagement() {
                 <Loader2 className="w-6 h-6 animate-spin" />
               </div>
             ) : collectionMovies && collectionMovies.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[80px]">Order</TableHead>
-                    <TableHead>TMDB ID</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Featured</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {collectionMovies.map((movie) => (
-                    <TableRow key={movie.id}>
-                      <TableCell>{movie.display_order}</TableCell>
-                      <TableCell className="font-mono">{movie.tmdb_id}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{movie.media_type}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Switch
-                          checked={movie.is_featured}
-                          onCheckedChange={(checked) => 
-                            toggleFeatured.mutate({ id: movie.id, is_featured: checked })
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeMovie.mutate(movie.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </TableCell>
+              <div className="space-y-4">
+                {loadingDetails && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading movie details...
+                  </div>
+                )}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[60px]">#</TableHead>
+                      <TableHead className="w-[60px]">Poster</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead className="w-[100px]">TMDB ID</TableHead>
+                      <TableHead className="w-[80px]">Featured</TableHead>
+                      <TableHead className="w-[60px] text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {collectionMovies.map((movie) => {
+                      const details = movieDetails[movie.tmdb_id];
+                      return (
+                        <TableRow key={movie.id}>
+                          <TableCell className="text-muted-foreground">{movie.display_order}</TableCell>
+                          <TableCell>
+                            {details?.poster_path ? (
+                              <img 
+                                src={`https://image.tmdb.org/t/p/w92${details.poster_path}`}
+                                alt={details.title}
+                                className="w-10 h-14 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                                <Film className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {details?.title || <span className="text-muted-foreground">Loading...</span>}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-muted-foreground">
+                            {movie.tmdb_id}
+                          </TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={movie.is_featured}
+                              onCheckedChange={(checked) => 
+                                toggleFeatured.mutate({ id: movie.id, is_featured: checked })
+                              }
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeMovie.mutate(movie.id)}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Film className="w-12 h-12 mx-auto mb-4 opacity-20" />
