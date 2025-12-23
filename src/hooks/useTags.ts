@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { adminAuth } from "@/lib/admin";
 
 export interface Tag {
   id: string;
@@ -33,7 +34,7 @@ export function useMovieTags(tmdbId: number | undefined, mediaType: string = "mo
     queryKey: ["movieTags", tmdbId, mediaType],
     queryFn: async () => {
       if (!tmdbId) return [];
-      
+
       const { data, error } = await supabase
         .from("movie_tags")
         .select(`
@@ -61,9 +62,9 @@ export function useMovieTags(tmdbId: number | undefined, mediaType: string = "mo
         return [];
       }
 
-      return data.map(mt => ({
+      return data.map((mt) => ({
         ...mt,
-        tag: mt.tags as unknown as Tag
+        tag: mt.tags as unknown as Tag,
       }));
     },
     enabled: !!tmdbId,
@@ -76,12 +77,8 @@ export function useTag(slug: string | undefined) {
     queryKey: ["tag", slug],
     queryFn: async () => {
       if (!slug) return null;
-      
-      const { data, error } = await supabase
-        .from("tags")
-        .select("*")
-        .eq("slug", slug)
-        .maybeSingle();
+
+      const { data, error } = await supabase.from("tags").select("*").eq("slug", slug).maybeSingle();
 
       if (error) {
         console.error("Error fetching tag:", error);
@@ -100,7 +97,7 @@ export function useMoviesByTag(tagId: string | undefined, page: number = 1, page
     queryKey: ["moviesByTag", tagId, page, pageSize],
     queryFn: async () => {
       if (!tagId) return { movies: [], totalCount: 0 };
-      
+
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
 
@@ -116,10 +113,10 @@ export function useMoviesByTag(tagId: string | undefined, page: number = 1, page
         return { movies: [], totalCount: 0 };
       }
 
-      return { 
-        movies: data || [], 
+      return {
+        movies: data || [],
         totalCount: count || 0,
-        totalPages: Math.ceil((count || 0) / pageSize)
+        totalPages: Math.ceil((count || 0) / pageSize),
       };
     },
     enabled: !!tagId,
@@ -127,35 +124,16 @@ export function useMoviesByTag(tagId: string | undefined, page: number = 1, page
 }
 
 // Fetch all tags (for browse/discovery pages)
-export function useTags(options?: { 
-  type?: string; 
-  featured?: boolean; 
-  limit?: number;
-  minMovieCount?: number;
-}) {
+export function useTags(options?: { type?: string; featured?: boolean; limit?: number; minMovieCount?: number }) {
   return useQuery({
     queryKey: ["tags", options],
     queryFn: async () => {
-      let query = supabase
-        .from("tags")
-        .select("*")
-        .order("movie_count", { ascending: false });
+      let query = supabase.from("tags").select("*").order("movie_count", { ascending: false });
 
-      if (options?.type) {
-        query = query.eq("tag_type", options.type);
-      }
-
-      if (options?.featured) {
-        query = query.eq("is_featured", true);
-      }
-
-      if (options?.minMovieCount) {
-        query = query.gte("movie_count", options.minMovieCount);
-      }
-
-      if (options?.limit) {
-        query = query.limit(options.limit);
-      }
+      if (options?.type) query = query.eq("tag_type", options.type);
+      if (options?.featured) query = query.eq("is_featured", true);
+      if (options?.minMovieCount) query = query.gte("movie_count", options.minMovieCount);
+      if (options?.limit) query = query.limit(options.limit);
 
       const { data, error } = await query;
 
@@ -198,7 +176,7 @@ export function useMovieTagStatus(tmdbId: number | undefined, mediaType: string 
     queryKey: ["movieTagStatus", tmdbId, mediaType],
     queryFn: async () => {
       if (!tmdbId) return null;
-      
+
       const { data, error } = await supabase
         .from("movie_meta")
         .select("*")
@@ -221,19 +199,24 @@ export function useMovieTagStatus(tmdbId: number | undefined, mediaType: string 
 export function useBatchTagging() {
   const queryClient = useQueryClient();
 
+  const adminStatus = useQuery({
+    queryKey: ["adminStatus"],
+    queryFn: () => adminAuth.isAuthenticated(),
+    staleTime: 60_000,
+  });
+
+  const requireAdmin = () => {
+    if (!adminStatus.data) {
+      throw new Error("Forbidden: Admin access required");
+    }
+  };
+
   // Queue movies from TMDB trending/popular
   const queueFromTMDB = useMutation({
-    mutationFn: async ({ 
-      limit = 20, 
-      mediaType = "movie",
-      source = "trending" 
-    }: { 
-      limit?: number; 
-      mediaType?: string;
-      source?: "trending" | "popular";
-    }) => {
+    mutationFn: async ({ limit = 20, mediaType = "movie", source = "trending" }: { limit?: number; mediaType?: string; source?: "trending" | "popular" }) => {
+      requireAdmin();
       const { data, error } = await supabase.functions.invoke("batch-tag-movies", {
-        body: { action: "queue", limit, media_type: mediaType, source }
+        body: { action: "queue", limit, media_type: mediaType, source },
       });
 
       if (error) throw error;
@@ -241,20 +224,15 @@ export function useBatchTagging() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tagJobStats"] });
-    }
+    },
   });
 
   // Queue specific TMDB IDs
   const queueByIds = useMutation({
-    mutationFn: async ({ 
-      tmdbIds, 
-      mediaType = "movie" 
-    }: { 
-      tmdbIds: number[]; 
-      mediaType?: string;
-    }) => {
+    mutationFn: async ({ tmdbIds, mediaType = "movie" }: { tmdbIds: number[]; mediaType?: string }) => {
+      requireAdmin();
       const { data, error } = await supabase.functions.invoke("batch-tag-movies", {
-        body: { action: "queue", tmdb_ids: tmdbIds, media_type: mediaType }
+        body: { action: "queue", tmdb_ids: tmdbIds, media_type: mediaType },
       });
 
       if (error) throw error;
@@ -262,20 +240,15 @@ export function useBatchTagging() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tagJobStats"] });
-    }
+    },
   });
 
   // Tag a single movie immediately
   const tagSingle = useMutation({
-    mutationFn: async ({ 
-      tmdbId, 
-      mediaType = "movie" 
-    }: { 
-      tmdbId: number; 
-      mediaType?: string;
-    }) => {
+    mutationFn: async ({ tmdbId, mediaType = "movie" }: { tmdbId: number; mediaType?: string }) => {
+      requireAdmin();
       const { data, error } = await supabase.functions.invoke("batch-tag-movies", {
-        body: { action: "tag_single", tmdb_id: tmdbId, media_type: mediaType }
+        body: { action: "tag_single", tmdb_id: tmdbId, media_type: mediaType },
       });
 
       if (error) throw error;
@@ -286,13 +259,14 @@ export function useBatchTagging() {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       queryClient.invalidateQueries({ queryKey: ["movieTags", variables.tmdbId] });
       queryClient.invalidateQueries({ queryKey: ["movieTagStatus", variables.tmdbId] });
-    }
+    },
   });
 
   const processJobs = useMutation({
     mutationFn: async (limit: number = 5) => {
+      requireAdmin();
       const { data, error } = await supabase.functions.invoke("batch-tag-movies", {
-        body: { action: "process", limit }
+        body: { action: "process", limit },
       });
 
       if (error) throw error;
@@ -301,20 +275,22 @@ export function useBatchTagging() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tagJobStats"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
-    }
+    },
   });
 
   const getStats = useQuery({
     queryKey: ["tagJobStats"],
     queryFn: async () => {
+      requireAdmin();
       const { data, error } = await supabase.functions.invoke("batch-tag-movies", {
-        body: { action: "stats" }
+        body: { action: "stats" },
       });
 
       if (error) throw error;
       return data;
     },
-    refetchInterval: 5000,
+    enabled: adminStatus.data === true,
+    refetchInterval: adminStatus.data === true ? 5000 : false,
   });
 
   return {
@@ -323,7 +299,8 @@ export function useBatchTagging() {
     tagSingle,
     processJobs,
     stats: getStats.data,
-    isLoading: getStats.isLoading
+    isLoading: adminStatus.isLoading || getStats.isLoading,
+    isAdmin: adminStatus.data === true,
   };
 }
 

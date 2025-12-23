@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { adminAuth } from "@/lib/admin";
 
 interface UseAutoTagOptions {
   tmdbId: number | undefined;
@@ -14,12 +15,16 @@ export function useAutoTag({ tmdbId, mediaType, enabled = true }: UseAutoTagOpti
     if (!tmdbId || !enabled) return;
 
     const key = `${mediaType}-${tmdbId}`;
-    
+
     // Prevent duplicate triggers in the same session
     if (triggeredRef.current.has(key)) return;
 
     const autoTag = async () => {
       try {
+        // Only admins can trigger auto-tagging (prevents 401s for normal visitors)
+        const isAdmin = await adminAuth.isAuthenticated();
+        if (!isAdmin) return;
+
         // Check if already tagged
         const { data: meta } = await supabase
           .from("movie_meta")
@@ -28,27 +33,19 @@ export function useAutoTag({ tmdbId, mediaType, enabled = true }: UseAutoTagOpti
           .eq("media_type", mediaType)
           .maybeSingle();
 
-        if (meta?.tagged_at) {
-          // Already tagged, skip
-          return;
-        }
+        if (meta?.tagged_at) return;
 
         // Mark as triggered to prevent duplicate calls
         triggeredRef.current.add(key);
 
         // Trigger background tagging (fire and forget)
-        console.log(`Auto-tagging ${mediaType} ${tmdbId}...`);
-        
         const { error } = await supabase.functions.invoke("batch-tag-movies", {
-          body: { action: "tag_single", tmdb_id: tmdbId, media_type: mediaType }
+          body: { action: "tag_single", tmdb_id: tmdbId, media_type: mediaType },
         });
 
         if (error) {
           console.error("Auto-tag error:", error);
-          // Remove from triggered set so it can retry
           triggeredRef.current.delete(key);
-        } else {
-          console.log(`Auto-tagged ${mediaType} ${tmdbId} successfully`);
         }
       } catch (err) {
         console.error("Auto-tag failed:", err);
