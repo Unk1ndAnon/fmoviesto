@@ -56,6 +56,44 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_movies: {
+        Row: {
+          collection_id: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_featured: boolean | null
+          media_type: string
+          tmdb_id: number
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_featured?: boolean | null
+          media_type?: string
+          tmdb_id: number
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_featured?: boolean | null
+          media_type?: string
+          tmdb_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_movies_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_tags: {
         Row: {
           collection_id: string

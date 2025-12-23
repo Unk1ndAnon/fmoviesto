@@ -22,7 +22,8 @@ import {
   AlertCircle,
   LogOut,
   Settings,
-  ChevronLeft
+  ChevronLeft,
+  FolderHeart
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -37,6 +38,7 @@ const menuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "search", label: "Add Content", icon: Search },
   { id: "managed", label: "Managed Content", icon: Film },
+  { id: "collections", label: "Collections", icon: FolderHeart },
   { id: "ai-tagging", label: "AI Tagging", icon: Sparkles },
   { id: "failed-jobs", label: "Failed Jobs", icon: AlertCircle },
   { id: "tags", label: "Tag Management", icon: Tag },
