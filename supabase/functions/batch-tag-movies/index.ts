@@ -90,21 +90,15 @@ async function verifyAdmin(req: Request): Promise<{ isAdmin: boolean; error?: st
   return { isAdmin: true };
 }
 
+// Actions that require admin authentication
+const ADMIN_ONLY_ACTIONS = ["queue", "queue_page", "process", "stats"];
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verify admin access
-    const { isAdmin, error: authError } = await verifyAdmin(req);
-    if (!isAdmin) {
-      return new Response(
-        JSON.stringify({ error: authError }),
-        { status: authError === "Unauthorized" ? 401 : 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const body = await req.json();
     
     // Validate input
@@ -117,6 +111,17 @@ serve(async (req) => {
     }
 
     const { action, limit = 10, tmdb_ids, media_type = "movie", source = "trending", tmdb_id, pages = 1 } = body;
+
+    // Only require admin for admin-only actions
+    if (ADMIN_ONLY_ACTIONS.includes(action)) {
+      const { isAdmin, error: authError } = await verifyAdmin(req);
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: authError }),
+          { status: authError === "Unauthorized" ? 401 : 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
