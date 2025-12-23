@@ -37,6 +37,7 @@ const NewEpisodes = lazy(() => import("./pages/NewEpisodes"));
 const Genres = lazy(() => import("./pages/Genres"));
 const TagPage = lazy(() => import("./pages/TagPage"));
 const TagsIndex = lazy(() => import("./pages/TagsIndex"));
+const CollectionPage = lazy(() => import("./pages/CollectionPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -97,6 +98,7 @@ const App = () => (
                   <Route path="/genre/tv/:genreSlug" element={<GenreTV />} />
                   <Route path="/tags" element={<TagsIndex />} />
                   <Route path="/tag/:slug" element={<TagPage />} />
+                  <Route path="/collection/:slug" element={<CollectionPage />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/dmca" element={<DMCA />} />
                   <Route path="/terms" element={<Terms />} />
