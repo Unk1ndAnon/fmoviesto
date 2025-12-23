@@ -4,6 +4,8 @@ import { tmdb, getImageUrl } from "@/lib/tmdb";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
+import { Breadcrumbs } from "@/components/seo/InternalLinks";
 import { Link } from "react-router-dom";
 import { Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,19 +18,27 @@ export default function PopularPeople() {
     queryFn: () => tmdb.getPopularPeople(page),
   });
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Popular People" },
+  ];
+
   return (
     <>
       <SEOHead
         title="Popular People - Fmovies"
         description="Discover popular actors, actresses, and celebrities. Browse their filmography and find movies and TV shows they've appeared in."
       />
+      <BreadcrumbJsonLd items={breadcrumbs} />
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
 
         <main className="flex-1 pt-20">
           <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center gap-3 mb-8">
+            <Breadcrumbs items={breadcrumbs} />
+            
+            <div className="flex items-center gap-3 mb-8 mt-4">
               <Users className="w-8 h-8 text-primary" />
               <h1 className="text-3xl font-bold">Popular People</h1>
             </div>
