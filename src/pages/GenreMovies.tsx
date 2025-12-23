@@ -7,6 +7,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { Breadcrumbs, QuickLinks } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -103,6 +104,7 @@ export default function GenreMovies() {
         description={genreInfo.description}
         keywords={genreInfo.keywords.join(", ")}
       />
+      <BreadcrumbJsonLd items={breadcrumbs} />
 
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
