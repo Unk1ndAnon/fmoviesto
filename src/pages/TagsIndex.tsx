@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tag, Film, Palette, MapPin, Sparkles, Users } from "lucide-react";
+import { generateTagsIndexSEO } from "@/lib/tag-seo";
 
 const TAG_TYPES = [
   { value: "all", label: "All Tags", icon: Tag },
@@ -34,11 +35,14 @@ export default function TagsIndex() {
     return acc;
   }, {} as Record<string, typeof tags>);
 
+  const seo = generateTagsIndexSEO();
+
   return (
     <>
       <SEOHead
-        title="Browse Tags - Discover Movies by Mood, Theme & Style"
-        description="Explore our AI-powered movie tags. Find films by mood, theme, setting, and style. Discover movies that match exactly what you're looking for."
+        title={seo.title}
+        description={seo.description}
+        keywords={seo.keywords}
       />
 
       <div className="min-h-screen flex flex-col bg-background">
