@@ -10,6 +10,7 @@ import { MovieCard } from "@/components/movie/MovieCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Tag as TagIcon, Film, Tv } from "lucide-react";
+import { generateTagSEO } from "@/lib/tag-seo";
 
 const PAGE_SIZE = 24;
 
@@ -95,16 +96,24 @@ export default function TagPage() {
   const totalPages = moviesByTag?.totalPages || 1;
   const filteredRelatedTags = relatedTags?.filter(t => t.id !== tag.id).slice(0, 8);
 
-  // SEO metadata
-  const seoTitle = tag.seo_title || `${tag.name} Movies & TV Shows`;
-  const seoDescription = tag.seo_description || 
-    `Discover ${tag.movie_count} ${tag.name} movies and TV shows. Browse our collection of ${tag.tag_type} content tagged as ${tag.name}.`;
+  // Auto-generated SEO metadata
+  const seo = generateTagSEO({
+    name: tag.name,
+    tagType: tag.tag_type,
+    movieCount: tag.movie_count || 0,
+    description: tag.description,
+    seoTitle: tag.seo_title,
+    seoDescription: tag.seo_description,
+  });
+
+  const pageTitle = page > 1 ? `${seo.title} - Page ${page}` : seo.title;
 
   return (
     <>
       <SEOHead
-        title={`${seoTitle} - Page ${page}`}
-        description={seoDescription}
+        title={pageTitle}
+        description={seo.description}
+        keywords={seo.keywords}
       />
 
       <div className="min-h-screen flex flex-col bg-background">
