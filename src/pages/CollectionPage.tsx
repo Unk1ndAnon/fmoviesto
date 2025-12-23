@@ -178,11 +178,20 @@ export default function CollectionPage() {
     })),
   };
 
+  const seoTitle = collection.seo_title || `${collection.name} - Watch Free Online`;
+  const seoDescription = collection.seo_description || collection.description || `Watch the best ${collection.name.toLowerCase()} for free. Stream ${movies?.length || 0}+ movies online in HD quality with no signup required.`;
+  const canonicalUrl = `https://fmov.online/collection/${collection.slug}`;
+  const coverImage = collection.cover_image || (movies?.[0]?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movies[0].backdrop_path}` : undefined);
+
   return (
     <>
       <SEOHead
-        title={collection.seo_title || `${collection.name} | StreamFlix`}
-        description={collection.seo_description || collection.description || `Browse ${collection.name} on StreamFlix`}
+        title={seoTitle}
+        description={seoDescription}
+        url={canonicalUrl}
+        image={coverImage}
+        type="website"
+        keywords={`${collection.name}, ${collection.name.toLowerCase()} movies, watch ${collection.name.toLowerCase()} online free, stream ${collection.name.toLowerCase()}, best ${collection.name.toLowerCase()} movies`}
       />
       <script
         type="application/ld+json"
