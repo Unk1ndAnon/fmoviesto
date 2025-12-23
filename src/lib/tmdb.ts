@@ -248,10 +248,33 @@ export const tmdb = {
   searchTV: (query: string, page: number = 1) =>
     fetchTMDB<{ results: TVShow[]; total_pages: number }>("/search/tv", { query, page: String(page) }),
 
-  // Search and get first result (for slug-based routing)
+  // Search and get best matching result (for slug-based routing)
   searchMovieByTitle: async (title: string): Promise<Movie | null> => {
     const result = await fetchTMDB<{ results: Movie[] }>("/search/movie", { query: title });
-    return result.results[0] || null;
+    if (!result.results || result.results.length === 0) return null;
+    
+    // Normalize title for comparison
+    const normalizedSearch = title.toLowerCase().trim();
+    
+    // Try to find exact match first
+    const exactMatch = result.results.find(movie => 
+      movie.title.toLowerCase().trim() === normalizedSearch
+    );
+    if (exactMatch) return exactMatch;
+    
+    // If no exact match, find the closest match that doesn't have extra numbers/sequels
+    const searchWithoutYear = normalizedSearch.replace(/\(\d{4}\)$/, '').trim();
+    const closeMatch = result.results.find(movie => {
+      const movieTitle = movie.title.toLowerCase().trim();
+      // Avoid sequels (titles with numbers like "2", "3", "II", "III", etc.)
+      const isSequel = /\s(2|3|4|5|ii|iii|iv|v|part\s*\d)$/i.test(movieTitle) || 
+                       /:\s*(part|chapter|episode)\s*\d/i.test(movieTitle);
+      return movieTitle === searchWithoutYear && !isSequel;
+    });
+    if (closeMatch) return closeMatch;
+    
+    // Return first result as fallback
+    return result.results[0];
   },
 
   searchTVByTitle: async (title: string): Promise<TVShow | null> => {
