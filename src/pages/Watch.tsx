@@ -5,7 +5,7 @@ import { tmdb, getBackdropUrl, getImageUrl } from "@/lib/tmdb";
 import { slugToTitle, generateSlug, getWatchMovieUrl, getWatchTVUrl, getMovieUrl, getTVShowUrl, parseSeasonEpisode } from "@/lib/slug";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { VideoPlayer } from "@/components/movie/VideoPlayer";
+import { VideoPlayer, ServerDropdown, useVideoSources } from "@/components/movie/VideoPlayer";
 import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -112,6 +112,7 @@ export default function Watch() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);
+  const [currentSource, setCurrentSource] = useState(0);
   
   // Detect TV from URL (has seasonEpisode param)
   const isTV = !!seasonEpisode;
@@ -164,6 +165,14 @@ export default function Watch() {
   const year = isTV 
     ? (show?.first_air_date ? new Date(show.first_air_date).getFullYear() : "")
     : (movie?.release_date ? new Date(movie.release_date).getFullYear() : "");
+
+  // Video sources hook
+  const videoSources = useVideoSources(
+    itemId || 0, 
+    isTV ? 'tv' : 'movie', 
+    isTV ? season : undefined, 
+    isTV ? episode : undefined
+  );
 
   // Watch Party hook
   const watchParty = useWatchParty({
@@ -279,8 +288,16 @@ export default function Watch() {
               showChat && watchParty.room && "lg:mr-80",
               watchParty.room && "lg:flex-grow"
             )}>
-              {/* Watch Party Button */}
-              <div className="flex items-center justify-end gap-2 mb-4">
+              {/* Server Dropdown & Watch Party - Inline */}
+              <div className="flex items-center justify-between gap-2 mb-4">
+                {/* Server Dropdown */}
+                <ServerDropdown
+                  sources={videoSources}
+                  currentSource={currentSource}
+                  onSelectSource={setCurrentSource}
+                />
+
+                {/* Watch Party Button */}
                 {watchParty.room ? (
                   <Button
                     variant="outline"
@@ -315,6 +332,9 @@ export default function Watch() {
                 episode={isTV ? episode : undefined}
                 title={title}
                 backdrop={getBackdropUrl(item.backdrop_path)}
+                externalControls
+                currentSource={currentSource}
+                onSourceChange={setCurrentSource}
               />
 
               {/* Next/Previous Episode Navigation */}
