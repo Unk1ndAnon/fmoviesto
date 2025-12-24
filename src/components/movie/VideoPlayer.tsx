@@ -26,6 +26,9 @@ interface VideoPlayerProps {
   title: string;
   backdrop?: string;
   onPlay?: () => void;
+  externalControls?: boolean; // When true, don't render server dropdown inside player
+  currentSource?: number;
+  onSourceChange?: (index: number) => void;
 }
 
 // Export hook for getting sources
@@ -63,13 +66,72 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
   return sources;
 }
 
-export function VideoPlayer({ id, type, season, episode, title, backdrop, onPlay }: VideoPlayerProps) {
-  const [currentSource, setCurrentSource] = useState(0);
+// Standalone Server Dropdown Component
+interface ServerDropdownProps {
+  sources: VideoSource[];
+  currentSource: number;
+  onSelectSource: (index: number) => void;
+}
+
+export function ServerDropdown({ sources, currentSource, onSelectSource }: ServerDropdownProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2 bg-card border-border h-9">
+          <Server className="w-4 h-4" />
+          <span className="font-medium">{sources[currentSource]?.name || 'Select'}</span>
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <ChevronDown className="w-4 h-4 opacity-50" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-48 bg-card border-border z-50">
+        {sources.map((source, index) => (
+          <DropdownMenuItem
+            key={index}
+            onClick={() => onSelectSource(index)}
+            className={cn(
+              "cursor-pointer gap-2",
+              currentSource === index && "bg-primary/10"
+            )}
+          >
+            <div className={cn(
+              "w-2 h-2 rounded-full shrink-0",
+              currentSource === index ? "bg-green-500" : "bg-muted-foreground/30"
+            )} />
+            <span className="flex-1">{source.name}</span>
+            {currentSource === index && (
+              <span className="text-xs text-muted-foreground">Active</span>
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function VideoPlayer({ 
+  id, 
+  type, 
+  season, 
+  episode, 
+  title, 
+  backdrop, 
+  onPlay,
+  externalControls = false,
+  currentSource: externalSource,
+  onSourceChange,
+}: VideoPlayerProps) {
+  const [internalSource, setInternalSource] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   
   const sources = useVideoSources(id, type, season, episode);
+  
+  // Use external or internal source control
+  const currentSource = externalControls && externalSource !== undefined ? externalSource : internalSource;
+  const setCurrentSource = externalControls && onSourceChange ? onSourceChange : setInternalSource;
+  
   const currentEmbedUrl = sources[currentSource]?.url || "";
 
   const handleLoad = () => {
@@ -106,50 +168,25 @@ export function VideoPlayer({ id, type, season, episode, title, backdrop, onPlay
     }
   };
 
-  // Server Dropdown Component
-  const ServerDropdown = () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 bg-card border-border h-9">
-          <Server className="w-4 h-4" />
-          <span className="hidden sm:inline">Server:</span>
-          <span className="font-medium">{sources[currentSource]?.name || 'Select'}</span>
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <ChevronDown className="w-4 h-4 opacity-50" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48 bg-card border-border z-50">
-        {sources.map((source, index) => (
-          <DropdownMenuItem
-            key={index}
-            onClick={() => handleSelectSource(index)}
-            className={cn(
-              "cursor-pointer gap-2",
-              currentSource === index && "bg-primary/10"
-            )}
-          >
-            <div className={cn(
-              "w-2 h-2 rounded-full shrink-0",
-              currentSource === index ? "bg-green-500" : "bg-muted-foreground/30"
-            )} />
-            <span className="flex-1">{source.name}</span>
-            {currentSource === index && (
-              <span className="text-xs text-muted-foreground">Active</span>
-            )}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+  // Internal Server Dropdown (only used when not externally controlled)
+  const InternalServerDropdown = () => (
+    <ServerDropdown 
+      sources={sources} 
+      currentSource={currentSource} 
+      onSelectSource={handleSelectSource} 
+    />
   );
 
   // Click to Play overlay
   if (!isPlaying && backdrop) {
     return (
       <div className="w-full">
-        {/* Server Dropdown - Above Player */}
-        <div className="mb-3">
-          <ServerDropdown />
-        </div>
+        {/* Server Dropdown - Above Player (only when not external) */}
+        {!externalControls && (
+          <div className="mb-3">
+            <InternalServerDropdown />
+          </div>
+        )}
 
         {/* Player Preview */}
         <div 
@@ -174,10 +211,12 @@ export function VideoPlayer({ id, type, season, episode, title, backdrop, onPlay
 
   return (
     <div className="w-full">
-      {/* Server Dropdown - Above Player */}
-      <div className="mb-3">
-        <ServerDropdown />
-      </div>
+      {/* Server Dropdown - Above Player (only when not external) */}
+      {!externalControls && (
+        <div className="mb-3">
+          <InternalServerDropdown />
+        </div>
+      )}
 
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
