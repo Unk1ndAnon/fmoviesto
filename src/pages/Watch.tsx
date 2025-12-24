@@ -274,7 +274,11 @@ export default function Watch() {
           {/* Watch Page Layout */}
           <div className="flex flex-col lg:flex-row">
             {/* Main Player Area */}
-            <div className={cn("flex-1 p-4 lg:p-6", showChat && watchParty.room && "lg:mr-80")}>
+            <div className={cn(
+              "flex-1 p-4 lg:p-6",
+              showChat && watchParty.room && "lg:mr-80",
+              watchParty.room && "lg:flex-grow"
+            )}>
               {/* Watch Party Button */}
               <div className="flex items-center justify-end gap-2 mb-4">
                 {watchParty.room ? (
@@ -455,62 +459,64 @@ export default function Watch() {
               )}
             </div>
 
-            {/* Sidebar - Movie/Show Info */}
-            <div className="w-full lg:w-80 xl:w-96 p-4 lg:p-6 lg:border-l border-border">
-              {/* Poster */}
-              <div className="rounded-lg overflow-hidden mb-4">
-                <img 
-                  src={getImageUrl(item.poster_path, "w780")}
-                  alt={title}
-                  className="w-full aspect-[2/3] object-cover"
-                />
-              </div>
+            {/* Sidebar - Movie/Show Info (hidden when in watch party) */}
+            {!watchParty.room && (
+              <div className="w-full lg:w-80 xl:w-96 p-4 lg:p-6 lg:border-l border-border">
+                {/* Poster */}
+                <div className="rounded-lg overflow-hidden mb-4">
+                  <img 
+                    src={getImageUrl(item.poster_path, "w780")}
+                    alt={title}
+                    className="w-full aspect-[2/3] object-cover"
+                  />
+                </div>
 
-              {/* Title & Year */}
-              <h2 className="text-xl font-bold text-foreground mb-1">{title}</h2>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                <Calendar className="w-4 h-4" />
-                <span>{year}</span>
-                {item.vote_average > 0 && (
-                  <>
-                    <span>•</span>
-                    <div className="flex items-center gap-1 text-rating-gold">
-                      <Star className="w-4 h-4" fill="currentColor" />
-                      {item.vote_average.toFixed(1)}
-                    </div>
-                  </>
+                {/* Title & Year */}
+                <h2 className="text-xl font-bold text-foreground mb-1">{title}</h2>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <Calendar className="w-4 h-4" />
+                  <span>{year}</span>
+                  {item.vote_average > 0 && (
+                    <>
+                      <span>•</span>
+                      <div className="flex items-center gap-1 text-rating-gold">
+                        <Star className="w-4 h-4" fill="currentColor" />
+                        {item.vote_average.toFixed(1)}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Back to Details */}
+                <Link 
+                  to={detailsLink}
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Details
+                </Link>
+
+                {/* Action Buttons */}
+                <WatchActionButtons
+                  itemId={itemId}
+                  mediaType={isTV ? "tv" : "movie"}
+                  title={title}
+                  posterPath={item.poster_path}
+                  voteAverage={item.vote_average}
+                  releaseDate={isTV ? (show?.first_air_date || null) : (movie?.release_date || null)}
+                />
+
+                {/* Overview */}
+                {item.overview && (
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Overview</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-6">
+                      {item.overview}
+                    </p>
+                  </div>
                 )}
               </div>
-
-              {/* Back to Details */}
-              <Link 
-                to={detailsLink}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Details
-              </Link>
-
-              {/* Action Buttons */}
-              <WatchActionButtons
-                itemId={itemId}
-                mediaType={isTV ? "tv" : "movie"}
-                title={title}
-                posterPath={item.poster_path}
-                voteAverage={item.vote_average}
-                releaseDate={isTV ? (show?.first_air_date || null) : (movie?.release_date || null)}
-              />
-
-              {/* Overview */}
-              {item.overview && (
-                <div>
-                  <h3 className="font-semibold text-foreground mb-2">Overview</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-6">
-                    {item.overview}
-                  </p>
-                </div>
-              )}
-            </div>
+            )}
 
             {/* Watch Party Chat Sidebar */}
             {showChat && watchParty.room && (
