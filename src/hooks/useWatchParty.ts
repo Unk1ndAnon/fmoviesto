@@ -12,9 +12,34 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
+// Random nickname generator
+const ADJECTIVES = [
+  'Happy', 'Sleepy', 'Brave', 'Swift', 'Clever', 'Mighty', 'Gentle', 'Wild', 
+  'Cosmic', 'Golden', 'Silent', 'Lucky', 'Mystic', 'Funky', 'Chill', 'Epic',
+  'Groovy', 'Zen', 'Neon', 'Turbo', 'Hyper', 'Ultra', 'Mega', 'Super'
+];
+
+const NOUNS = [
+  'Panda', 'Tiger', 'Eagle', 'Dolphin', 'Phoenix', 'Dragon', 'Wolf', 'Fox',
+  'Koala', 'Owl', 'Falcon', 'Otter', 'Bear', 'Lion', 'Raven', 'Shark',
+  'Penguin', 'Unicorn', 'Wizard', 'Ninja', 'Pirate', 'Knight', 'Viking', 'Samurai'
+];
+
+const generateRandomNickname = (): string => {
+  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+  const number = Math.floor(Math.random() * 99) + 1;
+  return `${adjective}${noun}${number}`;
+};
+
 // Get or set display name
 export const getDisplayName = (): string => {
-  return localStorage.getItem('watch_party_display_name') || 'Guest';
+  let name = localStorage.getItem('watch_party_display_name');
+  if (!name) {
+    name = generateRandomNickname();
+    localStorage.setItem('watch_party_display_name', name);
+  }
+  return name;
 };
 
 export const setDisplayName = (name: string): void => {
