@@ -551,13 +551,28 @@ export default function Watch() {
               </div>
             )}
 
-            {/* Mobile Overview - Only visible on mobile */}
-            {!watchParty.room && item.overview && (
-              <div className="lg:hidden p-4">
-                <h3 className="font-semibold text-foreground mb-2">Overview</h3>
-                <p className="text-sm text-muted-foreground">
-                  {item.overview}
-                </p>
+            {/* Mobile Action Buttons & Overview - Only visible on mobile */}
+            {!watchParty.room && (
+              <div className="lg:hidden p-4 space-y-4">
+                {/* Action Buttons */}
+                <WatchActionButtons
+                  itemId={itemId}
+                  mediaType={isTV ? "tv" : "movie"}
+                  title={title}
+                  posterPath={item.poster_path}
+                  voteAverage={item.vote_average}
+                  releaseDate={isTV ? (show?.first_air_date || null) : (movie?.release_date || null)}
+                />
+
+                {/* Overview */}
+                {item.overview && (
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Overview</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {item.overview}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
