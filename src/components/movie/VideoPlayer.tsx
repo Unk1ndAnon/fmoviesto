@@ -1,9 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
-import { AlertTriangle, RefreshCw, Play } from "lucide-react";
+import { AlertTriangle, RefreshCw, Play, ChevronDown, Server } from "lucide-react";
 import { EMBED_SOURCES, getEmbedUrl } from "@/lib/tmdb";
 import { adminStorage, AdminMovie } from "@/lib/admin";
 import { validateEmbedUrl } from "@/lib/url-validation";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 interface VideoPlayerProps {
@@ -100,29 +106,44 @@ export function VideoPlayer({ id, type, season, episode, title, backdrop, onPlay
           </div>
         </div>
         
-        {/* Server Tabs - Below Preview */}
-        <div className="bg-card/80 backdrop-blur rounded-lg border border-border mt-4 p-4">
-          <p className="text-sm text-muted-foreground mb-3">{allSources.length} servers available</p>
-          <div className="flex flex-wrap gap-2">
-            {allSources.map((source, index) => (
-              <button
-                key={index}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentSource(index);
-                  handlePlay();
-                }}
-                className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium transition-all border",
-                  currentSource === index
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-secondary/80 text-secondary-foreground border-border hover:bg-secondary"
-                )}
-              >
-                {source.name}
-              </button>
-            ))}
-          </div>
+        {/* Server Dropdown - Below Preview */}
+        <div className="flex items-center gap-3 mt-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2 bg-card border-border">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <Server className="w-4 h-4" />
+                <span>{allSources[currentSource]?.name || 'Select Server'}</span>
+                <ChevronDown className="w-4 h-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 bg-card border-border z-50">
+              {allSources.map((source, index) => (
+                <DropdownMenuItem
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSource(index);
+                    handlePlay();
+                  }}
+                  className={cn(
+                    "cursor-pointer gap-2",
+                    currentSource === index && "bg-primary/10"
+                  )}
+                >
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    currentSource === index ? "bg-green-500" : "bg-muted-foreground/30"
+                  )} />
+                  {source.name}
+                  {currentSource === index && (
+                    <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <span className="text-sm text-muted-foreground">{allSources.length} servers available</span>
         </div>
       </div>
     );
@@ -171,29 +192,44 @@ export function VideoPlayer({ id, type, season, episode, title, backdrop, onPlay
         />
       </div>
 
-      {/* Server Tabs - Below Player */}
-      <div className="bg-card/80 backdrop-blur rounded-lg border border-border mt-4 p-4">
-        <p className="text-sm text-muted-foreground mb-3">{allSources.length} servers available</p>
-        <div className="flex flex-wrap gap-2">
-          {allSources.map((source, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setCurrentSource(index);
-                setIsLoading(true);
-                setHasError(false);
-              }}
-              className={cn(
-                "px-4 py-2 rounded-md text-sm font-medium transition-all border",
-                currentSource === index
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary/80 text-secondary-foreground border-border hover:bg-secondary"
-              )}
-            >
-              {source.name}
-            </button>
-          ))}
-        </div>
+      {/* Server Dropdown - Below Player */}
+      <div className="flex items-center gap-3 mt-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2 bg-card border-border">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <Server className="w-4 h-4" />
+              <span>{allSources[currentSource]?.name || 'Select Server'}</span>
+              <ChevronDown className="w-4 h-4 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48 bg-card border-border z-50">
+            {allSources.map((source, index) => (
+              <DropdownMenuItem
+                key={index}
+                onClick={() => {
+                  setCurrentSource(index);
+                  setIsLoading(true);
+                  setHasError(false);
+                }}
+                className={cn(
+                  "cursor-pointer gap-2",
+                  currentSource === index && "bg-primary/10"
+                )}
+              >
+                <div className={cn(
+                  "w-2 h-2 rounded-full",
+                  currentSource === index ? "bg-green-500" : "bg-muted-foreground/30"
+                )} />
+                {source.name}
+                {currentSource === index && (
+                  <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <span className="text-sm text-muted-foreground">{allSources.length} servers available</span>
       </div>
     </div>
   );
