@@ -522,8 +522,8 @@ export default function Watch() {
             {/* Sidebar - Movie/Show Info (hidden when in watch party) */}
             {!watchParty.room && (
               <div className="w-full lg:w-80 xl:w-96 p-4 lg:p-6 lg:border-l border-border">
-                {/* Poster */}
-                <div className="rounded-lg overflow-hidden mb-4">
+                {/* Poster - Desktop only */}
+                <div className="hidden lg:block rounded-lg overflow-hidden mb-4">
                   <img 
                     src={getImageUrl(item.poster_path, "w780")}
                     alt={title}
@@ -531,42 +531,44 @@ export default function Watch() {
                   />
                 </div>
 
-                {/* Title & Year */}
-                <h2 className="text-xl font-bold text-foreground mb-1">{title}</h2>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                  <Calendar className="w-4 h-4" />
-                  <span>{year}</span>
-                  {item.vote_average > 0 && (
-                    <>
-                      <span>•</span>
-                      <div className="flex items-center gap-1 text-rating-gold">
-                        <Star className="w-4 h-4" fill="currentColor" />
-                        {item.vote_average.toFixed(1)}
-                      </div>
-                    </>
-                  )}
+                {/* Title & Year - Desktop only */}
+                <div className="hidden lg:block">
+                  <h2 className="text-xl font-bold text-foreground mb-1">{title}</h2>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                    <Calendar className="w-4 h-4" />
+                    <span>{year}</span>
+                    {item.vote_average > 0 && (
+                      <>
+                        <span>•</span>
+                        <div className="flex items-center gap-1 text-rating-gold">
+                          <Star className="w-4 h-4" fill="currentColor" />
+                          {item.vote_average.toFixed(1)}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Back to Details */}
+                  <Link 
+                    to={detailsLink}
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Details
+                  </Link>
+
+                  {/* Action Buttons */}
+                  <WatchActionButtons
+                    itemId={itemId}
+                    mediaType={isTV ? "tv" : "movie"}
+                    title={title}
+                    posterPath={item.poster_path}
+                    voteAverage={item.vote_average}
+                    releaseDate={isTV ? (show?.first_air_date || null) : (movie?.release_date || null)}
+                  />
                 </div>
 
-                {/* Back to Details */}
-                <Link 
-                  to={detailsLink}
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Details
-                </Link>
-
-                {/* Action Buttons */}
-                <WatchActionButtons
-                  itemId={itemId}
-                  mediaType={isTV ? "tv" : "movie"}
-                  title={title}
-                  posterPath={item.poster_path}
-                  voteAverage={item.vote_average}
-                  releaseDate={isTV ? (show?.first_air_date || null) : (movie?.release_date || null)}
-                />
-
-                {/* Overview */}
+                {/* Overview - Always visible */}
                 {item.overview && (
                   <div>
                     <h3 className="font-semibold text-foreground mb-2">Overview</h3>
