@@ -126,14 +126,25 @@ export default function MovieDetails() {
     { label: movie.title },
   ];
 
+  // Generate proper SEO meta tags
+  const currentUrl = `${window.location.origin}${window.location.pathname}`;
+  const backdropImage = movie.backdrop_path 
+    ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}` 
+    : undefined;
+  
+  const seoTitle = `Watch ${movie.title} (${year}) Online Free – Fmovies`;
+  const seoDescription = `Watch ${movie.title} (${year}) online free in HD on Fmovies. Stream movies instantly without signup.`;
+
   return (
     <>
       <SEOHead
-        title={`${movie.title} (${year})`}
-        description={movie.overview}
-        image={getBackdropUrl(movie.backdrop_path)}
+        title={seoTitle}
+        description={seoDescription}
+        image={backdropImage}
+        url={currentUrl}
         type="video.movie"
         keywords={seoKeywords}
+        siteName="Fmovies"
       />
       <MovieJsonLd movie={movie} breadcrumbs={breadcrumbs} />
 
