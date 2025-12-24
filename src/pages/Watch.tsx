@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites, useWatchlist } from "@/hooks/useUserLists";
 import { toast } from "sonner";
 import { useWatchParty, SyncEvent } from "@/hooks/useWatchParty";
+import { useVidifySync } from "@/hooks/useVidifySync";
 import { WatchPartyButton } from "@/components/watch-party/WatchPartyButton";
 import { WatchPartyChat } from "@/components/watch-party/WatchPartyChat";
 import { PlaybackSync } from "@/components/watch-party/PlaybackSync";
@@ -192,6 +193,27 @@ export default function Watch() {
       console.log('Sync event received:', event);
       setCurrentSyncEvent(event);
     }, []),
+  });
+
+  // Vidify player sync - listens to WATCH_PROGRESS messages from iframe
+  const vidifySync = useVidifySync({
+    mediaId: String(itemId || 0),
+    isHost: watchParty.isHost,
+    enabled: !!watchParty.room && !!itemId,
+    onTimeUpdate: useCallback((currentTime: number, eventType: string) => {
+      // Update viewer time for drift detection
+      if (!watchParty.isHost) {
+        watchParty.updateViewerTime(currentTime);
+      }
+    }, [watchParty.isHost, watchParty.updateViewerTime]),
+    onHostSync: useCallback((eventType: string, currentTime: number) => {
+      // Host broadcasts sync events when player state changes
+      watchParty.broadcastPlayerEvent(eventType, currentTime);
+      
+      // Also update room playback state in database
+      const isPlaying = eventType === 'play' || eventType === 'progress';
+      watchParty.updatePlayback(currentTime, isPlaying);
+    }, [watchParty.broadcastPlayerEvent, watchParty.updatePlayback]),
   });
 
   // Check for room code in URL params
@@ -376,6 +398,10 @@ export default function Watch() {
                     lastHeartbeatTime={watchParty.lastHostHeartbeat?.timestamp}
                     lastHostHeartbeat={watchParty.lastHostHeartbeat}
                     onSendHeartbeat={watchParty.sendHeartbeat}
+                    // Vidify player sync data
+                    playerTime={vidifySync.playerTime}
+                    playerStatus={vidifySync.playerStatus}
+                    isPlayerActive={vidifySync.isPlayerActive}
                   />
                 </div>
               )}

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
-import { Play, Pause, RotateCcw, Users, Timer, Radio, AlertTriangle, CheckCircle, Clock, Target } from 'lucide-react';
+import { Play, Pause, RotateCcw, Users, Timer, Radio, AlertTriangle, CheckCircle, Clock, Target, Activity, Wifi } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { HeartbeatData } from '@/hooks/useWatchParty';
@@ -24,6 +24,10 @@ interface PlaybackSyncProps {
   lastHeartbeatTime?: number;
   lastHostHeartbeat?: HeartbeatData | null;
   onSendHeartbeat?: (time: number, playing: boolean) => void;
+  // Vidify player sync data
+  playerTime?: number;
+  playerStatus?: 'play' | 'pause' | 'seeking' | 'progress' | 'ended';
+  isPlayerActive?: boolean;
 }
 
 const formatTime = (seconds: number): string => {
@@ -74,6 +78,10 @@ export function PlaybackSync({
   lastHeartbeatTime,
   lastHostHeartbeat,
   onSendHeartbeat,
+  // Vidify player sync data
+  playerTime = 0,
+  playerStatus = 'pause',
+  isPlayerActive = false,
 }: PlaybackSyncProps) {
   const [localTime, setLocalTime] = useState(currentTime);
   const [localPlaying, setLocalPlaying] = useState(isPlaying);
@@ -83,11 +91,17 @@ export function PlaybackSync({
   const lastUpdateRef = useRef<number>(Date.now());
   const tickIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Calculate and tick host's live time based on heartbeat
+  // For host: use actual player time when available
+  const effectiveHostTime = isHost && isPlayerActive ? playerTime : localTime;
+  const effectiveHostPlaying = isHost && isPlayerActive 
+    ? (playerStatus === 'play' || playerStatus === 'progress') 
+    : localPlaying;
+
+  // Calculate and tick host's live time based on heartbeat (for viewers)
   useEffect(() => {
     if (isHost) {
-      // For host, use local time
-      setHostLiveTime(localTime);
+      // For host, use player time if active, otherwise local time
+      setHostLiveTime(isPlayerActive ? playerTime : localTime);
       return;
     }
 
@@ -118,11 +132,20 @@ export function PlaybackSync({
         clearInterval(tickIntervalRef.current);
       }
     };
-  }, [isHost, localTime, lastHostHeartbeat, currentTime]);
+  }, [isHost, localTime, lastHostHeartbeat, currentTime, isPlayerActive, playerTime]);
 
-  // Host ticking: increment localTime every second when playing
+  // Host: sync local state with player time when active
   useEffect(() => {
-    if (!isHost || !localPlaying) return;
+    if (isHost && isPlayerActive) {
+      setLocalTime(playerTime);
+      setLocalPlaying(playerStatus === 'play' || playerStatus === 'progress');
+      setTimeInput(formatTime(playerTime));
+    }
+  }, [isHost, isPlayerActive, playerTime, playerStatus]);
+
+  // Host ticking: only when player is not active (manual mode)
+  useEffect(() => {
+    if (!isHost || !localPlaying || isPlayerActive) return;
 
     const hostTickInterval = setInterval(() => {
       setLocalTime(prev => prev + 1);
@@ -130,26 +153,27 @@ export function PlaybackSync({
     }, 1000);
 
     return () => clearInterval(hostTickInterval);
-  }, [isHost, localPlaying, localTime]);
+  }, [isHost, localPlaying, localTime, isPlayerActive]);
 
-  // Sync local state with remote state
+  // Sync local state with remote state (for non-host or when player not active)
   useEffect(() => {
+    if (isHost && isPlayerActive) return; // Don't override player time
     setLocalTime(currentTime);
     setLocalPlaying(isPlaying);
     setTimeInput(formatTime(currentTime));
     lastUpdateRef.current = Date.now();
-  }, [currentTime, isPlaying]);
+  }, [currentTime, isPlaying, isHost, isPlayerActive]);
 
-  // Send heartbeat periodically when host
+  // Send heartbeat periodically when host (using effective player time)
   useEffect(() => {
     if (!isHost || !onSendHeartbeat) return;
 
     const heartbeatInterval = setInterval(() => {
-      onSendHeartbeat(localTime, localPlaying);
+      onSendHeartbeat(effectiveHostTime, effectiveHostPlaying);
     }, 3000);
 
     return () => clearInterval(heartbeatInterval);
-  }, [isHost, localTime, localPlaying, onSendHeartbeat]);
+  }, [isHost, effectiveHostTime, effectiveHostPlaying, onSendHeartbeat]);
 
   // Handle time input change
   const handleTimeInputChange = (value: string) => {
@@ -252,24 +276,49 @@ export function PlaybackSync({
       {/* Host Controls */}
       {isHost && (
         <div className="space-y-4">
+          {/* Player Connection Status */}
+          <div className={cn(
+            "flex items-center gap-2 p-2 rounded-lg text-sm",
+            isPlayerActive 
+              ? "bg-green-500/10 text-green-600" 
+              : "bg-yellow-500/10 text-yellow-600"
+          )}>
+            {isPlayerActive ? (
+              <>
+                <Activity className="w-4 h-4" />
+                <span>Player connected - syncing automatically</span>
+                <span className="ml-auto text-xs px-2 py-0.5 bg-green-500/20 rounded-full">
+                  {playerStatus}
+                </span>
+              </>
+            ) : (
+              <>
+                <Wifi className="w-4 h-4" />
+                <span>Waiting for player connection...</span>
+              </>
+            )}
+          </div>
+
           {/* Live Host Time Display */}
           <div className="p-3 bg-primary/10 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium">Your Current Time</span>
-                {localPlaying && (
+                {effectiveHostPlaying && (
                   <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-500 rounded-full animate-pulse">
                     LIVE
                   </span>
                 )}
               </div>
               <span className="text-2xl font-mono font-bold text-primary">
-                {formatTime(localTime)}
+                {formatTime(effectiveHostTime)}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              This time syncs to all viewers in real-time
+              {isPlayerActive 
+                ? 'Syncing from your video player in real-time'
+                : 'Start playing in your video player to sync automatically'}
             </p>
           </div>
 
@@ -361,7 +410,9 @@ export function PlaybackSync({
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            Set your video time, then sync everyone. They'll see instructions to match your playback.
+            {isPlayerActive 
+              ? 'Your player syncs automatically - viewers will follow your playback'
+              : 'Set your video time, then sync everyone. They\'ll see instructions to match your playback.'}
           </p>
         </div>
       )}
@@ -369,6 +420,29 @@ export function PlaybackSync({
       {/* Guest View */}
       {!isHost && (
         <div className="space-y-3">
+          {/* Player Connection Status for viewers */}
+          <div className={cn(
+            "flex items-center gap-2 p-2 rounded-lg text-sm",
+            isPlayerActive 
+              ? "bg-green-500/10 text-green-600" 
+              : "bg-muted/50 text-muted-foreground"
+          )}>
+            {isPlayerActive ? (
+              <>
+                <Activity className="w-4 h-4" />
+                <span>Your player connected</span>
+                <span className="ml-auto font-mono text-xs">
+                  {formatTime(playerTime)}
+                </span>
+              </>
+            ) : (
+              <>
+                <Wifi className="w-4 h-4" />
+                <span>Play video to enable sync tracking</span>
+              </>
+            )}
+          </div>
+
           {/* Live Host Time Display */}
           <div className="p-4 bg-primary/10 rounded-lg">
             <div className="flex items-center justify-between mb-2">
@@ -425,22 +499,29 @@ export function PlaybackSync({
             </div>
           </div>
 
-          {/* Sync status */}
+          {/* Sync status with drift detection */}
           <div className={cn(
             "flex items-center gap-2 p-2 rounded-lg text-sm",
             isOutOfSync 
               ? "bg-destructive/10 text-destructive" 
-              : "bg-green-500/10 text-green-600"
+              : isPlayerActive && driftSeconds < 3
+                ? "bg-green-500/10 text-green-600"
+                : "bg-muted/50 text-muted-foreground"
           )}>
             {isOutOfSync ? (
               <>
                 <AlertTriangle className="w-4 h-4" />
-                <span>~{Math.round(driftSeconds)}s out of sync</span>
+                <span>~{Math.round(driftSeconds)}s out of sync - seek to {formatTime(Math.round(hostLiveTime))}</span>
+              </>
+            ) : isPlayerActive ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                <span>In sync with host {driftSeconds > 0 && `(${driftSeconds.toFixed(1)}s drift)`}</span>
               </>
             ) : (
               <>
-                <CheckCircle className="w-4 h-4" />
-                <span>In sync with host</span>
+                <Clock className="w-4 h-4" />
+                <span>Play video to check sync status</span>
               </>
             )}
           </div>
