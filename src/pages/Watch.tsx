@@ -281,12 +281,11 @@ export default function Watch() {
 
         <main className="flex-1 pt-16">
           {/* Watch Page Layout */}
-          <div className="flex flex-col lg:flex-row">
+          <div className="flex flex-col">
             {/* Main Player Area */}
             <div className={cn(
               "flex-1 p-4 lg:p-6",
-              showChat && watchParty.room && "lg:mr-80",
-              watchParty.room && "lg:flex-grow"
+              showChat && watchParty.room && "lg:pr-[calc(20rem+1.5rem)]"
             )}>
               {/* Server Dropdown & Watch Party - Inline */}
               <div className="flex items-center justify-between gap-2 mb-4">
@@ -552,9 +551,9 @@ export default function Watch() {
               </div>
             )}
 
-            {/* Watch Party Chat Sidebar */}
+            {/* Watch Party Chat Sidebar - Fixed position */}
             {showChat && watchParty.room && (
-              <div className="fixed right-0 top-16 bottom-0 w-80 z-40 lg:relative lg:top-0">
+              <div className="fixed right-0 top-16 bottom-0 w-80 z-40">
                 <WatchPartyChat
                   messages={watchParty.messages}
                   members={watchParty.members}
