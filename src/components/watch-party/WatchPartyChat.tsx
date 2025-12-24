@@ -38,9 +38,15 @@ export function WatchPartyChat({
   const scrollRef = useRef<HTMLDivElement>(null);
   const displayName = getDisplayName();
 
+  const getInviteLink = () => {
+    if (!roomCode) return '';
+    const path = window.location.pathname;
+    return `https://fmov.online${path}?party=${roomCode}`;
+  };
+
   const copyInviteLink = () => {
     if (!roomCode) return;
-    const url = `${window.location.origin}${window.location.pathname}?party=${roomCode}`;
+    const url = getInviteLink();
     navigator.clipboard.writeText(url);
     setCopied(true);
     toast.success('Invite link copied!');
@@ -94,7 +100,7 @@ export function WatchPartyChat({
       {/* Room Code & Invite */}
       {roomCode && (
         <div className="px-4 py-3 bg-primary/10 border-b border-border">
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-muted-foreground">Room Code</p>
             <Button
               variant="ghost"
@@ -110,12 +116,18 @@ export function WatchPartyChat({
               ) : (
                 <>
                   <Copy className="w-3 h-3" />
-                  Copy Invite Link
+                  Copy Link
                 </>
               )}
             </Button>
           </div>
-          <p className="font-mono font-bold text-primary">{roomCode}</p>
+          <p className="font-mono font-bold text-primary mb-2">{roomCode}</p>
+          <div className="bg-background/50 rounded p-2">
+            <p className="text-xs text-muted-foreground mb-1">Invite Link</p>
+            <p className="text-xs font-mono text-foreground break-all select-all">
+              {getInviteLink()}
+            </p>
+          </div>
         </div>
       )}
 
