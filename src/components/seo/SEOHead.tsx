@@ -5,11 +5,20 @@ interface SEOHeadProps {
   description: string;
   image?: string;
   url?: string;
-  type?: "website" | "video.movie" | "video.tv_show";
+  type?: "website" | "video.movie" | "video.tv_show" | "video.episode";
   keywords?: string;
+  siteName?: string;
 }
 
-export function SEOHead({ title, description, image, url, type = "website", keywords }: SEOHeadProps) {
+export function SEOHead({ 
+  title, 
+  description, 
+  image, 
+  url, 
+  type = "website", 
+  keywords,
+  siteName = "Fmovies"
+}: SEOHeadProps) {
   useEffect(() => {
     // Update title
     document.title = `${title} | fmovies`;
@@ -30,6 +39,8 @@ export function SEOHead({ title, description, image, url, type = "website", keyw
     updateMeta("og:title", title, true);
     updateMeta("og:description", description, true);
     updateMeta("og:type", type, true);
+    updateMeta("og:site_name", siteName, true);
+    updateMeta("twitter:card", "summary_large_image");
     updateMeta("twitter:title", title);
     updateMeta("twitter:description", description);
 
@@ -43,20 +54,22 @@ export function SEOHead({ title, description, image, url, type = "website", keyw
     }
 
     if (url) {
-      updateMeta("og:url", url, true);
+      // Remove query params for canonical URL
+      const cleanUrl = url.split('?')[0];
+      updateMeta("og:url", cleanUrl, true);
       let canonical = document.querySelector('link[rel="canonical"]');
       if (!canonical) {
         canonical = document.createElement("link");
         canonical.setAttribute("rel", "canonical");
         document.head.appendChild(canonical);
       }
-      canonical.setAttribute("href", url);
+      canonical.setAttribute("href", cleanUrl);
     }
 
     return () => {
       document.title = "fmovies - Watch Free Movies & TV Shows Online";
     };
-  }, [title, description, image, url, type, keywords]);
+  }, [title, description, image, url, type, keywords, siteName]);
 
   return null;
 }

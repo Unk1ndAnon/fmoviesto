@@ -159,14 +159,25 @@ export default function TVDetails() {
     { label: show.name },
   ];
 
+  // Generate proper SEO meta tags
+  const currentUrl = `${window.location.origin}${window.location.pathname}`;
+  const backdropImage = show.backdrop_path 
+    ? `https://image.tmdb.org/t/p/original${show.backdrop_path}` 
+    : undefined;
+  
+  const seoTitle = `Watch ${show.name} (${year}) TV Series Online Free – Fmovies`;
+  const seoDescription = `Watch ${show.name} TV series online free in HD on Fmovies. Stream all seasons and episodes instantly.`;
+
   return (
     <>
       <SEOHead
-        title={`${show.name} (${year})`}
-        description={show.overview}
-        image={getBackdropUrl(show.backdrop_path)}
+        title={seoTitle}
+        description={seoDescription}
+        image={backdropImage}
+        url={currentUrl}
         type="video.tv_show"
         keywords={seoKeywords}
+        siteName="Fmovies"
       />
       <TVShowJsonLd show={show} breadcrumbs={breadcrumbs} />
 

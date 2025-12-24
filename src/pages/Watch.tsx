@@ -297,13 +297,32 @@ export default function Watch() {
     navigate(getWatchTVUrl(title, season, parseInt(newEpisode)));
   };
 
+  // Generate proper SEO meta tags
+  const currentUrl = `${window.location.origin}${location.pathname}`;
+  const backdropImage = item.backdrop_path 
+    ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` 
+    : undefined;
+
+  // Meta tag content based on page type
+  const seoTitle = isTV 
+    ? `Watch ${title} – Season ${season} Episode ${episode} Online Free – Fmovies`
+    : `Watch ${title} (${year}) Online Free – Fmovies`;
+  
+  const seoDescription = isTV
+    ? `Watch ${title} Season ${season} Episode ${episode} online free in HD on Fmovies. Stream instantly without signup.`
+    : `Watch ${title} (${year}) online free in HD on Fmovies. Stream movies instantly without signup.`;
+  
+  const seoType = isTV ? "video.episode" : "video.movie";
+
   return (
     <>
       <SEOHead
-        title={`Watch ${title}${isTV ? ` S${season}E${episode}` : ""} - Free HD Streaming`}
-        description={`Watch ${title} online for free in HD quality. ${item.overview?.slice(0, 100)}...`}
-        image={getBackdropUrl(item.backdrop_path)}
-        type={isTV ? "video.tv_show" : "video.movie"}
+        title={seoTitle}
+        description={seoDescription}
+        image={backdropImage}
+        url={currentUrl}
+        type={seoType as "video.movie" | "video.tv_show" | "video.episode"}
+        siteName="Fmovies"
       />
 
       {/* Sync Countdown Overlay for Watch Party */}
