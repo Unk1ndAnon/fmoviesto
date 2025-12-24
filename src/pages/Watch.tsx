@@ -350,6 +350,16 @@ export default function Watch() {
                 </div>
               )}
 
+              {/* Desktop Overview - Below player */}
+              {!watchParty.room && item.overview && (
+                <div className="hidden lg:block mt-4 p-4 rounded-lg bg-card border border-border">
+                  <h3 className="font-semibold text-foreground mb-2">Overview</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {item.overview}
+                  </p>
+                </div>
+              )}
+
               {/* Next/Previous Episode Navigation */}
               {isTV && seasonData?.episodes && (
                 <div className="flex items-center justify-between mt-4 p-3 rounded-lg bg-card border border-border">
@@ -538,16 +548,6 @@ export default function Watch() {
                   voteAverage={item.vote_average}
                   releaseDate={isTV ? (show?.first_air_date || null) : (movie?.release_date || null)}
                 />
-
-                {/* Overview */}
-                {item.overview && (
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">Overview</h3>
-                    <p className="text-sm text-muted-foreground line-clamp-6">
-                      {item.overview}
-                    </p>
-                  </div>
-                )}
               </div>
             )}
 
