@@ -1,7 +1,7 @@
-// Vercel Edge Middleware for bot detection and prerendering
-// This file should be placed at the root of your project for Vercel
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+// Vercel Edge Function for bot detection and prerendering (Vite-compatible)
+export const config = {
+  runtime: 'edge',
+};
 
 const BOT_AGENTS = [
   'googlebot',
@@ -39,19 +39,9 @@ const BOT_AGENTS = [
   'xing-contenttabreceiver',
   'chrome-lighthouse',
   'telegrambot',
-  'messenger'
+  'messenger',
 ];
 
-const IGNORED_EXTENSIONS = [
-  '.js', '.css', '.xml', '.less', '.png', '.jpg', '.jpeg', '.gif',
-  '.pdf', '.doc', '.txt', '.ico', '.rss', '.zip', '.mp3', '.rar',
-  '.exe', '.wmv', '.doc', '.avi', '.ppt', '.mpg', '.mpeg', '.tif',
-  '.wav', '.mov', '.psd', '.ai', '.xls', '.mp4', '.m4a', '.swf',
-  '.dat', '.dmg', '.iso', '.flv', '.m4v', '.torrent', '.woff',
-  '.woff2', '.ttf', '.svg', '.webp'
-];
-
-// Supabase project URL - hardcoded since env vars don't work reliably in edge
 const SUPABASE_URL = 'https://fblsoqabliezhxtswfah.supabase.co';
 
 function isBot(userAgent: string): boolean {
@@ -59,49 +49,25 @@ function isBot(userAgent: string): boolean {
   return BOT_AGENTS.some(bot => ua.includes(bot));
 }
 
-function shouldPrerender(pathname: string, userAgent: string): boolean {
-  if (!isBot(userAgent)) {
-    return false;
-  }
-
-  const lowerPath = pathname.toLowerCase();
-  if (IGNORED_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) {
-    return false;
-  }
-
-  // Prerender movie, TV show, and watch pages:
-  // /movie/{slug} - movie detail pages
-  // /tv/{slug} - TV show detail pages
-  // /watch/{slug} - movie watch pages
-  // /watch/{slug}/season-X-episode-Y - TV episode watch pages
-  if (
-    lowerPath.startsWith('/movie/') || 
-    lowerPath.startsWith('/tv/') || 
-    lowerPath.startsWith('/watch/')
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-export const config = {
-  matcher: ['/movie/:path*', '/tv/:path*', '/watch/:path*'],
-};
-
-export default async function middleware(request: NextRequest) {
+export default async function handler(request: Request) {
   const userAgent = request.headers.get('user-agent') || '';
   const url = new URL(request.url);
 
   // Only prerender for bots
-  if (!shouldPrerender(url.pathname, userAgent)) {
-    return NextResponse.next();
+  if (!isBot(userAgent)) {
+    // Return null to let Vercel serve the SPA
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'x-middleware-next': '1',
+      },
+    });
   }
 
   try {
     console.log(`[Prerender] Bot detected: ${userAgent.slice(0, 50)}`);
     console.log(`[Prerender] URL: ${request.url}`);
-    
+
     const prerenderResponse = await fetch(`${SUPABASE_URL}/functions/v1/prerender`, {
       method: 'POST',
       headers: {
@@ -119,20 +85,26 @@ export default async function middleware(request: NextRequest) {
         const html = await prerenderResponse.text();
         console.log(`[Prerender] Success, HTML length: ${html.length}`);
         return new Response(html, {
+          status: 200,
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
             'X-Prerendered': 'true',
-            'Cache-Control': 'public, max-age=86400',
+            'Cache-Control': 'public, max-age=86400, s-maxage=86400',
           },
         });
       }
     }
-    
+
     console.log(`[Prerender] Edge function returned: ${prerenderResponse.status}`);
   } catch (error) {
-    console.error('[Prerender] Middleware error:', error);
+    console.error('[Prerender] Error:', error);
   }
 
-  // Fall back to normal SPA rendering
-  return NextResponse.next();
+  // Fall back - let Vercel serve the SPA
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'x-middleware-next': '1',
+    },
+  });
 }

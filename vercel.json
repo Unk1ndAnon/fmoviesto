@@ -1,5 +1,41 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/movie/:path*",
+      "destination": "/api/prerender",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(googlebot|bingbot|facebookexternalhit|facebot|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot|slackbot|messenger|pinterest|redditbot|applebot).*"
+        }
+      ]
+    },
+    {
+      "source": "/tv/:path*",
+      "destination": "/api/prerender",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(googlebot|bingbot|facebookexternalhit|facebot|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot|slackbot|messenger|pinterest|redditbot|applebot).*"
+        }
+      ]
+    },
+    {
+      "source": "/watch/:path*",
+      "destination": "/api/prerender",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(googlebot|bingbot|facebookexternalhit|facebot|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot|slackbot|messenger|pinterest|redditbot|applebot).*"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
   ]
 }
