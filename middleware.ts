@@ -1,5 +1,7 @@
 // Vercel Edge Middleware for bot detection and prerendering
 // This file should be placed at the root of your project for Vercel
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 const BOT_AGENTS = [
   'googlebot',
@@ -8,6 +10,7 @@ const BOT_AGENTS = [
   'yandex',
   'baiduspider',
   'facebookexternalhit',
+  'facebot',
   'twitterbot',
   'rogerbot',
   'linkedinbot',
@@ -35,7 +38,8 @@ const BOT_AGENTS = [
   'bitrix link preview',
   'xing-contenttabreceiver',
   'chrome-lighthouse',
-  'telegrambot'
+  'telegrambot',
+  'messenger'
 ];
 
 const IGNORED_EXTENSIONS = [
@@ -46,6 +50,9 @@ const IGNORED_EXTENSIONS = [
   '.dat', '.dmg', '.iso', '.flv', '.m4v', '.torrent', '.woff',
   '.woff2', '.ttf', '.svg', '.webp'
 ];
+
+// Supabase project URL - hardcoded since env vars don't work reliably in edge
+const SUPABASE_URL = 'https://fblsoqabliezhxtswfah.supabase.co';
 
 function isBot(userAgent: string): boolean {
   const ua = userAgent.toLowerCase();
@@ -62,14 +69,14 @@ function shouldPrerender(pathname: string, userAgent: string): boolean {
     return false;
   }
 
-  // Prerender movie, TV show, and watch pages with new URL structure:
+  // Prerender movie, TV show, and watch pages:
   // /movie/{slug} - movie detail pages
-  // /tvshow/{slug} - TV show detail pages
+  // /tv/{slug} - TV show detail pages
   // /watch/{slug} - movie watch pages
-  // /watch/{slug}/{season}-{episode} - TV show watch pages
+  // /watch/{slug}/season-X-episode-Y - TV episode watch pages
   if (
     lowerPath.startsWith('/movie/') || 
-    lowerPath.startsWith('/tvshow/') || 
+    lowerPath.startsWith('/tv/') || 
     lowerPath.startsWith('/watch/')
   ) {
     return true;
@@ -79,48 +86,53 @@ function shouldPrerender(pathname: string, userAgent: string): boolean {
 }
 
 export const config = {
-  matcher: ['/movie/:path*', '/tvshow/:path*', '/watch/:path*'],
+  matcher: ['/movie/:path*', '/tv/:path*', '/watch/:path*'],
 };
 
-export default async function middleware(request: Request) {
+export default async function middleware(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || '';
   const url = new URL(request.url);
 
-  if (shouldPrerender(url.pathname, userAgent)) {
-    // Call our Supabase Edge Function to get pre-rendered content
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    
-    if (supabaseUrl) {
-      try {
-        const prerenderResponse = await fetch(`${supabaseUrl}/functions/v1/prerender`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: request.url,
-            userAgent: userAgent,
-          }),
-        });
-
-        if (prerenderResponse.ok) {
-          const contentType = prerenderResponse.headers.get('content-type');
-          if (contentType?.includes('text/html')) {
-            const html = await prerenderResponse.text();
-            return new Response(html, {
-              headers: {
-                'Content-Type': 'text/html; charset=utf-8',
-                'X-Prerendered': 'true',
-              },
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Prerender middleware error:', error);
-      }
-    }
+  // Only prerender for bots
+  if (!shouldPrerender(url.pathname, userAgent)) {
+    return NextResponse.next();
   }
 
-  // Continue with normal request
-  return undefined;
+  try {
+    console.log(`[Prerender] Bot detected: ${userAgent.slice(0, 50)}`);
+    console.log(`[Prerender] URL: ${request.url}`);
+    
+    const prerenderResponse = await fetch(`${SUPABASE_URL}/functions/v1/prerender`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: request.url,
+        userAgent: userAgent,
+      }),
+    });
+
+    if (prerenderResponse.ok) {
+      const contentType = prerenderResponse.headers.get('content-type');
+      if (contentType?.includes('text/html')) {
+        const html = await prerenderResponse.text();
+        console.log(`[Prerender] Success, HTML length: ${html.length}`);
+        return new Response(html, {
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'X-Prerendered': 'true',
+            'Cache-Control': 'public, max-age=86400',
+          },
+        });
+      }
+    }
+    
+    console.log(`[Prerender] Edge function returned: ${prerenderResponse.status}`);
+  } catch (error) {
+    console.error('[Prerender] Middleware error:', error);
+  }
+
+  // Fall back to normal SPA rendering
+  return NextResponse.next();
 }
