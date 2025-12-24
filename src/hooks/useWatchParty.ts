@@ -110,8 +110,8 @@ interface UseWatchPartyOptions {
   onSyncEvent?: (event: SyncEvent) => void;
 }
 
-const HEARTBEAT_INTERVAL = 5000; // 5 seconds
-const DRIFT_THRESHOLD = 10; // 10 seconds drift threshold
+const HEARTBEAT_INTERVAL = 3000; // 3 seconds for more responsive sync
+const DRIFT_THRESHOLD = 5; // 5 seconds drift threshold (reduced for tighter sync)
 
 export function useWatchParty(options: UseWatchPartyOptions) {
   const { tmdbId, mediaType, season, episode, onPlaybackUpdate, onSyncEvent } = options;
@@ -598,6 +598,23 @@ export function useWatchParty(options: UseWatchPartyOptions) {
     };
   }, []);
 
+  // Broadcast sync from player events (for Vidify integration)
+  const broadcastPlayerEvent = useCallback((eventType: string, currentTime: number) => {
+    if (!isHost || !syncChannelRef.current) return;
+
+    // Map player events to sync events
+    if (eventType === 'play') {
+      sendPlayEvent(currentTime);
+    } else if (eventType === 'pause') {
+      sendPauseEvent(currentTime);
+    } else if (eventType === 'seeking') {
+      sendSeekEvent(currentTime, room?.is_playing || false);
+    }
+
+    // Always send heartbeat with current time
+    sendHeartbeat(currentTime, eventType === 'play' || eventType === 'progress');
+  }, [isHost, room, sendPlayEvent, sendPauseEvent, sendSeekEvent, sendHeartbeat]);
+
   return {
     room,
     members,
@@ -611,6 +628,7 @@ export function useWatchParty(options: UseWatchPartyOptions) {
     lastHostHeartbeat,
     driftSeconds,
     isOutOfSync,
+    viewerTime,
     // Actions
     createRoom,
     joinRoom,
@@ -627,5 +645,6 @@ export function useWatchParty(options: UseWatchPartyOptions) {
     sendSeekEvent,
     initiateCountdownSync,
     updateViewerTime,
+    broadcastPlayerEvent,
   };
 }
