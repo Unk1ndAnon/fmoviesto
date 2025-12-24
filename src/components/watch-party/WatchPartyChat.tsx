@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Smile, X, Crown, Users } from 'lucide-react';
+import { Send, Smile, X, Crown, Users, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { WatchPartyMessage, WatchPartyMember, getDisplayName } from '@/hooks/useWatchParty';
+import { toast } from 'sonner';
 
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '🎉'];
 
@@ -33,8 +34,18 @@ export function WatchPartyChat({
 }: WatchPartyChatProps) {
   const [input, setInput] = useState('');
   const [showEmojis, setShowEmojis] = useState(false);
+  const [copied, setCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const displayName = getDisplayName();
+
+  const copyInviteLink = () => {
+    if (!roomCode) return;
+    const url = `${window.location.origin}${window.location.pathname}?party=${roomCode}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    toast.success('Invite link copied!');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -80,10 +91,30 @@ export function WatchPartyChat({
         </Button>
       </div>
 
-      {/* Room Code */}
+      {/* Room Code & Invite */}
       {roomCode && (
-        <div className="px-4 py-2 bg-primary/10 border-b border-border">
-          <p className="text-xs text-muted-foreground">Room Code</p>
+        <div className="px-4 py-3 bg-primary/10 border-b border-border">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-muted-foreground">Room Code</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={copyInviteLink}
+              className="h-7 gap-1 text-xs"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3 h-3" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3 h-3" />
+                  Copy Invite Link
+                </>
+              )}
+            </Button>
+          </div>
           <p className="font-mono font-bold text-primary">{roomCode}</p>
         </div>
       )}
