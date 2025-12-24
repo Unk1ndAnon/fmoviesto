@@ -578,6 +578,136 @@ export type Database = {
         }
         Relationships: []
       }
+      watch_party_members: {
+        Row: {
+          display_name: string
+          id: string
+          is_host: boolean
+          joined_at: string
+          last_ping: string
+          room_id: string
+          session_id: string
+        }
+        Insert: {
+          display_name?: string
+          id?: string
+          is_host?: boolean
+          joined_at?: string
+          last_ping?: string
+          room_id: string
+          session_id: string
+        }
+        Update: {
+          display_name?: string
+          id?: string
+          is_host?: boolean
+          joined_at?: string
+          last_ping?: string
+          room_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watch_party_members_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "watch_party_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      watch_party_messages: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          message: string
+          message_type: string
+          room_id: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          message: string
+          message_type?: string
+          room_id: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          message?: string
+          message_type?: string
+          room_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watch_party_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "watch_party_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      watch_party_rooms: {
+        Row: {
+          created_at: string
+          episode: number | null
+          host_session_id: string
+          id: string
+          is_playing: boolean
+          is_public: boolean
+          last_activity_at: string
+          max_members: number
+          media_type: string
+          playback_time: number
+          room_code: string | null
+          room_name: string | null
+          season: number | null
+          tmdb_id: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          episode?: number | null
+          host_session_id: string
+          id?: string
+          is_playing?: boolean
+          is_public?: boolean
+          last_activity_at?: string
+          max_members?: number
+          media_type?: string
+          playback_time?: number
+          room_code?: string | null
+          room_name?: string | null
+          season?: number | null
+          tmdb_id: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          episode?: number | null
+          host_session_id?: string
+          id?: string
+          is_playing?: boolean
+          is_public?: boolean
+          last_activity_at?: string
+          max_members?: number
+          media_type?: string
+          playback_time?: number
+          room_code?: string | null
+          room_name?: string | null
+          season?: number | null
+          tmdb_id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       watchlist: {
         Row: {
           created_at: string | null
@@ -619,6 +749,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_room_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

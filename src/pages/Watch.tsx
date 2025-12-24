@@ -1,5 +1,6 @@
-import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useCallback } from "react";
 import { tmdb, getBackdropUrl, getImageUrl } from "@/lib/tmdb";
 import { slugToTitle, generateSlug, getWatchMovieUrl, getWatchTVUrl, getMovieUrl, getTVShowUrl, parseSeasonEpisode } from "@/lib/slug";
 import { Navbar } from "@/components/layout/Navbar";
@@ -9,11 +10,14 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight, Heart, Bookmark, Calendar } from "lucide-react";
+import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight, Heart, Bookmark, Calendar, Users, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites, useWatchlist } from "@/hooks/useUserLists";
 import { toast } from "sonner";
+import { useWatchParty } from "@/hooks/useWatchParty";
+import { WatchPartyButton } from "@/components/watch-party/WatchPartyButton";
+import { WatchPartyChat } from "@/components/watch-party/WatchPartyChat";
 
 function WatchActionButtons({
   itemId,
@@ -104,8 +108,10 @@ function WatchActionButtons({
 
 export default function Watch() {
   const { slug, seasonEpisode } = useParams<{ slug: string; seasonEpisode?: string }>();
+  const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const [showChat, setShowChat] = useState(false);
   
   // Detect TV from URL (has seasonEpisode param)
   const isTV = !!seasonEpisode;
@@ -159,6 +165,68 @@ export default function Watch() {
     ? (show?.first_air_date ? new Date(show.first_air_date).getFullYear() : "")
     : (movie?.release_date ? new Date(movie.release_date).getFullYear() : "");
 
+  // Watch Party hook
+  const watchParty = useWatchParty({
+    tmdbId: itemId || 0,
+    mediaType: isTV ? 'tv' : 'movie',
+    season: isTV ? season : undefined,
+    episode: isTV ? episode : undefined,
+    onPlaybackUpdate: useCallback((time: number, playing: boolean) => {
+      // Handle playback sync for guests
+      console.log('Playback update:', time, playing);
+    }, []),
+  });
+
+  // Check for room code in URL params
+  useEffect(() => {
+    const roomCode = searchParams.get('party');
+    if (roomCode && itemId) {
+      watchParty.joinByCode(roomCode).then((success) => {
+        if (success) {
+          setShowChat(true);
+        }
+      });
+    }
+  }, [searchParams, itemId]);
+
+  // Fetch public rooms when component mounts
+  useEffect(() => {
+    if (itemId) {
+      watchParty.fetchPublicRooms();
+    }
+  }, [itemId, watchParty.fetchPublicRooms]);
+
+  // Handle room creation and show chat
+  const handleCreateRoom = async (isPublic: boolean, name?: string) => {
+    const roomId = await watchParty.createRoom(isPublic, name);
+    if (roomId) {
+      setShowChat(true);
+    }
+    return roomId;
+  };
+
+  // Handle join and show chat
+  const handleJoinRoom = async (roomId: string) => {
+    const success = await watchParty.joinRoom(roomId);
+    if (success) {
+      setShowChat(true);
+    }
+    return success;
+  };
+
+  const handleJoinByCode = async (code: string) => {
+    const success = await watchParty.joinByCode(code);
+    if (success) {
+      setShowChat(true);
+    }
+    return success;
+  };
+
+  const handleLeaveRoom = async () => {
+    await watchParty.leaveRoom();
+    setShowChat(false);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -206,7 +274,35 @@ export default function Watch() {
           {/* Watch Page Layout */}
           <div className="flex flex-col lg:flex-row">
             {/* Main Player Area */}
-            <div className="flex-1 p-4 lg:p-6">
+            <div className={cn("flex-1 p-4 lg:p-6", showChat && watchParty.room && "lg:mr-80")}>
+              {/* Watch Party Button */}
+              <div className="flex items-center justify-end gap-2 mb-4">
+                {watchParty.room ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => setShowChat(!showChat)}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    {showChat ? 'Hide Chat' : 'Show Chat'}
+                    <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                      {watchParty.members.length}
+                    </span>
+                  </Button>
+                ) : (
+                  <WatchPartyButton
+                    onCreateRoom={handleCreateRoom}
+                    onJoinRoom={handleJoinRoom}
+                    onJoinByCode={handleJoinByCode}
+                    onRefreshRooms={watchParty.fetchPublicRooms}
+                    publicRooms={watchParty.publicRooms}
+                    isLoading={watchParty.isLoading}
+                    title={title}
+                  />
+                )}
+              </div>
+
               {/* Player */}
               <VideoPlayer
                 id={itemId}
@@ -415,6 +511,23 @@ export default function Watch() {
                 </div>
               )}
             </div>
+
+            {/* Watch Party Chat Sidebar */}
+            {showChat && watchParty.room && (
+              <div className="fixed right-0 top-16 bottom-0 w-80 z-40 lg:relative lg:top-0">
+                <WatchPartyChat
+                  messages={watchParty.messages}
+                  members={watchParty.members}
+                  isHost={watchParty.isHost}
+                  isConnected={watchParty.isConnected}
+                  roomCode={watchParty.room.room_code}
+                  sessionId={watchParty.sessionId}
+                  onSendMessage={watchParty.sendMessage}
+                  onClose={() => setShowChat(false)}
+                  onLeave={handleLeaveRoom}
+                />
+              </div>
+            )}
           </div>
 
           {/* Similar Content */}
