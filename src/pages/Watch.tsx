@@ -350,6 +350,33 @@ export default function Watch() {
                 </div>
               )}
 
+              {/* Overview - Desktop */}
+              {item.overview && (
+                <div className="hidden lg:block mt-4 p-4 rounded-lg bg-card border border-border">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <h2 className="text-xl font-semibold text-foreground mb-1">{title} {year && `(${year})`}</h2>
+                      <div className="flex items-center gap-3 mb-3">
+                        {item.vote_average > 0 && (
+                          <div className="flex items-center gap-1 text-sm text-rating-gold">
+                            <Star className="w-4 h-4" fill="currentColor" />
+                            {item.vote_average.toFixed(1)}
+                          </div>
+                        )}
+                        {isTV && seasonData?.episodes?.[episode - 1] && (
+                          <span className="text-sm text-muted-foreground">
+                            S{season} E{episode}: {seasonData.episodes[episode - 1].name}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {item.overview}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Next/Previous Episode Navigation */}
               {isTV && seasonData?.episodes && (
                 <div className="flex items-center justify-between mt-4 p-3 rounded-lg bg-card border border-border">
