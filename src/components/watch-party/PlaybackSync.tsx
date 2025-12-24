@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Pause, RotateCcw, Users } from 'lucide-react';
+import { Play, Pause, RotateCcw, Users, Bell, BellOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -14,6 +14,8 @@ interface PlaybackSyncProps {
   memberCount: number;
 }
 
+const AUTO_SYNC_INTERVAL = 30000; // 30 seconds
+
 export function PlaybackSync({
   isHost,
   isConnected,
@@ -24,7 +26,10 @@ export function PlaybackSync({
 }: PlaybackSyncProps) {
   const [localTime, setLocalTime] = useState(currentTime);
   const [localPlaying, setLocalPlaying] = useState(isPlaying);
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+  const [lastSyncTime, setLastSyncTime] = useState<number>(Date.now());
   const lastSyncRef = useRef<number>(Date.now());
+  const autoSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync local state with remote state (for guests)
   useEffect(() => {
@@ -42,8 +47,46 @@ export function PlaybackSync({
         }
       }
       lastSyncRef.current = Date.now();
+      setLastSyncTime(Date.now());
     }
   }, [currentTime, isPlaying, isHost]);
+
+  // Auto-sync reminder for guests
+  useEffect(() => {
+    if (isHost || !isConnected || !autoSyncEnabled) {
+      if (autoSyncIntervalRef.current) {
+        clearInterval(autoSyncIntervalRef.current);
+        autoSyncIntervalRef.current = null;
+      }
+      return;
+    }
+
+    autoSyncIntervalRef.current = setInterval(() => {
+      const timeSinceLastSync = Date.now() - lastSyncTime;
+      if (timeSinceLastSync >= AUTO_SYNC_INTERVAL) {
+        toast.info(
+          <div className="flex flex-col gap-1">
+            <span className="font-medium">🔄 Time to sync!</span>
+            <span className="text-sm">Sync to: {formatTime(currentTime)}</span>
+          </div>,
+          {
+            duration: 5000,
+            action: {
+              label: 'Got it',
+              onClick: () => setLastSyncTime(Date.now()),
+            },
+          }
+        );
+        setLastSyncTime(Date.now());
+      }
+    }, AUTO_SYNC_INTERVAL);
+
+    return () => {
+      if (autoSyncIntervalRef.current) {
+        clearInterval(autoSyncIntervalRef.current);
+      }
+    };
+  }, [isHost, isConnected, autoSyncEnabled, lastSyncTime, currentTime]);
 
   const handlePlayPause = () => {
     if (!isHost) return;
@@ -75,6 +118,13 @@ export function PlaybackSync({
     toast.success('Sync signal sent to all guests', { duration: 2000 });
   };
 
+  const toggleAutoSync = () => {
+    setAutoSyncEnabled(!autoSyncEnabled);
+    toast.info(autoSyncEnabled ? 'Auto-sync reminders disabled' : 'Auto-sync reminders enabled', {
+      duration: 2000,
+    });
+  };
+
   const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -100,9 +150,26 @@ export function PlaybackSync({
             {isHost ? 'You are the host' : 'Synced with host'}
           </span>
         </div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Users className="w-3 h-3" />
-          {memberCount} watching
+        <div className="flex items-center gap-2">
+          {!isHost && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6"
+              onClick={toggleAutoSync}
+              title={autoSyncEnabled ? 'Disable sync reminders' : 'Enable sync reminders'}
+            >
+              {autoSyncEnabled ? (
+                <Bell className="w-3 h-3 text-primary" />
+              ) : (
+                <BellOff className="w-3 h-3 text-muted-foreground" />
+              )}
+            </Button>
+          )}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Users className="w-3 h-3" />
+            {memberCount} watching
+          </div>
         </div>
       </div>
 
@@ -179,9 +246,17 @@ export function PlaybackSync({
             </div>
             <span className="text-sm font-mono">{formatTime(currentTime)}</span>
           </div>
-          <p className="text-xs text-muted-foreground text-center">
-            Sync your player to: <strong>{formatTime(currentTime)}</strong>
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Sync your player to: <strong>{formatTime(currentTime)}</strong>
+            </p>
+            {autoSyncEnabled && (
+              <span className="text-xs text-primary flex items-center gap-1">
+                <Bell className="w-3 h-3" />
+                Auto-remind on
+              </span>
+            )}
+          </div>
         </div>
       )}
     </div>
