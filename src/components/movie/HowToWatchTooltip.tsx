@@ -41,7 +41,7 @@ export function HowToWatchTooltip() {
 
           {/* Step 2 */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-b from-green-400 to-green-600 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-b from-red-400 to-red-600 flex items-center justify-center shrink-0">
               <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
             </div>
             <p className="text-white font-medium">
