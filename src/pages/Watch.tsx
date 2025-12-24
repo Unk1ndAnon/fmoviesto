@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { useWatchParty } from "@/hooks/useWatchParty";
 import { WatchPartyButton } from "@/components/watch-party/WatchPartyButton";
 import { WatchPartyChat } from "@/components/watch-party/WatchPartyChat";
-
+import { PlaybackSync } from "@/components/watch-party/PlaybackSync";
 function WatchActionButtons({
   itemId,
   mediaType,
@@ -336,6 +336,20 @@ export default function Watch() {
                 currentSource={currentSource}
                 onSourceChange={setCurrentSource}
               />
+
+              {/* Playback Sync Controls - Watch Party */}
+              {watchParty.room && (
+                <div className="mt-4">
+                  <PlaybackSync
+                    isHost={watchParty.isHost}
+                    isConnected={watchParty.isConnected}
+                    currentTime={watchParty.room.playback_time}
+                    isPlaying={watchParty.room.is_playing}
+                    onUpdatePlayback={watchParty.updatePlayback}
+                    memberCount={watchParty.members.length}
+                  />
+                </div>
+              )}
 
               {/* Next/Previous Episode Navigation */}
               {isTV && seasonData?.episodes && (
