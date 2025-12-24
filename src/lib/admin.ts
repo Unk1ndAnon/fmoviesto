@@ -60,7 +60,7 @@ export const adminStorage = {
       .select('*')
       .eq('tmdb_id', tmdbId)
       .eq('media_type', type)
-      .single();
+      .maybeSingle();
     
     if (error || !data) {
       return null;
