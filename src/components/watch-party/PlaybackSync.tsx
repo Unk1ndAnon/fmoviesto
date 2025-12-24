@@ -2,9 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
-import { Play, Pause, RotateCcw, Users, Timer, Radio, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Play, Pause, RotateCcw, Users, Timer, Radio, AlertTriangle, CheckCircle, Clock, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import type { HeartbeatData } from '@/hooks/useWatchParty';
 
 interface PlaybackSyncProps {
   isHost: boolean;
@@ -21,6 +22,8 @@ interface PlaybackSyncProps {
   driftSeconds?: number;
   isOutOfSync?: boolean;
   lastHeartbeatTime?: number;
+  lastHostHeartbeat?: HeartbeatData | null;
+  onSendHeartbeat?: (time: number, playing: boolean) => void;
 }
 
 const formatTime = (seconds: number): string => {
@@ -69,12 +72,65 @@ export function PlaybackSync({
   driftSeconds = 0,
   isOutOfSync = false,
   lastHeartbeatTime,
+  lastHostHeartbeat,
+  onSendHeartbeat,
 }: PlaybackSyncProps) {
   const [localTime, setLocalTime] = useState(currentTime);
   const [localPlaying, setLocalPlaying] = useState(isPlaying);
   const [timeInput, setTimeInput] = useState(formatTime(currentTime));
   const [countdownDuration, setCountdownDuration] = useState(5);
+  const [hostLiveTime, setHostLiveTime] = useState(currentTime);
   const lastUpdateRef = useRef<number>(Date.now());
+  const tickIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Calculate and tick host's live time based on heartbeat
+  useEffect(() => {
+    if (isHost) {
+      // For host, use local time
+      setHostLiveTime(localTime);
+      return;
+    }
+
+    if (!lastHostHeartbeat) {
+      setHostLiveTime(currentTime);
+      return;
+    }
+
+    // Calculate initial time from heartbeat
+    const calculateHostTime = () => {
+      const elapsed = (Date.now() - lastHostHeartbeat.timestamp) / 1000;
+      return lastHostHeartbeat.hostPlaying 
+        ? lastHostHeartbeat.hostTime + elapsed 
+        : lastHostHeartbeat.hostTime;
+    };
+
+    setHostLiveTime(calculateHostTime());
+
+    // If host is playing, tick every second
+    if (lastHostHeartbeat.hostPlaying) {
+      tickIntervalRef.current = setInterval(() => {
+        setHostLiveTime(calculateHostTime());
+      }, 1000);
+    }
+
+    return () => {
+      if (tickIntervalRef.current) {
+        clearInterval(tickIntervalRef.current);
+      }
+    };
+  }, [isHost, localTime, lastHostHeartbeat, currentTime]);
+
+  // Host ticking: increment localTime every second when playing
+  useEffect(() => {
+    if (!isHost || !localPlaying) return;
+
+    const hostTickInterval = setInterval(() => {
+      setLocalTime(prev => prev + 1);
+      setTimeInput(formatTime(localTime + 1));
+    }, 1000);
+
+    return () => clearInterval(hostTickInterval);
+  }, [isHost, localPlaying, localTime]);
 
   // Sync local state with remote state
   useEffect(() => {
@@ -83,6 +139,17 @@ export function PlaybackSync({
     setTimeInput(formatTime(currentTime));
     lastUpdateRef.current = Date.now();
   }, [currentTime, isPlaying]);
+
+  // Send heartbeat periodically when host
+  useEffect(() => {
+    if (!isHost || !onSendHeartbeat) return;
+
+    const heartbeatInterval = setInterval(() => {
+      onSendHeartbeat(localTime, localPlaying);
+    }, 3000);
+
+    return () => clearInterval(heartbeatInterval);
+  }, [isHost, localTime, localPlaying, onSendHeartbeat]);
 
   // Handle time input change
   const handleTimeInputChange = (value: string) => {
@@ -154,6 +221,13 @@ export function PlaybackSync({
     toast.success('🔄 Sync signal sent', { duration: 2000 });
   };
 
+  const handleSeekToHostTime = () => {
+    toast.success(`🎯 Seek your video to ${formatTime(Math.round(hostLiveTime))}`, {
+      duration: 5000,
+      description: 'Match the host\'s current playback position',
+    });
+  };
+
   if (!isConnected) return null;
 
   return (
@@ -178,10 +252,31 @@ export function PlaybackSync({
       {/* Host Controls */}
       {isHost && (
         <div className="space-y-4">
+          {/* Live Host Time Display */}
+          <div className="p-3 bg-primary/10 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Your Current Time</span>
+                {localPlaying && (
+                  <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-500 rounded-full animate-pulse">
+                    LIVE
+                  </span>
+                )}
+              </div>
+              <span className="text-2xl font-mono font-bold text-primary">
+                {formatTime(localTime)}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              This time syncs to all viewers in real-time
+            </p>
+          </div>
+
           {/* Time Input */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm text-muted-foreground">Target Time</label>
+              <label className="text-sm text-muted-foreground">Set Target Time</label>
               <div className="flex items-center gap-2">
                 <Input
                   value={timeInput}
@@ -274,10 +369,43 @@ export function PlaybackSync({
       {/* Guest View */}
       {!isHost && (
         <div className="space-y-3">
+          {/* Live Host Time Display */}
+          <div className="p-4 bg-primary/10 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary" />
+                <span className="font-medium">Host's Current Time</span>
+              </div>
+              {lastHostHeartbeat?.hostPlaying && (
+                <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-500 rounded-full animate-pulse">
+                  LIVE
+                </span>
+              )}
+            </div>
+            <div className="text-center">
+              <span className="text-4xl font-mono font-bold text-primary">
+                {formatTime(Math.round(hostLiveTime))}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Seek your video player to this exact time
+            </p>
+          </div>
+
+          {/* Seek to Host Time Button */}
+          <Button 
+            onClick={handleSeekToHostTime}
+            className="w-full gap-2"
+            size="lg"
+          >
+            <Target className="w-5 h-5" />
+            Seek to {formatTime(Math.round(hostLiveTime))}
+          </Button>
+
           {/* Current host status */}
           <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
             <div className="flex items-center gap-3">
-              {isPlaying ? (
+              {lastHostHeartbeat?.hostPlaying ?? isPlaying ? (
                 <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
                   <Play className="w-4 h-4 text-green-500 fill-green-500" />
                 </div>
@@ -288,17 +416,12 @@ export function PlaybackSync({
               )}
               <div>
                 <p className="text-sm font-medium">
-                  Host is {isPlaying ? 'playing' : 'paused'}
+                  Host is {(lastHostHeartbeat?.hostPlaying ?? isPlaying) ? 'playing' : 'paused'}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Sync your video to this time
+                  {(lastHostHeartbeat?.hostPlaying ?? isPlaying) ? 'Press play to sync' : 'Pause your video'}
                 </p>
               </div>
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-mono font-bold text-primary">
-                {formatTime(currentTime)}
-              </p>
             </div>
           </div>
 
@@ -324,8 +447,8 @@ export function PlaybackSync({
 
           {/* Instructions */}
           <div className="text-xs text-muted-foreground space-y-1">
-            <p>• Seek your video player to <strong className="text-foreground">{formatTime(currentTime)}</strong></p>
-            <p>• {isPlaying ? 'Press play to match the host' : 'Pause your video to match the host'}</p>
+            <p>• Seek your video player to <strong className="text-foreground">{formatTime(Math.round(hostLiveTime))}</strong></p>
+            <p>• {(lastHostHeartbeat?.hostPlaying ?? isPlaying) ? 'Press play to match the host' : 'Pause your video to match the host'}</p>
             <p>• Watch for countdown notifications from the host</p>
           </div>
 

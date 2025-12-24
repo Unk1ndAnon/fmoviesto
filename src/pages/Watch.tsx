@@ -374,6 +374,8 @@ export default function Watch() {
                     driftSeconds={watchParty.driftSeconds}
                     isOutOfSync={watchParty.isOutOfSync}
                     lastHeartbeatTime={watchParty.lastHostHeartbeat?.timestamp}
+                    lastHostHeartbeat={watchParty.lastHostHeartbeat}
+                    onSendHeartbeat={watchParty.sendHeartbeat}
                   />
                 </div>
               )}
