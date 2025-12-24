@@ -15,10 +15,12 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites, useWatchlist } from "@/hooks/useUserLists";
 import { toast } from "sonner";
-import { useWatchParty } from "@/hooks/useWatchParty";
+import { useWatchParty, SyncEvent } from "@/hooks/useWatchParty";
 import { WatchPartyButton } from "@/components/watch-party/WatchPartyButton";
 import { WatchPartyChat } from "@/components/watch-party/WatchPartyChat";
 import { PlaybackSync } from "@/components/watch-party/PlaybackSync";
+import { SyncCountdownOverlay } from "@/components/watch-party/SyncCountdownOverlay";
+
 function WatchActionButtons({
   itemId,
   mediaType,
@@ -174,6 +176,9 @@ export default function Watch() {
     isTV ? episode : undefined
   );
 
+  // Sync event state for overlay
+  const [currentSyncEvent, setCurrentSyncEvent] = useState<SyncEvent | null>(null);
+
   // Watch Party hook
   const watchParty = useWatchParty({
     tmdbId: itemId || 0,
@@ -181,8 +186,11 @@ export default function Watch() {
     season: isTV ? season : undefined,
     episode: isTV ? episode : undefined,
     onPlaybackUpdate: useCallback((time: number, playing: boolean) => {
-      // Handle playback sync for guests
       console.log('Playback update:', time, playing);
+    }, []),
+    onSyncEvent: useCallback((event: SyncEvent) => {
+      console.log('Sync event received:', event);
+      setCurrentSyncEvent(event);
     }, []),
   });
 
@@ -276,6 +284,19 @@ export default function Watch() {
         type={isTV ? "video.tv_show" : "video.movie"}
       />
 
+      {/* Sync Countdown Overlay for Watch Party */}
+      {watchParty.room && !watchParty.isHost && (
+        <SyncCountdownOverlay
+          syncEvent={currentSyncEvent}
+          isHost={watchParty.isHost}
+          driftSeconds={watchParty.driftSeconds}
+          isOutOfSync={watchParty.isOutOfSync}
+          hostTime={watchParty.room.playback_time}
+          onResync={() => setCurrentSyncEvent(null)}
+          onDismiss={() => setCurrentSyncEvent(null)}
+        />
+      )}
+
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
 
@@ -346,6 +367,13 @@ export default function Watch() {
                     isPlaying={watchParty.room.is_playing}
                     onUpdatePlayback={watchParty.updatePlayback}
                     memberCount={watchParty.members.length}
+                    onInitiateCountdown={watchParty.initiateCountdownSync}
+                    onSendPlay={watchParty.sendPlayEvent}
+                    onSendPause={watchParty.sendPauseEvent}
+                    onSendSeek={watchParty.sendSeekEvent}
+                    driftSeconds={watchParty.driftSeconds}
+                    isOutOfSync={watchParty.isOutOfSync}
+                    lastHeartbeatTime={watchParty.lastHostHeartbeat?.timestamp}
                   />
                 </div>
               )}

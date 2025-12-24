@@ -83,16 +83,38 @@ export interface WatchPartyMessage {
   created_at: string;
 }
 
+// Sync event types for real-time broadcast
+export type SyncEventType = 'sync_start' | 'sync_countdown' | 'play' | 'pause' | 'seek' | 'heartbeat';
+
+export interface SyncEvent {
+  type: SyncEventType;
+  timestamp: number; // Server timestamp when event was sent
+  targetTime: number; // Target playback time in seconds
+  isPlaying: boolean;
+  countdownSeconds?: number; // For sync_countdown events
+  hostSessionId: string;
+}
+
+export interface HeartbeatData {
+  hostTime: number;
+  hostPlaying: boolean;
+  timestamp: number;
+}
+
 interface UseWatchPartyOptions {
   tmdbId: number;
   mediaType: 'movie' | 'tv';
   season?: number;
   episode?: number;
   onPlaybackUpdate?: (time: number, isPlaying: boolean) => void;
+  onSyncEvent?: (event: SyncEvent) => void;
 }
 
+const HEARTBEAT_INTERVAL = 5000; // 5 seconds
+const DRIFT_THRESHOLD = 10; // 10 seconds drift threshold
+
 export function useWatchParty(options: UseWatchPartyOptions) {
-  const { tmdbId, mediaType, season, episode, onPlaybackUpdate } = options;
+  const { tmdbId, mediaType, season, episode, onPlaybackUpdate, onSyncEvent } = options;
   const sessionId = getSessionId();
   
   const [room, setRoom] = useState<WatchPartyRoom | null>(null);
@@ -103,8 +125,16 @@ export function useWatchParty(options: UseWatchPartyOptions) {
   const [publicRooms, setPublicRooms] = useState<WatchPartyRoom[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
+  // Sync state
+  const [lastHostHeartbeat, setLastHostHeartbeat] = useState<HeartbeatData | null>(null);
+  const [driftSeconds, setDriftSeconds] = useState(0);
+  const [isOutOfSync, setIsOutOfSync] = useState(false);
+  const [viewerTime, setViewerTime] = useState(0);
+  
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const syncChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Generate room code
   const generateRoomCode = (): string => {
@@ -135,6 +165,105 @@ export function useWatchParty(options: UseWatchPartyOptions) {
       setPublicRooms(roomsWithCount);
     }
   }, [tmdbId, mediaType]);
+
+  // Send sync event to all viewers via Supabase Realtime broadcast
+  const sendSyncEvent = useCallback((event: Omit<SyncEvent, 'hostSessionId' | 'timestamp'>) => {
+    if (!room || !isHost || !syncChannelRef.current) return;
+    
+    const fullEvent: SyncEvent = {
+      ...event,
+      hostSessionId: sessionId,
+      timestamp: Date.now(),
+    };
+    
+    syncChannelRef.current.send({
+      type: 'broadcast',
+      event: 'sync_event',
+      payload: fullEvent,
+    });
+    
+    console.log('Sent sync event:', fullEvent);
+  }, [room, isHost, sessionId]);
+
+  // Send heartbeat (host only)
+  const sendHeartbeat = useCallback((time: number, playing: boolean) => {
+    if (!room || !isHost || !syncChannelRef.current) return;
+    
+    const heartbeat: HeartbeatData = {
+      hostTime: time,
+      hostPlaying: playing,
+      timestamp: Date.now(),
+    };
+    
+    syncChannelRef.current.send({
+      type: 'broadcast',
+      event: 'heartbeat',
+      payload: heartbeat,
+    });
+  }, [room, isHost]);
+
+  // Update viewer's current time (for drift detection)
+  const updateViewerTime = useCallback((time: number) => {
+    setViewerTime(time);
+    
+    if (lastHostHeartbeat && !isHost) {
+      // Calculate drift based on time elapsed since heartbeat
+      const elapsed = (Date.now() - lastHostHeartbeat.timestamp) / 1000;
+      const expectedHostTime = lastHostHeartbeat.hostPlaying 
+        ? lastHostHeartbeat.hostTime + elapsed 
+        : lastHostHeartbeat.hostTime;
+      const drift = Math.abs(time - expectedHostTime);
+      setDriftSeconds(drift);
+      setIsOutOfSync(drift > DRIFT_THRESHOLD);
+    }
+  }, [lastHostHeartbeat, isHost]);
+
+  // Initiate countdown sync (host only)
+  const initiateCountdownSync = useCallback((targetTime: number, countdownSeconds: number = 5) => {
+    if (!isHost) return;
+    
+    // First, send countdown event
+    sendSyncEvent({
+      type: 'sync_countdown',
+      targetTime,
+      isPlaying: false,
+      countdownSeconds,
+    });
+    
+    // After countdown, send play event
+    setTimeout(() => {
+      sendSyncEvent({
+        type: 'play',
+        targetTime,
+        isPlaying: true,
+      });
+    }, countdownSeconds * 1000);
+  }, [isHost, sendSyncEvent]);
+
+  // Send play/pause events
+  const sendPlayEvent = useCallback((time: number) => {
+    sendSyncEvent({
+      type: 'play',
+      targetTime: time,
+      isPlaying: true,
+    });
+  }, [sendSyncEvent]);
+
+  const sendPauseEvent = useCallback((time: number) => {
+    sendSyncEvent({
+      type: 'pause',
+      targetTime: time,
+      isPlaying: false,
+    });
+  }, [sendSyncEvent]);
+
+  const sendSeekEvent = useCallback((time: number, isPlaying: boolean) => {
+    sendSyncEvent({
+      type: 'seek',
+      targetTime: time,
+      isPlaying,
+    });
+  }, [sendSyncEvent]);
 
   // Create a new room
   const createRoom = async (isPublic: boolean, roomName?: string): Promise<string | null> => {
@@ -293,6 +422,9 @@ export function useWatchParty(options: UseWatchPartyOptions) {
     setMessages([]);
     setIsHost(false);
     setIsConnected(false);
+    setLastHostHeartbeat(null);
+    setDriftSeconds(0);
+    setIsOutOfSync(false);
   };
 
   // Send message
@@ -310,7 +442,7 @@ export function useWatchParty(options: UseWatchPartyOptions) {
     });
   };
 
-  // Update playback (host only)
+  // Update playback (host only) - also sends sync event
   const updatePlayback = async (time: number, playing: boolean) => {
     if (!room || !isHost) return;
 
@@ -324,7 +456,7 @@ export function useWatchParty(options: UseWatchPartyOptions) {
       .eq('id', room.id);
   };
 
-  // Subscribe to room updates
+  // Subscribe to room updates and sync channel
   useEffect(() => {
     if (!room) return;
 
@@ -350,7 +482,7 @@ export function useWatchParty(options: UseWatchPartyOptions) {
 
     fetchInitialData();
 
-    // Set up realtime subscription
+    // Set up realtime subscription for database changes
     const channel = supabase
       .channel(`watch_party_${room.id}`)
       .on(
@@ -396,6 +528,42 @@ export function useWatchParty(options: UseWatchPartyOptions) {
 
     channelRef.current = channel;
 
+    // Set up sync broadcast channel for low-latency events
+    const syncChannel = supabase.channel(`sync_${room.id}`, {
+      config: {
+        broadcast: { self: false },
+      },
+    });
+
+    syncChannel
+      .on('broadcast', { event: 'sync_event' }, ({ payload }) => {
+        const event = payload as SyncEvent;
+        console.log('Received sync event:', event);
+        
+        if (!isHost && onSyncEvent) {
+          onSyncEvent(event);
+        }
+      })
+      .on('broadcast', { event: 'heartbeat' }, ({ payload }) => {
+        const heartbeat = payload as HeartbeatData;
+        
+        if (!isHost) {
+          setLastHostHeartbeat(heartbeat);
+        }
+      })
+      .subscribe();
+
+    syncChannelRef.current = syncChannel;
+
+    // Host sends heartbeats
+    if (isHost) {
+      heartbeatIntervalRef.current = setInterval(() => {
+        if (room) {
+          sendHeartbeat(room.playback_time, room.is_playing);
+        }
+      }, HEARTBEAT_INTERVAL);
+    }
+
     // Ping to stay active
     pingIntervalRef.current = setInterval(async () => {
       await supabase
@@ -409,11 +577,17 @@ export function useWatchParty(options: UseWatchPartyOptions) {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
+      if (syncChannelRef.current) {
+        supabase.removeChannel(syncChannelRef.current);
+      }
       if (pingIntervalRef.current) {
         clearInterval(pingIntervalRef.current);
       }
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
     };
-  }, [room?.id, isHost, sessionId, onPlaybackUpdate]);
+  }, [room?.id, isHost, sessionId, onPlaybackUpdate, onSyncEvent, sendHeartbeat]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -433,6 +607,11 @@ export function useWatchParty(options: UseWatchPartyOptions) {
     isLoading,
     publicRooms,
     sessionId,
+    // Sync state
+    lastHostHeartbeat,
+    driftSeconds,
+    isOutOfSync,
+    // Actions
     createRoom,
     joinRoom,
     joinByCode,
@@ -440,5 +619,13 @@ export function useWatchParty(options: UseWatchPartyOptions) {
     sendMessage,
     updatePlayback,
     fetchPublicRooms,
+    // Sync actions
+    sendSyncEvent,
+    sendHeartbeat,
+    sendPlayEvent,
+    sendPauseEvent,
+    sendSeekEvent,
+    initiateCountdownSync,
+    updateViewerTime,
   };
 }
