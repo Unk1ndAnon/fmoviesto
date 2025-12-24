@@ -21,6 +21,7 @@ import { WatchPartyButton } from "@/components/watch-party/WatchPartyButton";
 import { WatchPartyChat } from "@/components/watch-party/WatchPartyChat";
 import { PlaybackSync } from "@/components/watch-party/PlaybackSync";
 import { SyncCountdownOverlay } from "@/components/watch-party/SyncCountdownOverlay";
+import { HowToWatchTooltip } from "@/components/movie/HowToWatchTooltip";
 
 function WatchActionButtons({
   itemId,
@@ -397,6 +398,9 @@ export default function Watch() {
                 currentSource={currentSource}
                 onSourceChange={setCurrentSource}
               />
+
+              {/* How to Watch Tooltip - First visit only */}
+              <HowToWatchTooltip />
 
               {/* Playback Sync Controls - Watch Party */}
               {watchParty.room && (
