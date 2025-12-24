@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Shuffle, Heart, Bookmark, LogIn, LogOut, User, Shield, Bell } from "lucide-react";
+import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Shuffle, Heart, Bookmark, LogIn, LogOut, User, Shield, Bell, Share2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -25,6 +25,7 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ShareModal, useShareModal } from "@/components/ShareModal";
 
 function UserMenu() {
   const { user, signOut, loading } = useAuth();
@@ -145,6 +146,7 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
+  const { isOpen: isShareModalOpen, openModal: openShareModal, closeModal: closeShareModal, canShowModal } = useShareModal();
 
   const { data: movieGenres } = useQuery({
     queryKey: ["movieGenres"],
@@ -418,6 +420,19 @@ export function Navbar() {
               placeholder="Search..."
             />
 
+            {/* Share Button - Only visible for non-logged users */}
+            {canShowModal() && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={openShareModal}
+                className="text-muted-foreground hover:text-primary"
+                title="Share"
+              >
+                <Share2 className="w-5 h-5" />
+              </Button>
+            )}
+
             {/* Notification Bell */}
             <NotificationBell />
 
@@ -564,6 +579,9 @@ export function Navbar() {
           </div>
         )}
       </div>
+
+      {/* Share Modal */}
+      <ShareModal isOpen={isShareModalOpen} onClose={closeShareModal} />
     </nav>
   );
 }
