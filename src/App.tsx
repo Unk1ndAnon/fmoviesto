@@ -40,6 +40,7 @@ const TagPage = lazy(() => import("./pages/TagPage"));
 const TagsIndex = lazy(() => import("./pages/TagsIndex"));
 const CollectionPage = lazy(() => import("./pages/CollectionPage"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const Trending = lazy(() => import("./pages/Trending"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -103,6 +104,7 @@ const App = () => (
                   <Route path="/tags" element={<TagsIndex />} />
                   <Route path="/tag/:slug" element={<TagPage />} />
                   <Route path="/collection/:slug" element={<CollectionPage />} />
+                  <Route path="/trending" element={<Trending />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/dmca" element={<DMCA />} />
                   <Route path="/terms" element={<Terms />} />
