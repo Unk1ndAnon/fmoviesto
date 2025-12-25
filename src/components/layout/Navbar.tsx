@@ -349,16 +349,23 @@ export function Navbar() {
                       <p className="text-sm text-muted-foreground mb-4">
                         Stay in the know with the latest trends in movies and TV shows. Discover what's popular.
                       </p>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
                         {trendingCategories.map((category) => (
                           <Link
                             key={category.title}
                             to={category.href}
-                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
+                            className="flex items-start gap-4 p-3 rounded-lg hover:bg-secondary transition-colors group"
                           >
-                            <category.icon className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                              <category.icon className="w-5 h-5 text-primary" />
+                            </div>
                             <div>
-                              <span className="font-medium text-sm">{category.title}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">{category.title}</span>
+                                {category.isNew && (
+                                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-primary text-primary-foreground">NEW</span>
+                                )}
+                              </div>
                               <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{category.description}</p>
                             </div>
                           </Link>
