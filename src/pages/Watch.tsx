@@ -338,6 +338,14 @@ export default function Watch() {
   
   const seoType = isTV ? "video.episode" : "video.movie";
 
+  // Generate SEO keywords from genres and content info
+  const genres = item.genres?.map((g: { name: string }) => g.name) || [];
+  const genreKeywords = genres.join(", ");
+  const baseKeywords = isTV
+    ? `watch ${title} online free, ${title} season ${season} episode ${episode}, ${title} streaming, ${title} free, ${title} HD, watch ${title} full episodes`
+    : `watch ${title} online free, ${title} ${year}, ${title} streaming, ${title} free, ${title} full movie, ${title} HD`;
+  const seoKeywords = `${baseKeywords}, ${genreKeywords}, fmovies, free movies, free tv shows, stream online, no signup`.toLowerCase();
+
   return (
     <>
       <SEOHead
@@ -347,6 +355,7 @@ export default function Watch() {
         url={currentUrl}
         type={seoType as "video.movie" | "video.tv_show" | "video.episode"}
         siteName="Fmovies"
+        keywords={seoKeywords}
       />
 
       {/* Sync Countdown Overlay for Watch Party */}
