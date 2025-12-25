@@ -509,30 +509,30 @@ export function HLSPlayer({ url, title, onLoad, onError, className }: HLSPlayerP
               </DropdownMenu>
             )}
 
-            {/* Quality */}
-            {qualityLevels.length > 1 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-white hover:bg-white/20 gap-1 px-2"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span className="text-xs">{getCurrentQualityLabel()}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-sm border-border z-50">
-                  <DropdownMenuLabel>Quality</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => setQuality(-1)}
-                    className="flex items-center justify-between"
-                  >
-                    Auto
-                    {currentQuality === -1 && <Check className="w-4 h-4 ml-2" />}
-                  </DropdownMenuItem>
-                  {qualityLevels.map((level) => (
+            {/* Quality - Always show */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-white hover:bg-white/20 gap-1 px-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span className="text-xs">{getCurrentQualityLabel()}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-sm border-border z-50">
+                <DropdownMenuLabel>Quality</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setQuality(-1)}
+                  className="flex items-center justify-between"
+                >
+                  Auto
+                  {currentQuality === -1 && <Check className="w-4 h-4 ml-2" />}
+                </DropdownMenuItem>
+                {qualityLevels.length > 0 ? (
+                  qualityLevels.map((level) => (
                     <DropdownMenuItem 
                       key={level.index}
                       onClick={() => setQuality(level.index)}
@@ -541,10 +541,14 @@ export function HLSPlayer({ url, title, onLoad, onError, className }: HLSPlayerP
                       {level.label}
                       {currentQuality === level.index && <Check className="w-4 h-4 ml-2" />}
                     </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                  ))
+                ) : (
+                  <DropdownMenuItem disabled className="text-muted-foreground text-xs">
+                    No quality options available
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Fullscreen */}
             <Button 
