@@ -120,7 +120,7 @@ export function WatchStatsTabs() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h2 className="text-xl md:text-2xl font-semibold text-foreground flex items-center gap-2">
           <Eye className="w-5 h-5 text-primary" />
-          Watching Statistics
+          Now Watching
         </h2>
         
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
