@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Shuffle, Heart, Bookmark, LogIn, LogOut, User, Shield, Bell } from "lucide-react";
+import { Search, Menu, X, Film, Tv, Home, ChevronDown, TrendingUp, LayoutGrid, Sparkles, Play, Calendar, Star, Clapperboard, Users, Shuffle, Heart, Bookmark, LogIn, LogOut, User, Shield, Bell, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -130,8 +130,9 @@ const tvCategories = [
 ];
 
 const trendingCategories = [
-  { title: "Movies", description: "Stay on the pulse of what's hot in the movie scene.", href: "/movies?category=trending", icon: Film },
-  { title: "Shows", description: "Catch up with the world and see what TV shows are trending.", href: "/tv?category=trending", icon: Tv },
+  { title: "Trending on Fmov", description: "See what everyone's watching on Fmov right now.", href: "/trending", icon: Flame, isNew: true },
+  { title: "Trending Movies", description: "Stay on the pulse of what's hot in the movie scene.", href: "/movies?category=trending", icon: Film },
+  { title: "Trending Shows", description: "Catch up with the world and see what TV shows are trending.", href: "/tv?category=trending", icon: Tv },
 ];
 
 const streamingServices = [
