@@ -27,7 +27,7 @@ export default function Trending() {
 
   // Fetch stats for each period with higher limits for longer periods
   const { items: mostWatchedToday, isLoading: todayLoading } = useMostWatched(24, 100);
-  const { items: mostWatchedWeek, isLoading: weekLoading } = useMostWatched(168, 200);
+  const { items: mostWatchedWeek, isLoading: weekLoading } = useMostWatched(168, 100);
   const { items: mostWatchedMonth, isLoading: monthLoading } = useMostWatched(720, 500);
   const { items: mostWatchedYear, isLoading: yearLoading } = useMostWatched(8760, 500);
 
