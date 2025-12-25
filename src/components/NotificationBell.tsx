@@ -27,7 +27,7 @@ function NotificationItem({ notification, onMarkRead, onDelete, onNavigate }: {
       const slug = generateSlug(notification.title);
       const season = notification.season_number || 1;
       const episode = notification.episode_number || 1;
-      return `/watch/tv/${notification.tmdb_id}/${slug}?s=${season}&e=${episode}`;
+      return `/watch/${slug}/${season}-${episode}`;
     }
     
     if (notification.media_type === "tv") {
