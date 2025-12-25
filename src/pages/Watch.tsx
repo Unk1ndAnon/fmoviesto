@@ -466,6 +466,35 @@ export default function Watch() {
                 </div>
               )}
 
+              {/* Next/Previous Episode Navigation - Desktop/Smart TV: Before overview */}
+              {isTV && seasonData?.episodes && (
+                <div className="hidden lg:flex items-center justify-between mt-4 p-3 rounded-lg bg-card border border-border">
+                  <Button
+                    variant="ghost"
+                    disabled={episode <= 1}
+                    onClick={() => navigate(getWatchTVUrl(title, season, episode - 1))}
+                    className="gap-2"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous Episode
+                  </Button>
+                  
+                  <span className="text-sm text-muted-foreground">
+                    S{season} E{episode} / {seasonData.episodes.length}
+                  </span>
+                  
+                  <Button
+                    variant="ghost"
+                    disabled={episode >= seasonData.episodes.length}
+                    onClick={() => navigate(getWatchTVUrl(title, season, episode + 1))}
+                    className="gap-2"
+                  >
+                    Next Episode
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+
               {/* Desktop Overview - Below player */}
               {!watchParty.room && item.overview && (
                 <div className="hidden lg:block mt-4 p-4 rounded-lg bg-card border border-border">
@@ -476,55 +505,29 @@ export default function Watch() {
                 </div>
               )}
 
-              {/* Next/Previous Episode Navigation */}
+              {/* Next/Previous Episode Navigation - Mobile only */}
               {isTV && seasonData?.episodes && (
-                <div className="flex items-center justify-between mt-4 p-3 rounded-lg bg-card border border-border">
-                  {/* Mobile: Icon only */}
+                <div className="flex lg:hidden items-center justify-between mt-4 p-3 rounded-lg bg-card border border-border">
                   <Button
                     variant="ghost"
                     size="icon"
                     disabled={episode <= 1}
                     onClick={() => navigate(getWatchTVUrl(title, season, episode - 1))}
-                    className="lg:hidden"
                   >
                     <ChevronLeft className="w-5 h-5" />
-                  </Button>
-                  
-                  {/* Desktop: Icon + Text */}
-                  <Button
-                    variant="ghost"
-                    disabled={episode <= 1}
-                    onClick={() => navigate(getWatchTVUrl(title, season, episode - 1))}
-                    className="hidden lg:flex gap-2"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    Previous Episode
                   </Button>
                   
                   <span className="text-sm text-muted-foreground">
                     S{season} E{episode} / {seasonData.episodes.length}
                   </span>
                   
-                  {/* Mobile: Icon only */}
                   <Button
                     variant="ghost"
                     size="icon"
                     disabled={episode >= seasonData.episodes.length}
                     onClick={() => navigate(getWatchTVUrl(title, season, episode + 1))}
-                    className="lg:hidden"
                   >
                     <ChevronRight className="w-5 h-5" />
-                  </Button>
-                  
-                  {/* Desktop: Icon + Text */}
-                  <Button
-                    variant="ghost"
-                    disabled={episode >= seasonData.episodes.length}
-                    onClick={() => navigate(getWatchTVUrl(title, season, episode + 1))}
-                    className="hidden lg:flex gap-2"
-                  >
-                    Next Episode
-                    <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
               )}
@@ -532,7 +535,7 @@ export default function Watch() {
               {/* Episode List for TV */}
               {isTV && seasonData?.episodes && (
                 <div className="mt-6">
-                  <h3 className="font-semibold text-foreground mb-4">Episodes</h3>
+                  <h3 className="font-semibold text-foreground mb-4">{title} - Season {season} - Episodes</h3>
                   <div className="grid gap-2 max-h-96 overflow-y-auto">
                     {seasonData.episodes.map((ep) => (
                       <Link
