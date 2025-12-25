@@ -431,6 +431,24 @@ export type Database = {
         }
         Relationships: []
       }
+      share_stats: {
+        Row: {
+          id: string
+          total_shares: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          total_shares?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          total_shares?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_visits: {
         Row: {
           country: string | null
@@ -930,6 +948,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_share_count: { Args: never; Returns: number }
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {

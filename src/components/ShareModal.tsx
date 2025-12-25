@@ -3,9 +3,9 @@ import { X, Send, Link2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "./Logo";
+import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_KEY = "share_modal_dismissed";
-const SHARE_COUNT_KEY = "total_share_count";
 const COOLDOWN_DAYS = 7;
 
 interface ShareModalProps {
@@ -17,19 +17,43 @@ export const ShareModal = ({ isOpen, onClose }: ShareModalProps) => {
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [shareCount, setShareCount] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Fetch total shares from database
   useEffect(() => {
-    const count = localStorage.getItem(SHARE_COUNT_KEY);
-    if (count) {
-      setShareCount(parseInt(count, 10));
-    }
-  }, []);
+    const fetchTotalShares = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('share_stats')
+          .select('total_shares')
+          .eq('id', 'global')
+          .single();
+        
+        if (error) throw error;
+        setShareCount(data?.total_shares || 0);
+      } catch (error) {
+        console.error('Error fetching share stats:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const incrementShareCount = () => {
-    const newCount = shareCount + 1;
-    setShareCount(newCount);
-    localStorage.setItem(SHARE_COUNT_KEY, newCount.toString());
+    if (isOpen) {
+      fetchTotalShares();
+    }
+  }, [isOpen]);
+
+  const incrementShareCount = async () => {
+    try {
+      const { data, error } = await supabase.rpc('increment_share_count');
+      if (error) throw error;
+      setShareCount(data || shareCount + 1);
+    } catch (error) {
+      console.error('Error incrementing share count:', error);
+      // Optimistically update UI even if DB fails
+      setShareCount(prev => prev + 1);
+    }
   };
 
   const handleClose = () => {
@@ -173,7 +197,7 @@ export const ShareModal = ({ isOpen, onClose }: ShareModalProps) => {
         <div className="flex items-center justify-center gap-2 py-3 px-4 bg-zinc-800/30 border border-white/10 rounded-2xl">
           <Send className="w-4 h-4 text-zinc-400" />
           <span className="text-zinc-400 uppercase text-sm tracking-wide font-medium">
-            Total Share : {shareCount.toLocaleString()}
+            Total Share : {isLoading ? "..." : shareCount.toLocaleString()}
           </span>
         </div>
       </div>
