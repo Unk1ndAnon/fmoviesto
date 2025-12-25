@@ -10,7 +10,7 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight, Heart, Bookmark, Calendar, Users, MessageCircle } from "lucide-react";
+import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight, Heart, Bookmark, Calendar, Users, MessageCircle, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites, useWatchlist } from "@/hooks/useUserLists";
@@ -22,6 +22,7 @@ import { WatchPartyChat } from "@/components/watch-party/WatchPartyChat";
 import { PlaybackSync } from "@/components/watch-party/PlaybackSync";
 import { SyncCountdownOverlay } from "@/components/watch-party/SyncCountdownOverlay";
 import { HowToWatchTooltip } from "@/components/movie/HowToWatchTooltip";
+import { useWatchTracking, useWatchingNow } from "@/hooks/useWatchStats";
 
 function WatchActionButtons({
   itemId,
@@ -180,6 +181,28 @@ export default function Watch() {
 
   // Sync event state for overlay
   const [currentSyncEvent, setCurrentSyncEvent] = useState<SyncEvent | null>(null);
+
+  // Watch tracking for statistics
+  const { startTracking, stopTracking, isTracking } = useWatchTracking({
+    tmdbId: itemId || 0,
+    mediaType: isTV ? 'tv' : 'movie',
+    season: isTV ? season : undefined,
+    episode: isTV ? episode : undefined,
+    enabled: !!itemId,
+  });
+
+  // Watch count for this content
+  const { count: watchingCount } = useWatchingNow(itemId || 0, isTV ? 'tv' : 'movie');
+
+  // Start tracking when player loads
+  useEffect(() => {
+    if (itemId) {
+      startTracking();
+    }
+    return () => {
+      stopTracking();
+    };
+  }, [itemId, startTracking, stopTracking]);
 
   // Watch Party hook
   const watchParty = useWatchParty({
@@ -357,11 +380,21 @@ export default function Watch() {
               {/* Server Dropdown & Watch Party - Inline */}
               <div className="flex items-center justify-between gap-2 mb-4">
                 {/* Server Dropdown */}
-                <ServerDropdown
-                  sources={videoSources}
-                  currentSource={currentSource}
-                  onSelectSource={setCurrentSource}
-                />
+                <div className="flex items-center gap-3">
+                  <ServerDropdown
+                    sources={videoSources}
+                    currentSource={currentSource}
+                    onSelectSource={setCurrentSource}
+                  />
+                  
+                  {/* Watching Now Badge */}
+                  {watchingCount > 0 && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/90 text-primary-foreground text-xs font-medium animate-pulse">
+                      <Eye className="w-3 h-3" />
+                      <span>{watchingCount} watching</span>
+                    </div>
+                  )}
+                </div>
 
                 {/* Watch Party Button */}
                 {watchParty.room ? (

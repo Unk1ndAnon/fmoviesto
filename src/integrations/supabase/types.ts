@@ -581,6 +581,39 @@ export type Database = {
         }
         Relationships: []
       }
+      watch_events: {
+        Row: {
+          episode: number | null
+          id: string
+          last_ping: string
+          media_type: string
+          season: number | null
+          session_id: string
+          started_at: string
+          tmdb_id: number
+        }
+        Insert: {
+          episode?: number | null
+          id?: string
+          last_ping?: string
+          media_type: string
+          season?: number | null
+          session_id: string
+          started_at?: string
+          tmdb_id: number
+        }
+        Update: {
+          episode?: number | null
+          id?: string
+          last_ping?: string
+          media_type?: string
+          season?: number | null
+          session_id?: string
+          started_at?: string
+          tmdb_id?: number
+        }
+        Relationships: []
+      }
       watch_party_members: {
         Row: {
           display_name: string
@@ -752,7 +785,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_watch_events: { Args: never; Returns: number }
       generate_room_code: { Args: never; Returns: string }
+      get_all_watching_now: {
+        Args: { p_limit?: number }
+        Returns: {
+          media_type: string
+          tmdb_id: number
+          viewer_count: number
+        }[]
+      }
+      get_most_watched: {
+        Args: { p_hours: number; p_limit?: number }
+        Returns: {
+          media_type: string
+          tmdb_id: number
+          view_count: number
+        }[]
+      }
+      get_watching_now: {
+        Args: { p_media_type: string; p_tmdb_id: number }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

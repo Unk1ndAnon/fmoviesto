@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.check-new-episodes]
 verify_jwt = true
+
+[functions.cleanup-watch-events]
+verify_jwt = false
