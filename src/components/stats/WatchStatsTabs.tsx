@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useQueries } from '@tanstack/react-query';
 import { tmdb, Movie, TVShow } from '@/lib/tmdb';
 import { MovieCard } from '@/components/movie/MovieCard';
@@ -6,7 +7,7 @@ import { WatchedItem, WatchingNowItem, useAllWatchingNow, useMostWatched } from 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, Flame, TrendingUp, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, Flame, TrendingUp, Trophy, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 
 type TabValue = 'now' | 'today' | 'week' | 'month';
 
@@ -118,10 +119,19 @@ export function WatchStatsTabs() {
     <div className="space-y-4">
       {/* Header with Tabs */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h2 className="text-xl md:text-2xl font-semibold text-foreground flex items-center gap-2">
-          <Eye className="w-5 h-5 text-primary" />
-          Now Watching
-        </h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl md:text-2xl font-semibold text-foreground flex items-center gap-2">
+            <Eye className="w-5 h-5 text-primary" />
+            Now Watching
+          </h2>
+          <Link
+            to="/trending"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            View All
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
         
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
           <TabsList className="bg-card/50 border border-border">
