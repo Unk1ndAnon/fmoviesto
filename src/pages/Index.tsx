@@ -59,11 +59,11 @@ export default function Index() {
 
           {/* Content Rows */}
           <div className="container mx-auto px-4 py-8 space-y-4">
+            {/* Now Watching - Tabbed */}
+            <WatchStatsTabs />
+
             {/* Christmas Movies Section */}
             <ChristmasMoviesRow />
-
-            {/* Watching Statistics - Tabbed */}
-            <WatchStatsTabs />
 
             <MovieRow
               title="Trending This Week"
