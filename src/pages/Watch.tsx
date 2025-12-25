@@ -350,6 +350,8 @@ export default function Watch() {
               "flex-1 p-4 lg:p-6",
               showChat && watchParty.room && "lg:pr-[calc(20rem+1.5rem)]"
             )}>
+              {/* Constrained Player Container */}
+              <div className="max-w-5xl mx-auto">
               {/* Server Dropdown & Watch Party - Inline */}
               <div className="flex items-center justify-between gap-2 mb-4">
                 {/* Server Dropdown */}
@@ -579,6 +581,7 @@ export default function Watch() {
                   </div>
                 </div>
               )}
+              </div>
             </div>
 
             {/* Sidebar - Movie/Show Info - RIGHT on desktop (hidden when in watch party) */}
