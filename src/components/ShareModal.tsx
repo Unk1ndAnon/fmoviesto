@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "./Logo";
 import { supabase } from "@/integrations/supabase/client";
-
+import confetti from "canvas-confetti";
 const STORAGE_KEY = "share_modal_dismissed";
 const COOLDOWN_DAYS = 7;
 
@@ -44,7 +44,17 @@ export const ShareModal = ({ isOpen, onClose }: ShareModalProps) => {
     }
   }, [isOpen]);
 
+  const triggerConfetti = () => {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#1877F2', '#25D366', '#10B981', '#ffffff', '#ffd700'],
+    });
+  };
+
   const incrementShareCount = async () => {
+    triggerConfetti();
     try {
       const { data, error } = await supabase.rpc('increment_share_count');
       if (error) throw error;
