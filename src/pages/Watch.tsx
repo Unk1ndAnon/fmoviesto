@@ -344,12 +344,14 @@ export default function Watch() {
 
         <main className="flex-1 pt-16">
           {/* Watch Page Layout - Player left, Sidebar right on desktop */}
-          <div className="flex flex-col lg:flex-row">
+          <div className="flex flex-col lg:flex-row lg:justify-center">
             {/* Main Player Area */}
-            <div className={cn(
-              "flex-1 p-4 lg:p-6",
-              showChat && watchParty.room && "lg:pr-[calc(20rem+1.5rem)]"
-            )}>
+            <div
+              className={cn(
+                "w-full p-4 lg:p-6 lg:w-[56rem] lg:flex-none",
+                showChat && watchParty.room && "lg:pr-[calc(20rem+1.5rem)]"
+              )}
+            >
               {/* Constrained Player Container */}
               <div className="max-w-4xl">
               {/* Server Dropdown & Watch Party - Inline */}
