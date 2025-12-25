@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { tmdb, Movie, TVShow } from '@/lib/tmdb';
-import { MovieRow } from '@/components/movie/MovieRow';
+import { MovieCard } from '@/components/movie/MovieCard';
 import { WatchedItem, WatchingNowItem, useAllWatchingNow, useMostWatched } from '@/hooks/useWatchStats';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, Flame, TrendingUp, Trophy } from 'lucide-react';
+import { Eye, Flame, TrendingUp, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type TabValue = 'now' | 'today' | 'week' | 'month';
 
@@ -62,7 +63,7 @@ export function WatchStatsTabs() {
 
   const isQueriesLoading = movieQueries.some(q => q.isLoading) || tvQueries.some(q => q.isLoading);
 
-  // Map fetched data back to items in order
+  // Map fetched data back to items in order with their media types
   const movieMap = new Map<number, Movie>();
   const tvMap = new Map<number, TVShow>();
   
@@ -80,16 +81,19 @@ export function WatchStatsTabs() {
     }
   });
 
-  // Build combined list preserving order
-  const combinedItems: (Movie | TVShow)[] = items
-    .map(item => {
-      if (item.media_type === 'movie') {
-        return movieMap.get(item.tmdb_id);
+  // Build combined list preserving order with media type
+  type CombinedItem = { item: Movie | TVShow; mediaType: 'movie' | 'tv' };
+  const combinedItems: CombinedItem[] = items
+    .map((watchItem): CombinedItem | null => {
+      if (watchItem.media_type === 'movie') {
+        const movie = movieMap.get(watchItem.tmdb_id);
+        return movie ? { item: movie, mediaType: 'movie' } : null;
       } else {
-        return tvMap.get(item.tmdb_id);
+        const tv = tvMap.get(watchItem.tmdb_id);
+        return tv ? { item: tv, mediaType: 'tv' } : null;
       }
     })
-    .filter((item): item is Movie | TVShow => !!item);
+    .filter((item): item is CombinedItem => item !== null);
 
   const tabConfig = [
     { value: 'now' as TabValue, label: 'Live', icon: Eye, color: 'text-red-500' },
@@ -97,6 +101,18 @@ export function WatchStatsTabs() {
     { value: 'week' as TabValue, label: 'Week', icon: TrendingUp, color: 'text-blue-500' },
     { value: 'month' as TabValue, label: 'Month', icon: Trophy, color: 'text-yellow-500' },
   ];
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      const scrollAmount = 300;
+      scrollRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -124,23 +140,56 @@ export function WatchStatsTabs() {
       </div>
 
       {/* Content */}
-      {isLoading() ? (
+      {isLoading() || isQueriesLoading ? (
         <div className="flex gap-4 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="w-40 h-60 flex-shrink-0 rounded-lg" />
+            <div key={i} className="flex-shrink-0 w-[150px] md:w-[180px]">
+              <Skeleton className="aspect-[2/3] rounded-lg" />
+              <div className="pt-3 space-y-1">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            </div>
           ))}
         </div>
-      ) : items.length === 0 ? (
+      ) : combinedItems.length === 0 ? (
         <div className="py-8 text-center text-muted-foreground">
           <p>No viewing data yet. Start watching to see stats!</p>
         </div>
       ) : (
-        <MovieRow
-          title=""
-          items={combinedItems}
-          type="movie"
-          isLoading={isQueriesLoading}
-        />
+        <div className="relative group/row">
+          <Button
+            variant="glass"
+            size="icon"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/row:opacity-100 transition-opacity -translate-x-2"
+            onClick={() => scroll("left")}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+
+          <Button
+            variant="glass"
+            size="icon"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/row:opacity-100 transition-opacity translate-x-2"
+            onClick={() => scroll("right")}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </Button>
+
+          <div
+            ref={scrollRef}
+            className="flex gap-4 overflow-x-auto scroll-hide pb-4 -mx-4 px-4"
+          >
+            {combinedItems.map(({ item, mediaType }) => (
+              <MovieCard
+                key={item.id}
+                item={item}
+                type={mediaType}
+                className="flex-shrink-0 w-[150px] md:w-[180px]"
+              />
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
