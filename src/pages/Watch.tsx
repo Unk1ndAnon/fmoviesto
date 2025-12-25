@@ -351,7 +351,7 @@ export default function Watch() {
               showChat && watchParty.room && "lg:pr-[calc(20rem+1.5rem)]"
             )}>
               {/* Constrained Player Container */}
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-4xl">
               {/* Server Dropdown & Watch Party - Inline */}
               <div className="flex items-center justify-between gap-2 mb-4">
                 {/* Server Dropdown */}
