@@ -865,12 +865,31 @@ export type Database = {
           viewer_count: number
         }[]
       }
+      get_geo_distribution: {
+        Args: { p_days?: number }
+        Returns: {
+          country: string
+          percentage: number
+          unique_sessions: number
+          visit_count: number
+        }[]
+      }
       get_most_watched: {
         Args: { p_hours: number; p_limit?: number }
         Returns: {
           media_type: string
           tmdb_id: number
           view_count: number
+        }[]
+      }
+      get_realtime_site_stats: {
+        Args: never
+        Returns: {
+          active_visitors: number
+          top_countries: Json
+          top_pages: Json
+          visitors_last_hour: number
+          visitors_today: number
         }[]
       }
       get_referrer_watch_stats: {

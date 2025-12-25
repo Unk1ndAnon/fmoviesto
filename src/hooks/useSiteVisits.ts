@@ -1,11 +1,12 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { getVisitData, parseReferrer, SourceType } from '@/lib/referrer-parser';
+import { getVisitData, SourceType } from '@/lib/referrer-parser';
 
 // Session storage keys
 const VISIT_SESSION_KEY = 'fmov_visit_session';
 const LAST_VISIT_KEY = 'fmov_last_visit';
+const GEO_CACHE_KEY = 'fmov_geo_cache';
 const VISIT_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 
 // Get or create anonymous session ID (reuse from watch stats if available)
@@ -63,8 +64,43 @@ function isFirstVisitOfSession(): boolean {
   return false;
 }
 
+// Get cached geo data or fetch from API
+async function getGeoData(): Promise<{ country: string | null }> {
+  if (typeof window === 'undefined') return { country: null };
+  
+  // Check cache first
+  const cached = sessionStorage.getItem(GEO_CACHE_KEY);
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch {
+      // Continue to fetch
+    }
+  }
+  
+  try {
+    // Use ipapi.co free tier (no API key needed, 1000 requests/day)
+    const response = await fetch('https://ipapi.co/json/', {
+      signal: AbortSignal.timeout(3000), // 3 second timeout
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const geoData = {
+        country: data.country_name || null,
+      };
+      sessionStorage.setItem(GEO_CACHE_KEY, JSON.stringify(geoData));
+      return geoData;
+    }
+  } catch (error) {
+    console.warn('Failed to fetch geo data:', error);
+  }
+  
+  return { country: null };
+}
+
 /**
- * Hook to track site visits with referrer data
+ * Hook to track site visits with referrer and geo data
  */
 export function useSiteVisitTracking(tmdbId?: number, mediaType?: string) {
   const location = useLocation();
@@ -97,11 +133,15 @@ export function useSiteVisitTracking(tmdbId?: number, mediaType?: string) {
         }
       }
 
+      // Get geo data (cached or fresh)
+      const geoData = await getGeoData();
+
       try {
         const { error } = await supabase
           .from('site_visits')
           .insert({
             session_id: sessionId,
+            country: geoData.country,
             ...visitData,
           });
 
@@ -153,6 +193,20 @@ export function useReferrerAnalytics(days: number = 30) {
     }>;
   }, [days]);
 
+  const fetchGeoDistribution = useCallback(async () => {
+    const { data, error } = await supabase.rpc('get_geo_distribution', {
+      p_days: days,
+    });
+    
+    if (error) throw error;
+    return data as Array<{
+      country: string;
+      visit_count: number;
+      unique_sessions: number;
+      percentage: number;
+    }>;
+  }, [days]);
+
   const fetchReferrerWatchStats = useCallback(async (limit: number = 50) => {
     const { data, error } = await supabase.rpc('get_referrer_watch_stats', {
       p_days: days,
@@ -185,7 +239,7 @@ export function useReferrerAnalytics(days: number = 30) {
     
     const { data, error } = await supabase
       .from('site_visits')
-      .select('session_id, referrer_domain, source_type, page_path, tmdb_id, media_type, visited_at')
+      .select('session_id, referrer_domain, source_type, page_path, tmdb_id, media_type, visited_at, country')
       .gte('visited_at', fiveMinutesAgo)
       .order('visited_at', { ascending: false });
     
@@ -202,11 +256,60 @@ export function useReferrerAnalytics(days: number = 30) {
     return Array.from(uniqueSessions.values());
   }, []);
 
+  const fetchRealtimeStats = useCallback(async () => {
+    const { data, error } = await supabase.rpc('get_realtime_site_stats');
+    
+    if (error) throw error;
+    return data?.[0] as {
+      active_visitors: number;
+      visitors_last_hour: number;
+      visitors_today: number;
+      top_countries: Array<{ country: string; count: number }>;
+      top_pages: Array<{ path: string; count: number }>;
+    } | null;
+  }, []);
+
   return {
     fetchTopReferrers,
     fetchSourceDistribution,
+    fetchGeoDistribution,
     fetchReferrerWatchStats,
     fetchRecentVisits,
     fetchLiveVisitors,
+    fetchRealtimeStats,
   };
+}
+
+/**
+ * Hook for real-time site stats with auto-refresh
+ */
+export function useRealtimeSiteStats(refreshInterval: number = 30000) {
+  const [stats, setStats] = useState<{
+    active_visitors: number;
+    visitors_last_hour: number;
+    visitors_today: number;
+    top_countries: Array<{ country: string; count: number }>;
+    top_pages: Array<{ path: string; count: number }>;
+  } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { fetchRealtimeStats } = useReferrerAnalytics();
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const data = await fetchRealtimeStats();
+        setStats(data);
+      } catch (error) {
+        console.error('Failed to fetch realtime stats:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadStats();
+    const interval = setInterval(loadStats, refreshInterval);
+    return () => clearInterval(interval);
+  }, [fetchRealtimeStats, refreshInterval]);
+
+  return { stats, isLoading };
 }

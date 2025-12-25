@@ -6,10 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useReferrerAnalytics } from '@/hooks/useSiteVisits';
+import { useReferrerAnalytics, useRealtimeSiteStats } from '@/hooks/useSiteVisits';
 import { getSourceTypeName, getSourceTypeIcon, SourceType } from '@/lib/referrer-parser';
-import { Link2, PieChart, Activity, Download, RefreshCw, ExternalLink, Eye, Users, TrendingUp } from 'lucide-react';
-import { PieChart as RechartsePieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Link2, PieChart, Activity, Download, RefreshCw, ExternalLink, Eye, Users, TrendingUp, Globe, Radio, MapPin, Clock } from 'lucide-react';
+import { PieChart as RechartsePieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const TIME_PERIODS = [
   { value: '1', label: 'Today' },
@@ -28,6 +28,8 @@ const SOURCE_COLORS: Record<SourceType, string> = {
   internal: '#14b8a6',
 };
 
+const GEO_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#ef4444', '#14b8a6', '#ec4899', '#8b5cf6', '#06b6d4', '#84cc16'];
+
 interface TopReferrer {
   referrer_domain: string;
   visit_count: number;
@@ -38,6 +40,13 @@ interface TopReferrer {
 interface SourceDistribution {
   source_type: SourceType;
   visit_count: number;
+  percentage: number;
+}
+
+interface GeoDistribution {
+  country: string;
+  visit_count: number;
+  unique_sessions: number;
   percentage: number;
 }
 
@@ -57,20 +66,57 @@ interface LiveVisitor {
   tmdb_id: number | null;
   media_type: string | null;
   visited_at: string;
+  country: string | null;
+}
+
+// Country flag emoji helper
+function getCountryFlag(country: string): string {
+  const flags: Record<string, string> = {
+    'United States': '🇺🇸',
+    'United Kingdom': '🇬🇧',
+    'Germany': '🇩🇪',
+    'France': '🇫🇷',
+    'Canada': '🇨🇦',
+    'Australia': '🇦🇺',
+    'India': '🇮🇳',
+    'Brazil': '🇧🇷',
+    'Japan': '🇯🇵',
+    'South Korea': '🇰🇷',
+    'Mexico': '🇲🇽',
+    'Spain': '🇪🇸',
+    'Italy': '🇮🇹',
+    'Netherlands': '🇳🇱',
+    'Poland': '🇵🇱',
+    'Russia': '🇷🇺',
+    'China': '🇨🇳',
+    'Indonesia': '🇮🇩',
+    'Philippines': '🇵🇭',
+    'Turkey': '🇹🇷',
+    'Croatia': '🇭🇷',
+    'Serbia': '🇷🇸',
+    'Bosnia and Herzegovina': '🇧🇦',
+    'Slovenia': '🇸🇮',
+    'Unknown': '🌍',
+  };
+  return flags[country] || '🌍';
 }
 
 export function ReferrerAnalytics() {
   const [days, setDays] = useState(30);
   const [topReferrers, setTopReferrers] = useState<TopReferrer[]>([]);
   const [sourceDistribution, setSourceDistribution] = useState<SourceDistribution[]>([]);
+  const [geoDistribution, setGeoDistribution] = useState<GeoDistribution[]>([]);
   const [watchStats, setWatchStats] = useState<ReferrerWatchStats[]>([]);
   const [liveVisitors, setLiveVisitors] = useState<LiveVisitor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('referrers');
+  const [activeTab, setActiveTab] = useState('realtime');
+
+  const { stats: realtimeStats, isLoading: realtimeLoading } = useRealtimeSiteStats(15000);
 
   const {
     fetchTopReferrers,
     fetchSourceDistribution,
+    fetchGeoDistribution,
     fetchReferrerWatchStats,
     fetchLiveVisitors,
   } = useReferrerAnalytics(days);
@@ -78,15 +124,17 @@ export function ReferrerAnalytics() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [referrers, distribution, stats, live] = await Promise.all([
+      const [referrers, distribution, geo, stats, live] = await Promise.all([
         fetchTopReferrers(100),
         fetchSourceDistribution(),
+        fetchGeoDistribution(),
         fetchReferrerWatchStats(50),
         fetchLiveVisitors(),
       ]);
       
       setTopReferrers(referrers || []);
       setSourceDistribution(distribution || []);
+      setGeoDistribution(geo || []);
       setWatchStats(stats || []);
       setLiveVisitors(live || []);
     } catch (error) {
@@ -102,7 +150,7 @@ export function ReferrerAnalytics() {
 
   // Auto-refresh live visitors
   useEffect(() => {
-    if (activeTab !== 'live') return;
+    if (activeTab !== 'live' && activeTab !== 'realtime') return;
     
     const interval = setInterval(async () => {
       try {
@@ -111,7 +159,7 @@ export function ReferrerAnalytics() {
       } catch (error) {
         console.error('Failed to refresh live visitors:', error);
       }
-    }, 30000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [activeTab, fetchLiveVisitors]);
@@ -141,8 +189,8 @@ export function ReferrerAnalytics() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Referrer Analytics</h2>
-          <p className="text-muted-foreground">Track where your visitors come from</p>
+          <h2 className="text-2xl font-bold">Traffic Analytics</h2>
+          <p className="text-muted-foreground">Real-time visitors, geo data & referrer tracking</p>
         </div>
         <div className="flex gap-2">
           <Select value={days.toString()} onValueChange={(v) => setDays(parseInt(v))}>
@@ -167,16 +215,27 @@ export function ReferrerAnalytics() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Real-time Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="border-green-500/30 bg-green-500/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2">
+              <Radio className="w-5 h-5 text-green-500 animate-pulse" />
+              <span className="text-sm text-muted-foreground">Active Now</span>
+            </div>
+            <p className="text-3xl font-bold mt-2 text-green-500">
+              {realtimeLoading ? <Skeleton className="h-9 w-16" /> : realtimeStats?.active_visitors || 0}
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
-              <Eye className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Total Visits</span>
+              <Clock className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Last Hour</span>
             </div>
             <p className="text-2xl font-bold mt-2">
-              {isLoading ? <Skeleton className="h-8 w-20" /> : totalVisits.toLocaleString()}
+              {realtimeLoading ? <Skeleton className="h-8 w-16" /> : realtimeStats?.visitors_last_hour || 0}
             </p>
           </CardContent>
         </Card>
@@ -184,32 +243,21 @@ export function ReferrerAnalytics() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Unique Sessions</span>
+              <span className="text-sm text-muted-foreground">Today</span>
             </div>
             <p className="text-2xl font-bold mt-2">
-              {isLoading ? <Skeleton className="h-8 w-20" /> : totalSessions.toLocaleString()}
+              {realtimeLoading ? <Skeleton className="h-8 w-16" /> : realtimeStats?.visitors_today || 0}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
-              <Link2 className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Unique Domains</span>
+              <Globe className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Countries (Last Hour)</span>
             </div>
             <p className="text-2xl font-bold mt-2">
-              {isLoading ? <Skeleton className="h-8 w-20" /> : topReferrers.length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Live Visitors</span>
-            </div>
-            <p className="text-2xl font-bold mt-2">
-              {isLoading ? <Skeleton className="h-8 w-20" /> : liveVisitors.length}
+              {realtimeLoading ? <Skeleton className="h-8 w-16" /> : realtimeStats?.top_countries?.length || 0}
             </p>
           </CardContent>
         </Card>
@@ -217,24 +265,238 @@ export function ReferrerAnalytics() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="realtime" className="gap-2">
+            <Radio className="w-4 h-4" />
+            <span className="hidden sm:inline">Realtime</span>
+          </TabsTrigger>
+          <TabsTrigger value="geo" className="gap-2">
+            <Globe className="w-4 h-4" />
+            <span className="hidden sm:inline">Geography</span>
+          </TabsTrigger>
           <TabsTrigger value="referrers" className="gap-2">
             <Link2 className="w-4 h-4" />
-            Referrers
+            <span className="hidden sm:inline">Referrers</span>
           </TabsTrigger>
           <TabsTrigger value="sources" className="gap-2">
             <PieChart className="w-4 h-4" />
-            Sources
+            <span className="hidden sm:inline">Sources</span>
           </TabsTrigger>
           <TabsTrigger value="performance" className="gap-2">
             <TrendingUp className="w-4 h-4" />
-            Performance
-          </TabsTrigger>
-          <TabsTrigger value="live" className="gap-2">
-            <Activity className="w-4 h-4" />
-            Live
+            <span className="hidden sm:inline">Performance</span>
           </TabsTrigger>
         </TabsList>
+
+        {/* Realtime Tab */}
+        <TabsContent value="realtime" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Live Visitors */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Radio className="w-5 h-5 text-green-500 animate-pulse" />
+                  Live Visitors
+                  <Badge variant="secondary" className="ml-2">{liveVisitors.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : liveVisitors.length > 0 ? (
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    {liveVisitors.map((visitor, index) => (
+                      <div
+                        key={visitor.session_id}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border"
+                      >
+                        <div className="flex-shrink-0 text-2xl">
+                          {getCountryFlag(visitor.country || 'Unknown')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium truncate text-sm">
+                              {visitor.page_path}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                            {visitor.country && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {visitor.country}
+                              </span>
+                            )}
+                            {visitor.referrer_domain && (
+                              <span>from {visitor.referrer_domain}</span>
+                            )}
+                            <Badge variant="outline" className="text-xs">
+                              {getSourceTypeIcon(visitor.source_type as SourceType)} {visitor.source_type}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(visitor.visited_at).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">
+                    No active visitors right now
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Top Pages & Countries in Real-time */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Pages (Last Hour)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {realtimeLoading ? (
+                    <div className="space-y-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Skeleton key={i} className="h-8 w-full" />
+                      ))}
+                    </div>
+                  ) : realtimeStats?.top_pages && realtimeStats.top_pages.length > 0 ? (
+                    <div className="space-y-2">
+                      {realtimeStats.top_pages.slice(0, 8).map((page, i) => (
+                        <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
+                          <span className="truncate text-sm max-w-[200px]">{page.path}</span>
+                          <Badge variant="secondary">{page.count}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">No data</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Countries (Last Hour)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {realtimeLoading ? (
+                    <div className="space-y-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Skeleton key={i} className="h-8 w-full" />
+                      ))}
+                    </div>
+                  ) : realtimeStats?.top_countries && realtimeStats.top_countries.length > 0 ? (
+                    <div className="space-y-2">
+                      {realtimeStats.top_countries.slice(0, 8).map((c, i) => (
+                        <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
+                          <span className="flex items-center gap-2">
+                            <span className="text-lg">{getCountryFlag(c.country)}</span>
+                            <span className="text-sm">{c.country}</span>
+                          </span>
+                          <Badge variant="secondary">{c.count}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">No data</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Geography Tab */}
+        <TabsContent value="geo" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Visitors by Country</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : geoDistribution.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={geoDistribution.slice(0, 10)} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis type="category" dataKey="country" width={100} tick={{ fontSize: 12 }} />
+                      <Tooltip 
+                        formatter={(value: number) => [value.toLocaleString(), 'Visits']}
+                      />
+                      <Bar dataKey="visit_count" fill="#3b82f6" radius={[0, 4, 4, 0]}>
+                        {geoDistribution.slice(0, 10).map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={GEO_COLORS[index % GEO_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                    No geo data available
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>All Countries</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(10)].map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="max-h-[400px] overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Country</TableHead>
+                          <TableHead className="text-right">Visits</TableHead>
+                          <TableHead className="text-right">Sessions</TableHead>
+                          <TableHead className="text-right">%</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {geoDistribution.map((geo, index) => (
+                          <TableRow key={index}>
+                            <TableCell>
+                              <span className="flex items-center gap-2">
+                                <span className="text-lg">{getCountryFlag(geo.country)}</span>
+                                <span>{geo.country}</span>
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">{geo.visit_count.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{geo.unique_sessions.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{geo.percentage}%</TableCell>
+                          </TableRow>
+                        ))}
+                        {geoDistribution.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                              No geo data available
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         {/* Referrers Tab */}
         <TabsContent value="referrers" className="mt-6">
@@ -357,7 +619,7 @@ export function ReferrerAnalytics() {
                   {sourceDistribution.map((source) => (
                     <div key={source.source_type} className="flex items-center gap-4">
                       <div
-                        className="w-4 h-4 rounded-full"
+                        className="w-4 h-4 rounded-full flex-shrink-0"
                         style={{ backgroundColor: SOURCE_COLORS[source.source_type] }}
                       />
                       <div className="flex-1">
@@ -435,57 +697,6 @@ export function ReferrerAnalytics() {
                   </TableBody>
                 </Table>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Live Tab */}
-        <TabsContent value="live" className="mt-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                  </span>
-                  Live Visitors (Last 5 minutes)
-                </CardTitle>
-                <Badge variant="outline">{liveVisitors.length} active</Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {liveVisitors.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No active visitors right now
-                  </p>
-                ) : (
-                  liveVisitors.map((visitor, index) => (
-                    <div
-                      key={visitor.session_id + index}
-                      className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">
-                          {getSourceTypeIcon(visitor.source_type as SourceType)}
-                        </span>
-                        <div>
-                          <p className="font-medium">
-                            User from {visitor.referrer_domain || 'direct'}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {visitor.page_path}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right text-sm text-muted-foreground">
-                        {new Date(visitor.visited_at).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
