@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const TMDB_API_KEY = Deno.env.get('TMDB_API_KEY');
-const SITE_URL = 'https://fmovies-sigma.vercel.app';
+const SITE_URL = 'https://fmov.online';
 const SITE_NAME = 'Fmovies';
 
 const corsHeaders = {
@@ -101,12 +101,20 @@ function slugToTitle(slug: string): string {
     .join(' ');
 }
 
-// Parse season/episode from URL format like "season-1-episode-5"
+// Parse season/episode from URL format like "1-5" (season-episode) or "season-1-episode-5"
 function parseSeasonEpisode(seasonEpisode: string): { season: number; episode: number } {
-  const match = seasonEpisode.match(/season-(\d+)-episode-(\d+)/i);
-  if (match) {
-    return { season: parseInt(match[1]), episode: parseInt(match[2]) };
+  // New format: "1-5" for season 1 episode 5
+  const simpleMatch = seasonEpisode.match(/^(\d+)-(\d+)$/);
+  if (simpleMatch) {
+    return { season: parseInt(simpleMatch[1]), episode: parseInt(simpleMatch[2]) };
   }
+  
+  // Legacy format: "season-1-episode-5"
+  const legacyMatch = seasonEpisode.match(/season-(\d+)-episode-(\d+)/i);
+  if (legacyMatch) {
+    return { season: parseInt(legacyMatch[1]), episode: parseInt(legacyMatch[2]) };
+  }
+  
   return { season: 1, episode: 1 };
 }
 
@@ -179,6 +187,44 @@ function extractYear(dateStr: string | null | undefined): string {
   return dateStr.split('-')[0] || '';
 }
 
+// Generate SEO keywords for movies
+function generateMovieKeywords(title: string, year: string, genres: string[] = []): string {
+  const titleLower = title.toLowerCase();
+  const keywords = [
+    `watch ${titleLower} online`,
+    `watch ${titleLower} free`,
+    `watch ${titleLower} fmovies`,
+    `${titleLower} full movie`,
+    `${titleLower} streaming free`,
+    `watch ${titleLower} hd`,
+    `${titleLower} ${year} watch online`,
+    `${titleLower} ${year} full movie`,
+    `watch ${titleLower} without sign up`,
+    `gledaj ${titleLower} online`,
+    `${titleLower} sa prevodom`,
+    ...genres.map(g => `${g.toLowerCase()} movies`),
+  ];
+  return keywords.slice(0, 30).join(', ');
+}
+
+// Generate SEO keywords for TV shows
+function generateTVKeywords(title: string, season: number, episode: number, genres: string[] = []): string {
+  const titleLower = title.toLowerCase();
+  const keywords = [
+    `watch ${titleLower} online`,
+    `watch ${titleLower} free`,
+    `watch ${titleLower} season ${season}`,
+    `${titleLower} season ${season} episode ${episode}`,
+    `${titleLower} s${season}e${episode}`,
+    `${titleLower} streaming free`,
+    `watch ${titleLower} all episodes`,
+    `gledaj ${titleLower} online`,
+    `${titleLower} sa prevodom`,
+    ...genres.map(g => `${g.toLowerCase()} tv shows`),
+  ];
+  return keywords.slice(0, 30).join(', ');
+}
+
 // Generate meta HTML for movies
 function generateMovieMetaHtml(movie: any, fullUrl: string): string {
   const title = movie.title || 'Unknown Movie';
@@ -186,9 +232,11 @@ function generateMovieMetaHtml(movie: any, fullUrl: string): string {
   const overview = movie.overview || '';
   const backdropPath = movie.backdrop_path;
   const imageUrl = backdropPath ? `https://image.tmdb.org/t/p/original${backdropPath}` : '';
+  const genres = movie.genres?.map((g: any) => g.name) || [];
   
   const pageTitle = `Watch ${title} (${year}) Online Free – ${SITE_NAME}`;
   const description = `Watch ${title} (${year}) online free in HD on ${SITE_NAME}. Stream movies instantly without signup.`;
+  const keywords = generateMovieKeywords(title, year, genres);
   
   return `<!DOCTYPE html>
 <html lang="en">
@@ -197,6 +245,7 @@ function generateMovieMetaHtml(movie: any, fullUrl: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(pageTitle)}</title>
   <meta name="description" content="${escapeHtml(description)}">
+  <meta name="keywords" content="${escapeHtml(keywords)}">
   
   <meta property="og:type" content="video.movie">
   <meta property="og:site_name" content="${SITE_NAME}">
@@ -211,11 +260,24 @@ function generateMovieMetaHtml(movie: any, fullUrl: string): string {
   ${imageUrl ? `<meta name="twitter:image" content="${escapeHtml(imageUrl)}">` : ''}
   
   <link rel="canonical" href="${escapeHtml(fullUrl)}">
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Movie",
+    "name": "${escapeHtml(title)}",
+    "description": "${escapeHtml(overview.substring(0, 200))}",
+    "image": "${escapeHtml(imageUrl)}",
+    "datePublished": "${movie.release_date || ''}",
+    ${movie.vote_average ? `"aggregateRating": { "@type": "AggregateRating", "ratingValue": "${movie.vote_average.toFixed(1)}", "bestRating": "10", "ratingCount": ${movie.vote_count || 0} },` : ''}
+    "genre": ${JSON.stringify(genres)},
+    "potentialAction": { "@type": "WatchAction", "target": "${escapeHtml(fullUrl)}" }
+  }
+  </script>
 </head>
 <body>
   <h1>${escapeHtml(pageTitle)}</h1>
   <p>${escapeHtml(overview)}</p>
-  <script>window.location.href = "${escapeHtml(fullUrl)}";</script>
 </body>
 </html>`;
 }
@@ -227,9 +289,11 @@ function generateTVShowMetaHtml(show: any, fullUrl: string): string {
   const overview = show.overview || '';
   const backdropPath = show.backdrop_path;
   const imageUrl = backdropPath ? `https://image.tmdb.org/t/p/original${backdropPath}` : '';
+  const genres = show.genres?.map((g: any) => g.name) || [];
   
   const pageTitle = `Watch ${name} (${year}) TV Series Online Free – ${SITE_NAME}`;
   const description = `Watch ${name} TV series online free in HD on ${SITE_NAME}. Stream all seasons and episodes instantly.`;
+  const keywords = generateTVKeywords(name, 1, 1, genres);
   
   return `<!DOCTYPE html>
 <html lang="en">
@@ -238,6 +302,7 @@ function generateTVShowMetaHtml(show: any, fullUrl: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(pageTitle)}</title>
   <meta name="description" content="${escapeHtml(description)}">
+  <meta name="keywords" content="${escapeHtml(keywords)}">
   
   <meta property="og:type" content="video.tv_show">
   <meta property="og:site_name" content="${SITE_NAME}">
@@ -252,11 +317,24 @@ function generateTVShowMetaHtml(show: any, fullUrl: string): string {
   ${imageUrl ? `<meta name="twitter:image" content="${escapeHtml(imageUrl)}">` : ''}
   
   <link rel="canonical" href="${escapeHtml(fullUrl)}">
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TVSeries",
+    "name": "${escapeHtml(name)}",
+    "description": "${escapeHtml(overview.substring(0, 200))}",
+    "image": "${escapeHtml(imageUrl)}",
+    "datePublished": "${show.first_air_date || ''}",
+    "numberOfSeasons": ${show.number_of_seasons || 1},
+    ${show.vote_average ? `"aggregateRating": { "@type": "AggregateRating", "ratingValue": "${show.vote_average.toFixed(1)}", "bestRating": "10", "ratingCount": ${show.vote_count || 0} },` : ''}
+    "genre": ${JSON.stringify(genres)}
+  }
+  </script>
 </head>
 <body>
   <h1>${escapeHtml(pageTitle)}</h1>
   <p>${escapeHtml(overview)}</p>
-  <script>window.location.href = "${escapeHtml(fullUrl)}";</script>
 </body>
 </html>`;
 }
@@ -268,10 +346,12 @@ function generateEpisodeMetaHtml(show: any, episode: any, season: number, episod
   const overview = episode?.overview || show.overview || '';
   const backdropPath = episode?.still_path || show.backdrop_path;
   const imageUrl = backdropPath ? `https://image.tmdb.org/t/p/original${backdropPath}` : '';
+  const genres = show.genres?.map((g: any) => g.name) || [];
   
   const pageTitle = `Watch ${showName} – Season ${season} Episode ${episodeNum} Online Free – ${SITE_NAME}`;
   const ogTitle = `Watch ${showName} – S${season}E${episodeNum} Online Free – ${SITE_NAME}`;
   const description = `Watch ${showName} Season ${season} Episode ${episodeNum} online free in HD on ${SITE_NAME}. Stream instantly without signup.`;
+  const keywords = generateTVKeywords(showName, season, episodeNum, genres);
   
   return `<!DOCTYPE html>
 <html lang="en">
@@ -280,6 +360,7 @@ function generateEpisodeMetaHtml(show: any, episode: any, season: number, episod
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(pageTitle)}</title>
   <meta name="description" content="${escapeHtml(description)}">
+  <meta name="keywords" content="${escapeHtml(keywords)}">
   
   <meta property="og:type" content="video.episode">
   <meta property="og:site_name" content="${SITE_NAME}">
@@ -294,12 +375,31 @@ function generateEpisodeMetaHtml(show: any, episode: any, season: number, episod
   ${imageUrl ? `<meta name="twitter:image" content="${escapeHtml(imageUrl)}">` : ''}
   
   <link rel="canonical" href="${escapeHtml(fullUrl)}">
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TVEpisode",
+    "name": "${escapeHtml(episodeName || `Season ${season} Episode ${episodeNum}`)}",
+    "description": "${escapeHtml(overview.substring(0, 200))}",
+    "image": "${escapeHtml(imageUrl)}",
+    "episodeNumber": ${episodeNum},
+    "partOfSeason": {
+      "@type": "TVSeason",
+      "seasonNumber": ${season},
+      "partOfSeries": {
+        "@type": "TVSeries",
+        "name": "${escapeHtml(showName)}"
+      }
+    },
+    "potentialAction": { "@type": "WatchAction", "target": "${escapeHtml(fullUrl)}" }
+  }
+  </script>
 </head>
 <body>
   <h1>${escapeHtml(pageTitle)}</h1>
   ${episodeName ? `<h2>${escapeHtml(episodeName)}</h2>` : ''}
   <p>${escapeHtml(overview)}</p>
-  <script>window.location.href = "${escapeHtml(fullUrl)}";</script>
 </body>
 </html>`;
 }
@@ -337,7 +437,7 @@ function parseUrl(url: string): PageInfo {
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
     
-    // Watch page: /watch/movie-slug or /watch/tv-slug/season-X-episode-Y
+    // Watch page: /watch/movie-slug or /watch/tv-slug/1-1 (season-episode)
     const watchMatch = pathname.match(/^\/watch\/([^\/]+)(?:\/(.+))?$/);
     if (watchMatch) {
       const slug = watchMatch[1];
@@ -350,7 +450,13 @@ function parseUrl(url: string): PageInfo {
       return { type: 'movie', slug };
     }
     
-    // TV page: /tv/show-slug
+    // TV show detail page: /tvshow/show-slug (new format)
+    const tvshowMatch = pathname.match(/^\/tvshow\/([^\/]+)$/);
+    if (tvshowMatch) {
+      return { type: 'tv', slug: tvshowMatch[1] };
+    }
+    
+    // TV page: /tv/show-slug (legacy format)
     const tvMatch = pathname.match(/^\/tv\/([^\/]+)$/);
     if (tvMatch) {
       return { type: 'tv', slug: tvMatch[1] };
