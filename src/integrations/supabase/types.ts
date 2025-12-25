@@ -431,6 +431,75 @@ export type Database = {
         }
         Relationships: []
       }
+      site_visits: {
+        Row: {
+          country: string | null
+          id: string
+          language: string | null
+          media_type: string | null
+          page_path: string
+          referrer_domain: string | null
+          referrer_path: string | null
+          referrer_url: string | null
+          screen_height: number | null
+          screen_width: number | null
+          session_id: string
+          source_type: string
+          tmdb_id: number | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visited_at: string
+        }
+        Insert: {
+          country?: string | null
+          id?: string
+          language?: string | null
+          media_type?: string | null
+          page_path: string
+          referrer_domain?: string | null
+          referrer_path?: string | null
+          referrer_url?: string | null
+          screen_height?: number | null
+          screen_width?: number | null
+          session_id: string
+          source_type?: string
+          tmdb_id?: number | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visited_at?: string
+        }
+        Update: {
+          country?: string | null
+          id?: string
+          language?: string | null
+          media_type?: string | null
+          page_path?: string
+          referrer_domain?: string | null
+          referrer_path?: string | null
+          referrer_url?: string | null
+          screen_height?: number | null
+          screen_width?: number | null
+          session_id?: string
+          source_type?: string
+          tmdb_id?: number | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visited_at?: string
+        }
+        Relationships: []
+      }
       tag_jobs: {
         Row: {
           created_at: string | null
@@ -785,6 +854,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_site_visits: { Args: never; Returns: number }
       cleanup_old_watch_events: { Args: never; Returns: number }
       generate_room_code: { Args: never; Returns: string }
       get_all_watching_now: {
@@ -801,6 +871,33 @@ export type Database = {
           media_type: string
           tmdb_id: number
           view_count: number
+        }[]
+      }
+      get_referrer_watch_stats: {
+        Args: { p_days?: number; p_limit?: number }
+        Returns: {
+          avg_pages_per_session: number
+          referrer_domain: string
+          unique_sessions: number
+          visit_count: number
+          watch_events: number
+        }[]
+      }
+      get_source_distribution: {
+        Args: { p_days?: number }
+        Returns: {
+          percentage: number
+          source_type: string
+          visit_count: number
+        }[]
+      }
+      get_top_referrers: {
+        Args: { p_days?: number; p_limit?: number }
+        Returns: {
+          referrer_domain: string
+          source_type: string
+          unique_sessions: number
+          visit_count: number
         }[]
       }
       get_watching_now: {

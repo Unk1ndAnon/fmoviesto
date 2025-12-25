@@ -12,6 +12,7 @@ import { AITaggingPanel } from "@/components/admin/AITaggingPanel";
 import { FailedJobsPanel } from "@/components/admin/FailedJobsPanel";
 import { TagManagement } from "@/components/admin/TagManagement";
 import { CollectionManagement } from "@/components/admin/CollectionManagement";
+import { ReferrerAnalytics } from "@/components/admin/ReferrerAnalytics";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -170,6 +171,8 @@ export default function Admin() {
         return <TagManagement />;
       case "collections":
         return <CollectionManagement />;
+      case "referrers":
+        return <ReferrerAnalytics />;
       default:
         return null;
     }

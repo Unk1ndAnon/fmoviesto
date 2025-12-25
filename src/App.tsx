@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { useCheckNewEpisodes } from "@/hooks/useCheckNewEpisodes";
+import { useSiteVisitTracking } from "@/hooks/useSiteVisits";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import Index from "./pages/Index";
@@ -63,6 +64,7 @@ const PageLoader = () => (
 const AppWrapper = ({ children }: { children: React.ReactNode }) => {
   useGoogleAnalytics();
   useCheckNewEpisodes();
+  useSiteVisitTracking(); // Track site visits with referrer data
   return <>{children}</>;
 };
 

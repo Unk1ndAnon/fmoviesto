@@ -23,7 +23,8 @@ import {
   LogOut,
   Settings,
   ChevronLeft,
-  FolderHeart
+  FolderHeart,
+  Link2
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -42,6 +43,7 @@ const menuItems = [
   { id: "ai-tagging", label: "AI Tagging", icon: Sparkles },
   { id: "failed-jobs", label: "Failed Jobs", icon: AlertCircle },
   { id: "tags", label: "Tag Management", icon: Tag },
+  { id: "referrers", label: "Referrer Analytics", icon: Link2 },
 ];
 
 export function AdminSidebar({ 
