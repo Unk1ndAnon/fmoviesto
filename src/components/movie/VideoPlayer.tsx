@@ -11,11 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { HLSPlayer, isHLSUrl } from "./HLSPlayer";
 
 export interface VideoSource {
   name: string;
   url: string;
   isCustom: boolean;
+  isHLS?: boolean;
 }
 
 interface VideoPlayerProps {
@@ -55,12 +57,14 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
       name: embed.name,
       url: embed.url,
       isCustom: true,
+      isHLS: isHLSUrl(embed.url),
     }));
     
     const defaultSources = EMBED_SOURCES.map((source, index) => ({
       name: source.name,
       url: getEmbedUrl(id, type, index, season, episode),
       isCustom: false,
+      isHLS: false,
     }));
     
     // Deduplicate by URL - custom sources take priority
@@ -106,6 +110,9 @@ export function ServerDropdown({ sources, currentSource, onSelectSource }: Serve
               currentSource === index ? "bg-green-500" : "bg-muted-foreground/30"
             )} />
             <span className="flex-1">{source.name}</span>
+            {source.isHLS && (
+              <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">HLS</span>
+            )}
             {currentSource === index && (
               <span className="text-xs text-muted-foreground">Active</span>
             )}
@@ -139,7 +146,9 @@ export function VideoPlayer({
   const currentSource = externalControls && externalSource !== undefined ? externalSource : internalSource;
   const setCurrentSource = externalControls && onSourceChange ? onSourceChange : setInternalSource;
   
-  const currentEmbedUrl = sources[currentSource]?.url || "";
+  const currentSourceData = sources[currentSource];
+  const currentEmbedUrl = currentSourceData?.url || "";
+  const isCurrentHLS = currentSourceData?.isHLS || false;
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -227,43 +236,56 @@ export function VideoPlayer({
 
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-muted-foreground">Loading player...</p>
-            </div>
-          </div>
-        )}
+        {/* HLS Player for m3u8 URLs */}
+        {isCurrentHLS ? (
+          <HLSPlayer
+            url={currentEmbedUrl}
+            title={title}
+            onLoad={handleLoad}
+            onError={handleError}
+            className="w-full h-full"
+          />
+        ) : (
+          <>
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-muted-foreground">Loading player...</p>
+                </div>
+              </div>
+            )}
 
-        {hasError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black">
-            <div className="flex flex-col items-center gap-4 text-center px-4">
-              <AlertTriangle className="w-12 h-12 text-destructive" />
-              <p className="text-foreground font-medium">Failed to load video</p>
-              <p className="text-muted-foreground text-sm">
-                This server might be unavailable. Try another server.
-              </p>
-              <Button variant="outline" onClick={tryNextSource} className="gap-2">
-                <RefreshCw className="w-4 h-4" />
-                Try Next Server
-              </Button>
-            </div>
-          </div>
-        )}
+            {hasError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <div className="flex flex-col items-center gap-4 text-center px-4">
+                  <AlertTriangle className="w-12 h-12 text-destructive" />
+                  <p className="text-foreground font-medium">Failed to load video</p>
+                  <p className="text-muted-foreground text-sm">
+                    This server might be unavailable. Try another server.
+                  </p>
+                  <Button variant="outline" onClick={tryNextSource} className="gap-2">
+                    <RefreshCw className="w-4 h-4" />
+                    Try Next Server
+                  </Button>
+                </div>
+              </div>
+            )}
 
-        <iframe
-          src={currentEmbedUrl}
-          className={cn(
-            "w-full h-full",
-            (isLoading || hasError) && "invisible"
-          )}
-          allowFullScreen
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          onLoad={handleLoad}
-          onError={handleError}
-          title={title}
-        />
+            <iframe
+              src={currentEmbedUrl}
+              className={cn(
+                "w-full h-full",
+                (isLoading || hasError) && "invisible"
+              )}
+              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              onLoad={handleLoad}
+              onError={handleError}
+              title={title}
+            />
+          </>
+        )}
       </div>
     </div>
   );
