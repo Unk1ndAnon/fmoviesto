@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useCallback } from "react";
 import { tmdb, getBackdropUrl, getImageUrl } from "@/lib/tmdb";
 import { slugToTitle, generateSlug, getWatchMovieUrl, getWatchTVUrl, getMovieUrl, getTVShowUrl, parseSeasonEpisode } from "@/lib/slug";
+import { generateMovieKeywords, generateTVKeywords } from "@/lib/seo-keywords";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { VideoPlayer, ServerDropdown, useVideoSources } from "@/components/movie/VideoPlayer";
@@ -339,18 +340,29 @@ export default function Watch() {
   
   const seoType = isTV ? "video.episode" : "video.movie";
 
-  // Generate SEO keywords from genres and content info
+  // Generate SEO keywords using the same functions as details pages
   const genres = item.genres?.map((g: { name: string }) => g.name) || [];
-  const genreKeywords = genres.join(", ");
-  const baseKeywords = isTV
-    ? `watch ${title} online free, ${title} season ${season} episode ${episode}, ${title} streaming, ${title} free, ${title} HD, watch ${title} full episodes`
-    : `watch ${title} online free, ${title} ${year}, ${title} streaming, ${title} free, ${title} full movie, ${title} HD`;
-  const seoKeywords = `${baseKeywords}, ${genreKeywords}, fmovies, free movies, free tv shows, stream online, no signup`.toLowerCase();
-
-  // Get actors and director for JSON-LD
-  const actors = isTV 
+  const cast = isTV 
     ? show?.credits?.cast?.slice(0, 5).map((p: { name: string }) => p.name) || []
     : movie?.credits?.cast?.slice(0, 5).map((p: { name: string }) => p.name) || [];
+  
+  const seoKeywords = isTV
+    ? generateTVKeywords({
+        title,
+        year: String(year),
+        genres,
+        cast,
+        seasons: show?.number_of_seasons || 1,
+        latestSeason: season,
+      })
+    : generateMovieKeywords({
+        title,
+        year: String(year),
+        genres,
+        cast,
+      });
+
+  // Get director for JSON-LD (cast already defined above for keywords)
   const director = !isTV 
     ? movie?.credits?.crew?.find((c: { job: string; name: string }) => c.job === "Director")?.name 
     : undefined;
@@ -379,7 +391,7 @@ export default function Watch() {
         contentUrl={currentUrl}
         embedUrl={currentUrl}
         genre={genres}
-        actors={actors}
+        actors={cast}
         director={director}
         datePublished={releaseDate}
         aggregateRating={item.vote_count > 0 ? {
