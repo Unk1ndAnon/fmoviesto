@@ -8,6 +8,7 @@ import { Footer } from "@/components/layout/Footer";
 import { VideoPlayer, ServerDropdown, useVideoSources } from "@/components/movie/VideoPlayer";
 import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { VideoObjectJsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight, Heart, Bookmark, Calendar, Users, MessageCircle, Eye } from "lucide-react";
@@ -346,6 +347,16 @@ export default function Watch() {
     : `watch ${title} online free, ${title} ${year}, ${title} streaming, ${title} free, ${title} full movie, ${title} HD`;
   const seoKeywords = `${baseKeywords}, ${genreKeywords}, fmovies, free movies, free tv shows, stream online, no signup`.toLowerCase();
 
+  // Get actors and director for JSON-LD
+  const actors = isTV 
+    ? show?.credits?.cast?.slice(0, 5).map((p: { name: string }) => p.name) || []
+    : movie?.credits?.cast?.slice(0, 5).map((p: { name: string }) => p.name) || [];
+  const director = !isTV 
+    ? movie?.credits?.crew?.find((c: { job: string; name: string }) => c.job === "Director")?.name 
+    : undefined;
+  const runtime = isTV ? (seasonData?.episodes?.[episode - 1]?.runtime || 45) : movie?.runtime;
+  const releaseDate = isTV ? show?.first_air_date : movie?.release_date;
+
   return (
     <>
       <SEOHead
@@ -356,6 +367,29 @@ export default function Watch() {
         type={seoType as "video.movie" | "video.tv_show" | "video.episode"}
         siteName="Fmovies"
         keywords={seoKeywords}
+      />
+
+      {/* VideoObject JSON-LD for rich search results */}
+      <VideoObjectJsonLd
+        name={seoTitle}
+        description={seoDescription}
+        thumbnailUrl={backdropImage || `https://fmov.online/placeholder.svg`}
+        uploadDate={releaseDate || new Date().toISOString().split('T')[0]}
+        duration={runtime}
+        contentUrl={currentUrl}
+        embedUrl={currentUrl}
+        genre={genres}
+        actors={actors}
+        director={director}
+        datePublished={releaseDate}
+        aggregateRating={item.vote_count > 0 ? {
+          ratingValue: item.vote_average,
+          ratingCount: item.vote_count,
+        } : undefined}
+        isTV={isTV}
+        seasonNumber={isTV ? season : undefined}
+        episodeNumber={isTV ? episode : undefined}
+        seriesName={isTV ? title : undefined}
       />
 
       {/* Sync Countdown Overlay for Watch Party */}

@@ -22,6 +22,28 @@ interface BreadcrumbJsonLdProps {
   items: { label: string; href?: string }[];
 }
 
+interface VideoObjectJsonLdProps {
+  name: string;
+  description: string;
+  thumbnailUrl: string;
+  uploadDate: string;
+  duration?: number; // in minutes
+  contentUrl: string;
+  embedUrl?: string;
+  genre?: string[];
+  actors?: string[];
+  director?: string;
+  datePublished?: string;
+  aggregateRating?: {
+    ratingValue: number;
+    ratingCount: number;
+  };
+  isTV?: boolean;
+  seasonNumber?: number;
+  episodeNumber?: number;
+  seriesName?: string;
+}
+
 const BASE_URL = "https://fmov.online";
 
 function generateBreadcrumbList(items: { label: string; href?: string }[]) {
@@ -151,6 +173,110 @@ export function CollectionJsonLd({ name, description, image, url, breadcrumbs }:
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdArray) }}
+    />
+  );
+}
+
+// Convert minutes to ISO 8601 duration format
+function formatDuration(minutes?: number): string | undefined {
+  if (!minutes) return undefined;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours > 0) {
+    return `PT${hours}H${mins}M`;
+  }
+  return `PT${mins}M`;
+}
+
+export function VideoObjectJsonLd({
+  name,
+  description,
+  thumbnailUrl,
+  uploadDate,
+  duration,
+  contentUrl,
+  embedUrl,
+  genre,
+  actors,
+  director,
+  datePublished,
+  aggregateRating,
+  isTV,
+  seasonNumber,
+  episodeNumber,
+  seriesName,
+}: VideoObjectJsonLdProps) {
+  // Base VideoObject schema
+  const videoObject: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": isTV ? "TVEpisode" : "Movie",
+    name,
+    description,
+    thumbnailUrl,
+    image: thumbnailUrl,
+    uploadDate,
+    datePublished: datePublished || uploadDate,
+    duration: formatDuration(duration),
+    contentUrl,
+    embedUrl,
+    genre,
+    potentialAction: {
+      "@type": "WatchAction",
+      target: contentUrl,
+    },
+  };
+
+  // Add TV-specific properties
+  if (isTV && seasonNumber && episodeNumber) {
+    videoObject.episodeNumber = episodeNumber;
+    videoObject.partOfSeason = {
+      "@type": "TVSeason",
+      seasonNumber,
+      partOfSeries: seriesName ? {
+        "@type": "TVSeries",
+        name: seriesName,
+      } : undefined,
+    };
+  }
+
+  // Add actors
+  if (actors && actors.length > 0) {
+    videoObject.actor = actors.map((actorName) => ({
+      "@type": "Person",
+      name: actorName,
+    }));
+  }
+
+  // Add director
+  if (director) {
+    videoObject.director = {
+      "@type": "Person",
+      name: director,
+    };
+  }
+
+  // Add aggregate rating
+  if (aggregateRating && aggregateRating.ratingCount > 0) {
+    videoObject.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: aggregateRating.ratingValue.toFixed(1),
+      bestRating: "10",
+      worstRating: "0",
+      ratingCount: aggregateRating.ratingCount,
+    };
+  }
+
+  // Add provider info
+  videoObject.provider = {
+    "@type": "Organization",
+    name: "Fmovies",
+    url: BASE_URL,
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(videoObject) }}
     />
   );
 }
