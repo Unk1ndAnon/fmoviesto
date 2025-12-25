@@ -85,21 +85,45 @@ interface ServerDropdownProps {
 }
 
 export function ServerDropdown({ sources, currentSource, onSelectSource }: ServerDropdownProps) {
+  const [open, setOpen] = useState(false);
+
+  const handleSelect = (index: number) => {
+    onSelectSource(index);
+    setOpen(false);
+  };
+
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 bg-card border-border h-9">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-2 bg-card border-border h-9"
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            setOpen(!open);
+          }}
+        >
           <Server className="w-4 h-4" />
           <span className="font-medium">{sources[currentSource]?.name || 'Select'}</span>
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <ChevronDown className="w-4 h-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48 bg-card border-border z-50">
+      <DropdownMenuContent 
+        align="start" 
+        className="w-48 bg-card border-border z-50"
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
         {sources.map((source, index) => (
           <DropdownMenuItem
             key={index}
-            onClick={() => onSelectSource(index)}
+            onSelect={() => handleSelect(index)}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handleSelect(index);
+            }}
             className={cn(
               "cursor-pointer gap-2",
               currentSource === index && "bg-primary/10"
