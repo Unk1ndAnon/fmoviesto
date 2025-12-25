@@ -479,11 +479,23 @@ export default function Watch() {
               {/* Next/Previous Episode Navigation */}
               {isTV && seasonData?.episodes && (
                 <div className="flex items-center justify-between mt-4 p-3 rounded-lg bg-card border border-border">
+                  {/* Mobile: Icon only */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={episode <= 1}
+                    onClick={() => navigate(getWatchTVUrl(title, season, episode - 1))}
+                    className="lg:hidden"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+                  
+                  {/* Desktop: Icon + Text */}
                   <Button
                     variant="ghost"
                     disabled={episode <= 1}
                     onClick={() => navigate(getWatchTVUrl(title, season, episode - 1))}
-                    className="gap-2"
+                    className="hidden lg:flex gap-2"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Previous Episode
@@ -493,60 +505,27 @@ export default function Watch() {
                     S{season} E{episode} / {seasonData.episodes.length}
                   </span>
                   
+                  {/* Mobile: Icon only */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={episode >= seasonData.episodes.length}
+                    onClick={() => navigate(getWatchTVUrl(title, season, episode + 1))}
+                    className="lg:hidden"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+                  
+                  {/* Desktop: Icon + Text */}
                   <Button
                     variant="ghost"
                     disabled={episode >= seasonData.episodes.length}
                     onClick={() => navigate(getWatchTVUrl(title, season, episode + 1))}
-                    className="gap-2"
+                    className="hidden lg:flex gap-2"
                   >
                     Next Episode
                     <ChevronRight className="w-4 h-4" />
                   </Button>
-                </div>
-              )}
-
-              {/* Season & Episode Selector for TV */}
-              {isTV && (
-                <div className="mt-4 p-4 rounded-lg bg-card border border-border">
-                  <div className="flex flex-wrap items-center gap-4">
-                    {/* Season Selector */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Season:</span>
-                      <Select value={String(season)} onValueChange={handleSeasonChange}>
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {seasons.map((s) => (
-                            <SelectItem key={s.season_number} value={String(s.season_number)}>
-                              Season {s.season_number}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Episode Selector */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Episode:</span>
-                      <Select value={String(episode)} onValueChange={handleEpisodeChange}>
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {seasonData?.episodes?.map((ep) => (
-                            <SelectItem key={ep.episode_number} value={String(ep.episode_number)}>
-                              Episode {ep.episode_number}
-                            </SelectItem>
-                          )) || Array.from({ length: 20 }, (_, i) => (
-                            <SelectItem key={i + 1} value={String(i + 1)}>
-                              Episode {i + 1}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
                 </div>
               )}
 
