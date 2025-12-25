@@ -104,15 +104,18 @@ export function ContentSearch({ onSave }: ContentSearchProps) {
     });
 
     if (saved) {
+      // Save new embeds (those with temp- prefix are new, not yet in DB)
       for (const embed of selectedItem.embeds) {
-        if (!embed.id.includes("-")) continue;
         if (embed.id.startsWith("temp-")) {
-          await adminStorage.addEmbed(selectedItem.tmdb_id, selectedItem.media_type, {
+          const success = await adminStorage.addEmbed(selectedItem.tmdb_id, selectedItem.media_type, {
             name: embed.name,
             url: embed.url,
             quality: embed.quality,
             language: embed.language,
           });
+          if (!success) {
+            console.error("Failed to save embed:", embed.name);
+          }
         }
       }
       onSave();

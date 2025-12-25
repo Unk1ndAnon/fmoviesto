@@ -122,7 +122,9 @@ export const adminStorage = {
   },
 
   addEmbed: async (tmdbId: number, type: "movie" | "tv", embed: { name: string; url: string; quality?: string; language?: string }): Promise<boolean> => {
-    // Validate URL server-side for security
+    console.log('Adding embed:', { tmdbId, type, embed });
+    
+    // Validate URL for security
     const validation = validateEmbedUrl(embed.url);
     if (!validation.valid) {
       console.error('Invalid embed URL:', validation.error);
@@ -131,8 +133,10 @@ export const adminStorage = {
 
     // First ensure the admin_movie exists
     let movie = await adminStorage.get(tmdbId, type);
+    console.log('Found existing movie:', movie);
     
     if (!movie) {
+      console.log('Creating new admin_movie for embed');
       movie = await adminStorage.save({
         tmdb_id: tmdbId,
         media_type: type
@@ -140,10 +144,12 @@ export const adminStorage = {
     }
 
     if (!movie) {
+      console.error('Failed to get/create admin_movie');
       return false;
     }
 
-    const { error } = await supabase
+    console.log('Inserting embed with admin_movie_id:', movie.id);
+    const { data, error } = await supabase
       .from('custom_embeds')
       .insert({
         admin_movie_id: movie.id,
@@ -151,13 +157,15 @@ export const adminStorage = {
         url: embed.url.trim(),
         quality: embed.quality?.trim(),
         language: embed.language?.trim()
-      });
+      })
+      .select();
 
     if (error) {
       console.error('Error adding embed:', error);
       return false;
     }
 
+    console.log('Embed saved successfully:', data);
     return true;
   },
 
