@@ -95,51 +95,49 @@ export function ServerDropdown({ sources, currentSource, onSelectSource }: Serve
   return (
     <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           className="gap-2 bg-card border-border h-9"
-          onTouchEnd={(e) => {
+          onPointerDown={(e) => {
+            // On mobile, a tap can fire both pointer and click; avoid double-toggling.
             e.preventDefault();
-            setOpen(!open);
+            e.stopPropagation();
+            setOpen((v) => !v);
+          }}
+          onClick={(e) => {
+            // Prevent Radix default click handling from toggling again.
+            e.preventDefault();
+            e.stopPropagation();
           }}
         >
           <Server className="w-4 h-4" />
-          <span className="font-medium">{sources[currentSource]?.name || 'Select'}</span>
+          <span className="font-medium">{sources[currentSource]?.name || "Select"}</span>
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <ChevronDown className="w-4 h-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        align="start" 
+      <DropdownMenuContent
+        align="start"
         className="w-48 bg-card border-border z-50"
-        onTouchStart={(e) => e.stopPropagation()}
-        onTouchEnd={(e) => e.stopPropagation()}
       >
         {sources.map((source, index) => (
           <DropdownMenuItem
             key={index}
             onSelect={() => handleSelect(index)}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              handleSelect(index);
-            }}
-            className={cn(
-              "cursor-pointer gap-2",
-              currentSource === index && "bg-primary/10"
-            )}
+            className={cn("cursor-pointer gap-2", currentSource === index && "bg-primary/10")}
           >
-            <div className={cn(
-              "w-2 h-2 rounded-full shrink-0",
-              currentSource === index ? "bg-green-500" : "bg-muted-foreground/30"
-            )} />
+            <div
+              className={cn(
+                "w-2 h-2 rounded-full shrink-0",
+                currentSource === index ? "bg-green-500" : "bg-muted-foreground/30"
+              )}
+            />
             <span className="flex-1">{source.name}</span>
             {source.isHLS && (
               <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">HLS</span>
             )}
-            {currentSource === index && (
-              <span className="text-xs text-muted-foreground">Active</span>
-            )}
+            {currentSource === index && <span className="text-xs text-muted-foreground">Active</span>}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
