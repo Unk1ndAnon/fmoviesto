@@ -50,18 +50,25 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
     });
   }, [adminData]);
 
-  const sources: VideoSource[] = useMemo(() => [
-    ...validCustomEmbeds.map((embed) => ({
+  const sources: VideoSource[] = useMemo(() => {
+    const customSources = validCustomEmbeds.map((embed) => ({
       name: embed.name,
       url: embed.url,
       isCustom: true,
-    })),
-    ...EMBED_SOURCES.map((source, index) => ({
+    }));
+    
+    const defaultSources = EMBED_SOURCES.map((source, index) => ({
       name: source.name,
       url: getEmbedUrl(id, type, index, season, episode),
       isCustom: false,
-    })),
-  ], [validCustomEmbeds, id, type, season, episode]);
+    }));
+    
+    // Deduplicate by URL - custom sources take priority
+    const customUrls = new Set(customSources.map(s => s.url));
+    const filteredDefaults = defaultSources.filter(s => !customUrls.has(s.url));
+    
+    return [...customSources, ...filteredDefaults];
+  }, [validCustomEmbeds, id, type, season, episode]);
 
   return sources;
 }

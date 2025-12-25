@@ -41,7 +41,12 @@ export function ManagedContent({ movies, onEdit, onDelete }: ManagedContentProps
   });
 
   const getMediaPath = (movie: AdminMovie) => {
-    const title = movie.custom_title || `Movie ${movie.tmdb_id}`;
+    // Use original_title (from TMDB), then custom_title, then fallback
+    const title = movie.original_title || movie.custom_title;
+    if (!title) {
+      // No title available - return null to disable View link
+      return null;
+    }
     return movie.media_type === "movie"
       ? getMovieUrl(title)
       : getTVShowUrl(title);
@@ -195,12 +200,19 @@ export function ManagedContent({ movies, onEdit, onDelete }: ManagedContentProps
                     <Edit className="w-3 h-3" />
                     Edit
                   </Button>
-                  <Link to={getMediaPath(movie)} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full gap-1">
+                  {getMediaPath(movie) ? (
+                    <Link to={getMediaPath(movie)!} className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full gap-1">
+                        <ExternalLink className="w-3 h-3" />
+                        View
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button variant="outline" size="sm" className="flex-1 gap-1" disabled>
                       <ExternalLink className="w-3 h-3" />
                       View
                     </Button>
-                  </Link>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -273,11 +285,17 @@ export function ManagedContent({ movies, onEdit, onDelete }: ManagedContentProps
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Link to={getMediaPath(movie)}>
-                        <Button variant="ghost" size="sm">
+                      {getMediaPath(movie) ? (
+                        <Link to={getMediaPath(movie)!}>
+                          <Button variant="ghost" size="sm">
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Button variant="ghost" size="sm" disabled>
                           <ExternalLink className="w-4 h-4" />
                         </Button>
-                      </Link>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

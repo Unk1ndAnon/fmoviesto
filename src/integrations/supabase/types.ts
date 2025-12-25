@@ -25,6 +25,7 @@ export type Database = {
           hidden: boolean | null
           id: string
           media_type: string
+          original_title: string | null
           tmdb_id: number
           updated_at: string
         }
@@ -38,6 +39,7 @@ export type Database = {
           hidden?: boolean | null
           id?: string
           media_type: string
+          original_title?: string | null
           tmdb_id: number
           updated_at?: string
         }
@@ -51,6 +53,7 @@ export type Database = {
           hidden?: boolean | null
           id?: string
           media_type?: string
+          original_title?: string | null
           tmdb_id?: number
           updated_at?: string
         }

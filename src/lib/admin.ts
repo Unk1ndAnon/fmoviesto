@@ -14,6 +14,7 @@ export interface AdminMovie {
   id: string;
   tmdb_id: number;
   media_type: "movie" | "tv";
+  original_title?: string;
   custom_title?: string;
   custom_description?: string;
   featured?: boolean;
@@ -84,6 +85,7 @@ export const adminStorage = {
       .upsert({
         tmdb_id: movie.tmdb_id,
         media_type: movie.media_type,
+        original_title: movie.original_title,
         custom_title: movie.custom_title,
         custom_description: movie.custom_description,
         featured: movie.featured,

@@ -26,6 +26,7 @@ interface EditableMovie {
   id?: string;
   tmdb_id: number;
   media_type: "movie" | "tv";
+  original_title?: string;
   custom_title?: string;
   custom_description?: string;
   featured?: boolean;
@@ -61,13 +62,14 @@ export function ContentSearch({ onSave }: ContentSearchProps) {
     enabled: searchQuery.length > 2,
   });
 
-  const handleSelectMovie = async (id: number, type: "movie" | "tv") => {
+  const handleSelectMovie = async (id: number, type: "movie" | "tv", originalTitle: string) => {
     const existing = await adminStorage.get(id, type);
     if (existing) {
       setSelectedItem({
         id: existing.id,
         tmdb_id: existing.tmdb_id,
         media_type: existing.media_type,
+        original_title: existing.original_title || originalTitle,
         custom_title: existing.custom_title,
         custom_description: existing.custom_description,
         featured: existing.featured,
@@ -80,6 +82,7 @@ export function ContentSearch({ onSave }: ContentSearchProps) {
       setSelectedItem({
         tmdb_id: id,
         media_type: type,
+        original_title: originalTitle,
         embeds: [],
       });
     }
@@ -91,6 +94,7 @@ export function ContentSearch({ onSave }: ContentSearchProps) {
     const saved = await adminStorage.save({
       tmdb_id: selectedItem.tmdb_id,
       media_type: selectedItem.media_type,
+      original_title: selectedItem.original_title,
       custom_title: selectedItem.custom_title,
       custom_description: selectedItem.custom_description,
       featured: selectedItem.featured,
@@ -229,7 +233,7 @@ export function ContentSearch({ onSave }: ContentSearchProps) {
                   <div
                     key={item.id}
                     className="cursor-pointer group"
-                    onClick={() => handleSelectMovie(item.id, searchType)}
+                    onClick={() => handleSelectMovie(item.id, searchType, title)}
                   >
                     <div className="aspect-[2/3] rounded-lg overflow-hidden bg-muted mb-2 relative">
                       {item.poster_path ? (
