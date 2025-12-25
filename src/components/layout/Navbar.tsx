@@ -240,7 +240,9 @@ export function Navbar() {
                             to={category.href}
                             className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                           >
-                            <category.icon className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                              <category.icon className="w-5 h-5 text-primary" />
+                            </div>
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-medium text-sm">{category.title}</span>
@@ -261,7 +263,7 @@ export function Navbar() {
                               to={service.href}
                               className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                             >
-                              <div className="w-5 h-5 rounded bg-muted flex items-center justify-center text-xs font-bold">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary group-hover:bg-primary/20 transition-colors">
                                 {service.icon}
                               </div>
                               <div>
@@ -298,7 +300,9 @@ export function Navbar() {
                             to={category.href}
                             className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                           >
-                            <category.icon className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                              <category.icon className="w-5 h-5 text-primary" />
+                            </div>
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-medium text-sm">{category.title}</span>
@@ -319,7 +323,7 @@ export function Navbar() {
                               to={service.href}
                               className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                             >
-                              <div className="w-5 h-5 rounded bg-muted flex items-center justify-center text-xs font-bold">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary group-hover:bg-primary/20 transition-colors">
                                 {service.icon}
                               </div>
                               <div>
@@ -396,7 +400,9 @@ export function Navbar() {
                           to="/genres"
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                         >
-                          <LayoutGrid className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                            <LayoutGrid className="w-5 h-5 text-primary" />
+                          </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-sm">Browse Genres</span>
@@ -409,7 +415,9 @@ export function Navbar() {
                           to="/tags"
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                         >
-                          <Sparkles className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                            <Sparkles className="w-5 h-5 text-primary" />
+                          </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-sm">Browse Tags</span>
@@ -422,7 +430,9 @@ export function Navbar() {
                           to="/people"
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                         >
-                          <Users className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                            <Users className="w-5 h-5 text-primary" />
+                          </div>
                           <div>
                             <span className="font-medium text-sm">Popular People</span>
                             <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">Discover popular actors, actresses, and celebrities in the entertainment industry.</p>
@@ -432,7 +442,9 @@ export function Navbar() {
                           to="/random"
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                         >
-                          <Shuffle className="w-5 h-5 mt-0.5 text-muted-foreground group-hover:text-primary" />
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                            <Shuffle className="w-5 h-5 text-primary" />
+                          </div>
                           <div>
                             <span className="font-medium text-sm">Random Movies</span>
                             <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">Can't decide what to watch? Let us pick some random movies for you!</p>
