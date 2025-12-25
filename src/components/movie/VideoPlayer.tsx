@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { AlertTriangle, RefreshCw, Play, Server, ChevronDown } from "lucide-react";
 import { EMBED_SOURCES, getEmbedUrl } from "@/lib/tmdb";
 import { adminStorage, AdminMovie } from "@/lib/admin";
@@ -86,6 +86,7 @@ interface ServerDropdownProps {
 
 export function ServerDropdown({ sources, currentSource, onSelectSource }: ServerDropdownProps) {
   const [open, setOpen] = useState(false);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
 
   const handleSelect = (index: number) => {
     onSelectSource(index);
@@ -93,23 +94,13 @@ export function ServerDropdown({ sources, currentSource, onSelectSource }: Serve
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
+          ref={triggerRef}
           variant="outline"
           size="sm"
-          className="gap-2 bg-card border-border h-9"
-          onPointerDown={(e) => {
-            // On mobile, a tap can fire both pointer and click; avoid double-toggling.
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen((v) => !v);
-          }}
-          onClick={(e) => {
-            // Prevent Radix default click handling from toggling again.
-            e.preventDefault();
-            e.stopPropagation();
-          }}
+          className="gap-2 bg-card border-border h-9 touch-manipulation"
         >
           <Server className="w-4 h-4" />
           <span className="font-medium">{sources[currentSource]?.name || "Select"}</span>
@@ -120,12 +111,13 @@ export function ServerDropdown({ sources, currentSource, onSelectSource }: Serve
       <DropdownMenuContent
         align="start"
         className="w-48 bg-card border-border z-50"
+        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         {sources.map((source, index) => (
           <DropdownMenuItem
             key={index}
             onSelect={() => handleSelect(index)}
-            className={cn("cursor-pointer gap-2", currentSource === index && "bg-primary/10")}
+            className={cn("cursor-pointer gap-2 touch-manipulation", currentSource === index && "bg-primary/10")}
           >
             <div
               className={cn(
