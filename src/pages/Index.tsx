@@ -7,6 +7,8 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { ChristmasMoviesRow } from "@/components/movie/ChristmasMoviesRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatsMovieRow } from "@/components/stats/StatsMovieRow";
+import { useAllWatchingNow, useMostWatched } from "@/hooks/useWatchStats";
 export default function Index() {
   const { data: trending, isLoading: trendingLoading } = useQuery({
     queryKey: ["trending"],
@@ -38,6 +40,12 @@ export default function Index() {
     queryFn: () => tmdb.getPopularTV(),
   });
 
+  // Watch statistics
+  const { items: watchingNow, isLoading: watchingNowLoading } = useAllWatchingNow(20);
+  const { items: mostWatchedToday, isLoading: todayLoading } = useMostWatched(24, 20);
+  const { items: mostWatchedWeek, isLoading: weekLoading } = useMostWatched(168, 20);
+  const { items: mostWatchedMonth, isLoading: monthLoading } = useMostWatched(720, 20);
+
   return (
     <>
       <SEOHead
@@ -61,6 +69,22 @@ export default function Index() {
             {/* Christmas Movies Section */}
             <ChristmasMoviesRow />
 
+            {/* Watching Now - Live viewers */}
+            <StatsMovieRow
+              title="🔴 Watching Now"
+              items={watchingNow}
+              isLoading={watchingNowLoading}
+              showViewCount
+            />
+
+            {/* Most Watched Today */}
+            <StatsMovieRow
+              title="🔥 Most Watched Today"
+              items={mostWatchedToday}
+              isLoading={todayLoading}
+              showViewCount
+            />
+
             <MovieRow
               title="Trending This Week"
               items={trending?.results || []}
@@ -77,6 +101,14 @@ export default function Index() {
               isLoading={!popular}
             />
 
+            {/* Most Watched This Week */}
+            <StatsMovieRow
+              title="📈 Most Watched This Week"
+              items={mostWatchedWeek}
+              isLoading={weekLoading}
+              showViewCount
+            />
+
             <MovieRow
               title="Now Playing"
               items={nowPlaying?.results || []}
@@ -91,6 +123,14 @@ export default function Index() {
               type="movie"
               viewMoreLink="/movies?category=top-rated"
               isLoading={!topRated}
+            />
+
+            {/* Most Watched This Month */}
+            <StatsMovieRow
+              title="🏆 Most Watched This Month"
+              items={mostWatchedMonth}
+              isLoading={monthLoading}
+              showViewCount
             />
 
             <MovieRow
