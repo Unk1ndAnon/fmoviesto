@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminMovie } from "@/lib/admin";
+import { getMovieUrl, getTVShowUrl } from "@/lib/slug";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,9 +41,10 @@ export function ManagedContent({ movies, onEdit, onDelete }: ManagedContentProps
   });
 
   const getMediaPath = (movie: AdminMovie) => {
+    const title = movie.custom_title || `Movie ${movie.tmdb_id}`;
     return movie.media_type === "movie"
-      ? `/movie/${movie.tmdb_id}`
-      : `/tv/${movie.tmdb_id}`;
+      ? getMovieUrl(title)
+      : getTVShowUrl(title);
   };
 
   return (
