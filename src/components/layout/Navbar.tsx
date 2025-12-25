@@ -240,8 +240,8 @@ export function Navbar() {
                             to={category.href}
                             className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                           >
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                              <category.icon className="w-5 h-5 text-primary" />
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                              <category.icon className="w-5 h-5 text-primary group-hover:rotate-12 transition-transform duration-300" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
@@ -263,7 +263,7 @@ export function Navbar() {
                               to={service.href}
                               className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                             >
-                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary group-hover:bg-primary/20 transition-colors">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
                                 {service.icon}
                               </div>
                               <div>
@@ -300,8 +300,8 @@ export function Navbar() {
                             to={category.href}
                             className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                           >
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                              <category.icon className="w-5 h-5 text-primary" />
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                              <category.icon className="w-5 h-5 text-primary group-hover:rotate-12 transition-transform duration-300" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
@@ -323,7 +323,7 @@ export function Navbar() {
                               to={service.href}
                               className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                             >
-                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary group-hover:bg-primary/20 transition-colors">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
                                 {service.icon}
                               </div>
                               <div>
@@ -360,8 +360,8 @@ export function Navbar() {
                             to={category.href}
                             className="flex items-start gap-4 p-3 rounded-lg hover:bg-secondary transition-colors group"
                           >
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                              <category.icon className="w-5 h-5 text-primary" />
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                              <category.icon className="w-5 h-5 text-primary group-hover:rotate-12 transition-transform duration-300" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
@@ -400,8 +400,8 @@ export function Navbar() {
                           to="/genres"
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                         >
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                            <LayoutGrid className="w-5 h-5 text-primary" />
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                            <LayoutGrid className="w-5 h-5 text-primary group-hover:rotate-12 transition-transform duration-300" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -415,8 +415,8 @@ export function Navbar() {
                           to="/tags"
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                         >
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                            <Sparkles className="w-5 h-5 text-primary" />
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                            <Sparkles className="w-5 h-5 text-primary group-hover:rotate-12 transition-transform duration-300" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -430,8 +430,8 @@ export function Navbar() {
                           to="/people"
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                         >
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                            <Users className="w-5 h-5 text-primary" />
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                            <Users className="w-5 h-5 text-primary group-hover:rotate-12 transition-transform duration-300" />
                           </div>
                           <div>
                             <span className="font-medium text-sm">Popular People</span>
@@ -442,8 +442,8 @@ export function Navbar() {
                           to="/random"
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors group"
                         >
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                            <Shuffle className="w-5 h-5 text-primary" />
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                            <Shuffle className="w-5 h-5 text-primary group-hover:rotate-12 transition-transform duration-300" />
                           </div>
                           <div>
                             <span className="font-medium text-sm">Random Movies</span>
