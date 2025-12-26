@@ -14,7 +14,7 @@ import { MovieTags } from "@/components/movie/MovieTags";
 import { GenerateTagsButton } from "@/components/movie/GenerateTagsButton";
 import { RelatedGenreLinks, Breadcrumbs, QuickLinks } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
-import { Play, Star, Clock, Plus, Heart, Download, ChevronRight } from "lucide-react";
+import { Play, Star, Clock, Plus, Heart, ChevronRight } from "lucide-react";
 import { SharePopover } from "@/components/SharePopover";
 import { useWatchlist, useFavorites } from "@/hooks/useUserLists";
 import { useAutoTag } from "@/hooks/useAutoTag";
@@ -293,12 +293,6 @@ export default function MovieDetails() {
 
                   <SharePopover title={movie.title} />
 
-                  <Link to={getWatchMovieUrl(movie.title)} className="ml-auto">
-                    <Button className="gap-2 bg-rating-green hover:bg-rating-green/90 text-foreground rounded-lg px-5">
-                      <Download className="w-4 h-4" />
-                      Watch Now
-                    </Button>
-                  </Link>
                 </div>
 
                 {/* Tabs */}
@@ -391,46 +385,28 @@ export default function MovieDetails() {
                   </div>
                 )}
 
-                {/* Streaming Platforms */}
-                <div className="flex items-center gap-3 pt-4">
-                  <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                    <Star className="w-5 h-5 text-rating-green" />
-                  </div>
-                  <div className="w-10 h-10 rounded-lg bg-destructive flex items-center justify-center text-primary-foreground font-bold text-xs">
-                    N
-                  </div>
-                  <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-primary-foreground font-bold text-xs">
-                    P+
-                  </div>
-                  <div className="w-10 h-10 rounded-lg bg-rating-green flex items-center justify-center text-primary-foreground font-bold text-xs">
-                    H
-                  </div>
-                  <button className="ml-auto flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    All <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
 
               {/* Right - Movie Poster */}
               <div className="hidden lg:block relative">
                 <div className="relative w-[300px] xl:w-[350px]">
-                  {/* Poster with glow */}
-                  <div className="relative rounded-xl overflow-hidden shadow-2xl glow-primary">
+                  {/* Poster with grayscale effect */}
+                  <Link 
+                    to={getWatchMovieUrl(movie.title)}
+                    className="group relative block rounded-xl overflow-hidden shadow-2xl"
+                  >
                     <img
                       src={getImageUrl(movie.poster_path, "w500")}
                       alt={movie.title}
-                      className="w-full h-auto"
+                      className="w-full h-auto grayscale group-hover:grayscale-0 transition-all duration-500"
                     />
-                    {/* Play button overlay */}
-                    <Link 
-                      to={getWatchMovieUrl(movie.title)}
-                      className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity"
-                    >
-                      <div className="w-16 h-16 rounded-full bg-background/20 backdrop-blur-sm flex items-center justify-center border border-foreground/30">
-                        <Play className="w-8 h-8 text-foreground" fill="currentColor" />
+                    {/* Red play button overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                        <Play className="w-10 h-10 text-primary-foreground ml-1" fill="currentColor" />
                       </div>
-                    </Link>
-                  </div>
+                    </div>
+                  </Link>
                 </div>
               </div>
             </div>
