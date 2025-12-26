@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedData, setCachedData, generateCacheKey, isCacheFresh } from "@/lib/apiCache";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
@@ -167,20 +168,51 @@ export const getPosterUrl = (path: string | null, size: "w342" | "w500" | "w780"
 };
 
 async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('tmdb-proxy', {
-    body: { endpoint, params }
-  });
-
-  if (error) {
-    console.error('TMDB proxy error:', error);
-    throw new Error(`TMDB API error: ${error.message}`);
+  const cacheKey = generateCacheKey(endpoint, params);
+  
+  // If cache is fresh, return cached data immediately
+  if (isCacheFresh(cacheKey)) {
+    const cached = getCachedData<T>(cacheKey);
+    if (cached) return cached;
   }
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('tmdb-proxy', {
+      body: { endpoint, params }
+    });
 
-  if (data?.error) {
-    throw new Error(data.error);
+    if (error) {
+      console.error('TMDB proxy error:', error);
+      // Try to return cached data as fallback
+      const cached = getCachedData<T>(cacheKey);
+      if (cached) {
+        console.log('Using cached data as fallback for:', endpoint);
+        return cached;
+      }
+      throw new Error(`TMDB API error: ${error.message}`);
+    }
+
+    if (data?.error) {
+      const cached = getCachedData<T>(cacheKey);
+      if (cached) {
+        console.log('Using cached data as fallback for:', endpoint);
+        return cached;
+      }
+      throw new Error(data.error);
+    }
+
+    // Cache successful response
+    setCachedData(cacheKey, data);
+    return data as T;
+  } catch (e) {
+    // Network error - try cache fallback
+    const cached = getCachedData<T>(cacheKey);
+    if (cached) {
+      console.log('Using cached data as fallback (network error) for:', endpoint);
+      return cached;
+    }
+    throw e;
   }
-
-  return data as T;
 }
 
 export const tmdb = {
