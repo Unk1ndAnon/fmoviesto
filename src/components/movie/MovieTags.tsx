@@ -2,6 +2,9 @@ import { Link } from "react-router-dom";
 import { useMovieTags, getTagTypeColor } from "@/hooks/useTags";
 import { Badge } from "@/components/ui/badge";
 
+// Feature flag - set to true to enable movie tags
+const MOVIE_TAGS_ENABLED = false;
+
 interface MovieTagsProps {
   tmdbId: number;
   mediaType?: "movie" | "tv";
@@ -15,6 +18,11 @@ export function MovieTags({
   maxTags = 8,
   showType = false
 }: MovieTagsProps) {
+  // Feature disabled
+  if (!MOVIE_TAGS_ENABLED) {
+    return null;
+  }
+  
   const { data: movieTags, isLoading } = useMovieTags(tmdbId, mediaType);
 
   if (isLoading || !movieTags?.length) {
