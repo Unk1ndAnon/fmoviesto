@@ -23,7 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type TabType = "cast" | "gallery" | "trailer" | "details";
+type TabType = "cast" | "details";
 
 export default function MovieDetails() {
   const { slug } = useParams<{ slug: string }>();
@@ -157,8 +157,6 @@ export default function MovieDetails() {
 
   const tabs: { id: TabType; label: string }[] = [
     { id: "cast", label: "Cast & Crew" },
-    { id: "gallery", label: "Gallery" },
-    { id: "trailer", label: "Trailer" },
     { id: "details", label: "More Details" },
   ];
 
