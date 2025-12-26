@@ -6,39 +6,57 @@ import { HeroSlider } from "@/components/movie/HeroSlider";
 import { MovieRow } from "@/components/movie/MovieRow";
 import { ChristmasMoviesRow } from "@/components/movie/ChristmasMoviesRow";
 import { SEOHead } from "@/components/seo/SEOHead";
-// Feature disabled - will enable later
-// import { WatchStatsTabs } from "@/components/stats/WatchStatsTabs";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, WifiOff } from "lucide-react";
 
 export default function Index() {
-  const { data: trending, isLoading: trendingLoading } = useQuery({
+  const { data: trending, isLoading: trendingLoading, isError: trendingError, refetch: refetchTrending } = useQuery({
     queryKey: ["trending"],
     queryFn: () => tmdb.getTrending("week"),
+    retry: 2,
+    retryDelay: 1000,
   });
 
-  const { data: popular } = useQuery({
+  const { data: popular, refetch: refetchPopular } = useQuery({
     queryKey: ["popular"],
     queryFn: () => tmdb.getPopular(),
+    retry: 2,
   });
 
-  const { data: topRated } = useQuery({
+  const { data: topRated, refetch: refetchTopRated } = useQuery({
     queryKey: ["topRated"],
     queryFn: () => tmdb.getTopRated(),
+    retry: 2,
   });
 
-  const { data: nowPlaying } = useQuery({
+  const { data: nowPlaying, refetch: refetchNowPlaying } = useQuery({
     queryKey: ["nowPlaying"],
     queryFn: () => tmdb.getNowPlaying(),
+    retry: 2,
   });
 
-  const { data: trendingTV } = useQuery({
+  const { data: trendingTV, refetch: refetchTrendingTV } = useQuery({
     queryKey: ["trendingTV"],
     queryFn: () => tmdb.getTrendingTV("week"),
+    retry: 2,
   });
 
-  const { data: popularTV } = useQuery({
+  const { data: popularTV, refetch: refetchPopularTV } = useQuery({
     queryKey: ["popularTV"],
     queryFn: () => tmdb.getPopularTV(),
+    retry: 2,
   });
+
+  const handleRetryAll = () => {
+    refetchTrending();
+    refetchPopular();
+    refetchTopRated();
+    refetchNowPlaying();
+    refetchTrendingTV();
+    refetchPopularTV();
+  };
+
+  const hasNoData = !trending?.results?.length && !trendingLoading;
 
   return (
     <>
@@ -51,18 +69,40 @@ export default function Index() {
         <Navbar />
 
         <main className="flex-1">
-          {/* Hero Section */}
-          {trendingLoading ? (
-            <div className="h-[70vh] md:h-[85vh] bg-card animate-pulse" />
+          {/* Error/Empty State */}
+          {(trendingError || hasNoData) && !trendingLoading ? (
+            <div className="h-[70vh] md:h-[85vh] flex flex-col items-center justify-center gap-6 px-4 text-center">
+              <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+                <WifiOff className="w-10 h-10 text-muted-foreground" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-semibold text-foreground">Nije moguće učitati sadržaj</h2>
+                <p className="text-muted-foreground max-w-md">
+                  Provjerite internetsku vezu i pokušajte ponovo.
+                </p>
+              </div>
+              <Button 
+                onClick={handleRetryAll} 
+                size="lg"
+                className="gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Pokušaj ponovo
+              </Button>
+            </div>
+          ) : trendingLoading ? (
+            <div className="h-[70vh] md:h-[85vh] bg-card animate-pulse flex items-center justify-center">
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-muted-foreground">Učitavanje...</p>
+              </div>
+            </div>
           ) : (
             <HeroSlider movies={trending?.results?.slice(0, 5) || []} />
           )}
 
           {/* Content Rows */}
           <div className="container mx-auto px-4 py-8 space-y-4">
-            {/* Now Watching - Tabbed - Feature disabled */}
-            {/* <WatchStatsTabs /> */}
-
             {/* Christmas Movies Section */}
             <ChristmasMoviesRow />
 
