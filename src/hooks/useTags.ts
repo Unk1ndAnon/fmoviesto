@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { adminAuth } from "@/lib/admin";
 
+// Feature flag - set to true to enable tags database queries
+const TAGS_DB_ENABLED = false;
+
 export interface Tag {
   id: string;
   name: string;
@@ -33,6 +36,8 @@ export function useMovieTags(tmdbId: number | undefined, mediaType: string = "mo
   return useQuery({
     queryKey: ["movieTags", tmdbId, mediaType],
     queryFn: async () => {
+      // Feature disabled - skip database query
+      if (!TAGS_DB_ENABLED) return [];
       if (!tmdbId) return [];
 
       const { data, error } = await supabase
@@ -67,7 +72,7 @@ export function useMovieTags(tmdbId: number | undefined, mediaType: string = "mo
         tag: mt.tags as unknown as Tag,
       }));
     },
-    enabled: !!tmdbId,
+    enabled: TAGS_DB_ENABLED && !!tmdbId,
   });
 }
 
@@ -76,6 +81,8 @@ export function useTag(slug: string | undefined) {
   return useQuery({
     queryKey: ["tag", slug],
     queryFn: async () => {
+      // Feature disabled - skip database query
+      if (!TAGS_DB_ENABLED) return null;
       if (!slug) return null;
 
       const { data, error } = await supabase.from("tags").select("*").eq("slug", slug).maybeSingle();
@@ -87,7 +94,7 @@ export function useTag(slug: string | undefined) {
 
       return data as Tag | null;
     },
-    enabled: !!slug,
+    enabled: TAGS_DB_ENABLED && !!slug,
   });
 }
 
@@ -96,7 +103,9 @@ export function useMoviesByTag(tagId: string | undefined, page: number = 1, page
   return useQuery({
     queryKey: ["moviesByTag", tagId, page, pageSize],
     queryFn: async () => {
-      if (!tagId) return { movies: [], totalCount: 0 };
+      // Feature disabled - skip database query
+      if (!TAGS_DB_ENABLED) return { movies: [], totalCount: 0, totalPages: 0 };
+      if (!tagId) return { movies: [], totalCount: 0, totalPages: 0 };
 
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
@@ -110,7 +119,7 @@ export function useMoviesByTag(tagId: string | undefined, page: number = 1, page
 
       if (error) {
         console.error("Error fetching movies by tag:", error);
-        return { movies: [], totalCount: 0 };
+        return { movies: [], totalCount: 0, totalPages: 0 };
       }
 
       return {
@@ -119,7 +128,7 @@ export function useMoviesByTag(tagId: string | undefined, page: number = 1, page
         totalPages: Math.ceil((count || 0) / pageSize),
       };
     },
-    enabled: !!tagId,
+    enabled: TAGS_DB_ENABLED && !!tagId,
   });
 }
 
@@ -128,6 +137,9 @@ export function useTags(options?: { type?: string; featured?: boolean; limit?: n
   return useQuery({
     queryKey: ["tags", options],
     queryFn: async () => {
+      // Feature disabled - skip database query
+      if (!TAGS_DB_ENABLED) return [];
+      
       let query = supabase.from("tags").select("*").order("movie_count", { ascending: false });
 
       if (options?.type) query = query.eq("tag_type", options.type);
@@ -144,6 +156,7 @@ export function useTags(options?: { type?: string; featured?: boolean; limit?: n
 
       return data as Tag[];
     },
+    enabled: TAGS_DB_ENABLED,
   });
 }
 
@@ -152,6 +165,9 @@ export function usePopularTags(limit: number = 20) {
   return useQuery({
     queryKey: ["popularTags", limit],
     queryFn: async () => {
+      // Feature disabled - skip database query
+      if (!TAGS_DB_ENABLED) return [];
+      
       const { data, error } = await supabase
         .from("tags")
         .select("*")
@@ -167,6 +183,7 @@ export function usePopularTags(limit: number = 20) {
 
       return data as Tag[];
     },
+    enabled: TAGS_DB_ENABLED,
   });
 }
 
@@ -175,6 +192,8 @@ export function useMovieTagStatus(tmdbId: number | undefined, mediaType: string 
   return useQuery({
     queryKey: ["movieTagStatus", tmdbId, mediaType],
     queryFn: async () => {
+      // Feature disabled - skip database query
+      if (!TAGS_DB_ENABLED) return null;
       if (!tmdbId) return null;
 
       const { data, error } = await supabase
@@ -191,7 +210,7 @@ export function useMovieTagStatus(tmdbId: number | undefined, mediaType: string 
 
       return data;
     },
-    enabled: !!tmdbId,
+    enabled: TAGS_DB_ENABLED && !!tmdbId,
   });
 }
 

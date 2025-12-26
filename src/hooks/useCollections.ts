@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+// Feature flag - set to true to enable Christmas movies database queries
+const CHRISTMAS_MOVIES_DB_ENABLED = false;
+
 export interface Collection {
   id: string;
   name: string;
@@ -86,6 +89,11 @@ export function useChristmasMovies(limit: number = 12) {
   return useQuery({
     queryKey: ["christmas-movies", limit],
     queryFn: async () => {
+      // Feature disabled - skip database query
+      if (!CHRISTMAS_MOVIES_DB_ENABLED) {
+        return [];
+      }
+      
       // Get the Christmas Movies collection
       const { data: collection, error: collectionError } = await supabase
         .from("collections")
@@ -109,5 +117,6 @@ export function useChristmasMovies(limit: number = 12) {
       if (moviesError) throw moviesError;
       return movies || [];
     },
+    enabled: CHRISTMAS_MOVIES_DB_ENABLED,
   });
 }
