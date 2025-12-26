@@ -27,7 +27,9 @@ const ALLOWED_ENDPOINTS = [
   /^\/tv\/top_rated$/,
   /^\/tv\/airing_today$/,
   /^\/trending\/movie\/week$/,
+  /^\/trending\/movie\/day$/,
   /^\/trending\/tv\/week$/,
+  /^\/trending\/tv\/day$/,
   /^\/trending\/all\/week$/,
   /^\/search\/movie$/,
   /^\/search\/tv$/,
@@ -50,7 +52,7 @@ const ALLOWED_ENDPOINTS = [
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey',
 };
 
 function isEndpointAllowed(endpoint: string): boolean {
@@ -81,8 +83,30 @@ export default async function handler(request: Request) {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  const url = new URL(request.url);
-  const endpoint = url.searchParams.get('endpoint');
+  let endpoint: string | null = null;
+  let params: Record<string, string> = {};
+
+  // Handle both GET (query params) and POST (JSON body) requests
+  if (request.method === 'POST') {
+    try {
+      const body = await request.json();
+      endpoint = body.endpoint;
+      params = body.params || {};
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  } else {
+    const url = new URL(request.url);
+    endpoint = url.searchParams.get('endpoint');
+    url.searchParams.forEach((value, key) => {
+      if (key !== 'endpoint') {
+        params[key] = value;
+      }
+    });
+  }
 
   if (!endpoint) {
     return new Response(
@@ -119,16 +143,18 @@ export default async function handler(request: Request) {
   }
 
   try {
-    // Build TMDB URL with all query params except 'endpoint'
+    // Build TMDB URL with all params
     const tmdbUrl = new URL(`${TMDB_BASE_URL}${endpoint}`);
     tmdbUrl.searchParams.set('api_key', TMDB_API_KEY);
     
-    // Forward all other query params
-    url.searchParams.forEach((value, key) => {
-      if (key !== 'endpoint') {
-        tmdbUrl.searchParams.set(key, value);
+    // Add all params to URL
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        tmdbUrl.searchParams.set(key, String(value));
       }
     });
+
+    console.log(`[TMDB Proxy] Fetching: ${endpoint}`);
 
     const response = await fetch(tmdbUrl.toString(), {
       method: 'GET',
