@@ -199,12 +199,12 @@ export default function MovieDetails() {
             </>
           )}
 
-          <div className="relative container mx-auto px-4 py-6 lg:py-12">
-            {/* Mobile Poster - Only visible on mobile */}
+          <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 3xl:px-16 py-6 lg:py-12 2xl:py-16 3xl:py-20 max-w-[2000px]">
+            {/* Mobile Poster - Only visible on mobile/tablet */}
             <div className="lg:hidden mb-6">
               <Link 
                 to={getWatchMovieUrl(movie.title)}
-                className="group relative block w-full max-w-[200px] mx-auto rounded-xl overflow-hidden shadow-2xl"
+                className="group relative block w-full max-w-[200px] sm:max-w-[240px] mx-auto rounded-xl overflow-hidden shadow-2xl"
               >
                 <img
                   src={getImageUrl(movie.poster_path, "w500")}
@@ -213,18 +213,18 @@ export default function MovieDetails() {
                 />
                 {/* Red play button */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-primary/90 flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:bg-primary transition-all duration-300">
-                    <Play className="w-7 h-7 text-primary-foreground ml-0.5" fill="currentColor" />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:bg-primary transition-all duration-300">
+                    <Play className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground ml-0.5" fill="currentColor" />
                   </div>
                 </div>
               </Link>
             </div>
 
-            <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-16">
+            <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-12 xl:gap-16 2xl:gap-20 3xl:gap-24">
               {/* Left Content */}
-              <div className="flex-1 space-y-4 lg:space-y-6 lg:max-w-xl xl:max-w-2xl">
+              <div className="flex-1 space-y-4 lg:space-y-6 2xl:space-y-8 lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl 3xl:max-w-4xl">
                 {/* Title */}
-                <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold text-foreground leading-tight text-center lg:text-left">
+                <h1 className="text-xl sm:text-2xl lg:text-4xl 2xl:text-5xl 3xl:text-6xl font-bold text-foreground leading-tight text-center lg:text-left">
                   {movie.title}
                 </h1>
 
@@ -247,15 +247,15 @@ export default function MovieDetails() {
                   )}
                   
                   {/* Votes */}
-                  <div className="flex items-center gap-1.5 text-muted-foreground text-xs lg:text-sm">
-                    <Star className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-rating-gold" fill="currentColor" />
+                  <div className="flex items-center gap-1.5 text-muted-foreground text-xs lg:text-sm 2xl:text-base">
+                    <Star className="w-3.5 h-3.5 lg:w-4 lg:h-4 2xl:w-5 2xl:h-5 text-rating-gold" fill="currentColor" />
                     <span>({omdbData?.imdbVotes || movie.vote_count?.toLocaleString()})</span>
                   </div>
                 </div>
 
                 {/* Meta Info */}
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 text-xs lg:text-sm text-muted-foreground">
-                  <span className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-medium">HD</span>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 lg:gap-3 2xl:gap-4 text-xs lg:text-sm 2xl:text-base text-muted-foreground">
+                  <span className="px-2 py-0.5 2xl:px-3 2xl:py-1 rounded bg-secondary text-secondary-foreground text-xs 2xl:text-sm font-medium">HD</span>
                   {movie.runtime && (
                     <span className="flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
@@ -273,17 +273,17 @@ export default function MovieDetails() {
                 </div>
 
                 {/* Overview */}
-                <p className="text-muted-foreground leading-relaxed text-sm lg:text-base text-center lg:text-left line-clamp-4 lg:line-clamp-none">
+                <p className="text-muted-foreground leading-relaxed text-sm lg:text-base 2xl:text-lg 3xl:text-xl text-center lg:text-left line-clamp-4 lg:line-clamp-none">
                   {movie.overview}
                 </p>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 lg:gap-3">
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 lg:gap-3 2xl:gap-4">
                   <Button
                     onClick={() => trailer && setTrailerOpen(true)}
-                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 lg:px-6 h-9 lg:h-10 text-sm"
+                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 lg:px-6 2xl:px-8 h-9 lg:h-10 2xl:h-12 text-sm 2xl:text-base"
                   >
-                    <Play className="w-4 h-4" fill="currentColor" />
+                    <Play className="w-4 h-4 2xl:w-5 2xl:h-5" fill="currentColor" />
                     Trailer
                   </Button>
                   
@@ -401,21 +401,21 @@ export default function MovieDetails() {
 
               {/* Right - Movie Poster (Desktop only) */}
               <div className="hidden lg:block lg:sticky lg:top-24 flex-shrink-0">
-                <div className="relative w-[280px] xl:w-[320px]">
+                <div className="relative w-[280px] xl:w-[320px] 2xl:w-[380px] 3xl:w-[440px] 4xl:w-[500px]">
                   {/* Poster with grayscale effect */}
                   <Link 
                     to={getWatchMovieUrl(movie.title)}
-                    className="group relative block rounded-lg overflow-hidden shadow-2xl"
+                    className="group relative block rounded-xl 2xl:rounded-2xl overflow-hidden shadow-2xl"
                   >
                     <img
-                      src={getImageUrl(movie.poster_path, "w500")}
+                      src={getImageUrl(movie.poster_path, "w780")}
                       alt={movie.title}
                       className="w-full h-auto grayscale group-hover:grayscale-0 transition-all duration-500"
                     />
                     {/* Red play button - always visible */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 xl:w-20 xl:h-20 rounded-full bg-primary/90 flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:bg-primary transition-all duration-300">
-                        <Play className="w-8 h-8 xl:w-10 xl:h-10 text-primary-foreground ml-1" fill="currentColor" />
+                      <div className="w-16 h-16 xl:w-20 xl:h-20 2xl:w-24 2xl:h-24 3xl:w-28 3xl:h-28 rounded-full bg-primary/90 flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:bg-primary transition-all duration-300">
+                        <Play className="w-8 h-8 xl:w-10 xl:h-10 2xl:w-12 2xl:h-12 3xl:w-14 3xl:h-14 text-primary-foreground ml-1" fill="currentColor" />
                       </div>
                     </div>
                   </Link>
