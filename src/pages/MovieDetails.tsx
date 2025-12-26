@@ -185,33 +185,33 @@ export default function MovieDetails() {
         <Navbar />
 
         {/* Hero Section */}
-        <section className="relative min-h-[85vh] overflow-hidden">
+        <section className="relative pt-20 lg:pt-24">
           {/* Background Image */}
           {movie.backdrop_path && (
             <>
               <img
                 src={getBackdropUrl(movie.backdrop_path)}
                 alt={movie.title}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover opacity-30"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/40" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/70" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
             </>
           )}
 
-          <div className="relative container mx-auto px-4 pt-24 lg:pt-32 pb-8">
-            <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+          <div className="relative container mx-auto px-4 py-8 lg:py-12">
+            <div className="flex flex-col lg:flex-row lg:items-start gap-8 lg:gap-16">
               {/* Left Content */}
-              <div className="flex-1 space-y-5 max-w-2xl">
+              <div className="flex-1 space-y-6 lg:max-w-xl xl:max-w-2xl">
                 {/* Title */}
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground leading-tight">
                   {movie.title}
                 </h1>
 
-                {/* Ratings */}
+                {/* Ratings Row */}
                 <div className="flex flex-wrap items-center gap-3">
                   {/* IMDb Rating */}
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-rating-gold/20 border border-rating-gold/30">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#1a1d29] border border-border">
                     <span className="text-rating-gold text-sm font-bold">IMDb</span>
                     <span className="text-foreground font-semibold">
                       {omdbData?.ratings?.imdb || movie.vote_average?.toFixed(1)}
@@ -220,21 +220,13 @@ export default function MovieDetails() {
                   
                   {/* Rotten Tomatoes */}
                   {omdbData?.ratings?.rottenTomatoes && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-destructive/20 border border-destructive/30">
-                      <span className="text-xl">🍅</span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#1a1d29] border border-border">
+                      <span className="text-lg">🍅</span>
                       <span className="text-foreground font-semibold">{omdbData.ratings.rottenTomatoes}</span>
                     </div>
                   )}
                   
-                  {/* Metacritic */}
-                  {omdbData?.ratings?.metacritic && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-rating-gold/20 border border-rating-gold/30">
-                      <span className="text-rating-gold text-sm font-bold">MC</span>
-                      <span className="text-foreground font-semibold">{omdbData.ratings.metacritic}</span>
-                    </div>
-                  )}
-                  
-                  {/* Views count */}
+                  {/* Votes */}
                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <Star className="w-4 h-4 text-rating-gold" fill="currentColor" />
                     <span>({omdbData?.imdbVotes || movie.vote_count?.toLocaleString()} votes)</span>
@@ -242,7 +234,7 @@ export default function MovieDetails() {
                 </div>
 
                 {/* Meta Info */}
-                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   <span className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-medium">HD</span>
                   {movie.runtime && (
                     <span className="flex items-center gap-1">
@@ -256,15 +248,15 @@ export default function MovieDetails() {
                 </div>
 
                 {/* Overview */}
-                <p className="text-muted-foreground leading-relaxed text-sm md:text-base line-clamp-4">
+                <p className="text-muted-foreground leading-relaxed text-sm lg:text-base">
                   {movie.overview}
                 </p>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap items-center gap-3 pt-4">
+                <div className="flex flex-wrap items-center gap-3">
                   <Button
                     onClick={() => trailer && setTrailerOpen(true)}
-                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6"
+                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6 h-10"
                   >
                     <Play className="w-4 h-4" fill="currentColor" />
                     Watch Trailer
@@ -272,7 +264,7 @@ export default function MovieDetails() {
                   
                   <Button 
                     variant="outline" 
-                    className="gap-2 rounded-full px-5 border-border bg-background/50 backdrop-blur-sm hover:bg-secondary text-foreground"
+                    className="gap-2 rounded-full px-5 h-10 border-border bg-secondary/50 hover:bg-secondary text-foreground"
                     onClick={handleWatchlist}
                   >
                     <Plus className="w-4 h-4" />
@@ -283,7 +275,7 @@ export default function MovieDetails() {
                     variant="outline"
                     size="icon"
                     className={cn(
-                      "rounded-full border-border bg-background/50 backdrop-blur-sm hover:bg-secondary",
+                      "rounded-full h-10 w-10 border-border bg-secondary/50 hover:bg-secondary",
                       isFavorite && "bg-destructive/20 border-destructive/50"
                     )}
                     onClick={handleFavorite}
@@ -292,19 +284,18 @@ export default function MovieDetails() {
                   </Button>
 
                   <SharePopover title={movie.title} />
-
                 </div>
 
                 {/* Tabs */}
-                <div className="flex items-center gap-6 pt-6 border-t border-border mt-6">
+                <div className="flex items-center gap-6 pt-4 border-t border-border">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={cn(
-                        "text-sm font-medium transition-colors pb-2",
+                        "text-sm font-medium transition-colors py-2",
                         activeTab === tab.id 
-                          ? "text-foreground border-b-2 border-primary" 
+                          ? "text-foreground border-b-2 border-foreground -mb-[2px]" 
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
@@ -315,15 +306,15 @@ export default function MovieDetails() {
 
                 {/* Tab Content - Cast */}
                 {activeTab === "cast" && cast.length > 0 && (
-                  <div className="pt-4">
-                    <div className="flex items-center gap-4 overflow-x-auto pb-4 scroll-hide">
+                  <div className="pt-2">
+                    <div className="flex items-start gap-6 overflow-x-auto pb-4 scroll-hide">
                       {cast.map((person) => (
                         <Link
                           key={person.id}
                           to={`/actor/${generateSlug(person.name)}`}
-                          className="flex flex-col items-center gap-2 min-w-[80px] group"
+                          className="flex flex-col items-center gap-2 min-w-[70px] group"
                         >
-                          <div className="w-16 h-16 rounded-full overflow-hidden bg-secondary ring-2 ring-transparent group-hover:ring-primary transition-all">
+                          <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full overflow-hidden bg-secondary ring-2 ring-transparent group-hover:ring-primary transition-all">
                             {person.profile_path ? (
                               <img
                                 src={getImageUrl(person.profile_path, "w185")}
@@ -331,26 +322,23 @@ export default function MovieDetails() {
                                 className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xl">
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-lg">
                                 {person.name[0]}
                               </div>
                             )}
                           </div>
-                          <span className="text-xs text-muted-foreground text-center line-clamp-1 max-w-[80px]">
-                            {person.name}
+                          <span className="text-xs text-muted-foreground text-center line-clamp-1 max-w-[70px] group-hover:text-foreground transition-colors">
+                            {person.name.split(' ')[0]}...
                           </span>
                         </Link>
                       ))}
-                      <button className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary hover:bg-muted transition-colors ml-2">
-                        <ChevronRight className="w-5 h-5 text-foreground" />
-                      </button>
                     </div>
                   </div>
                 )}
 
                 {/* Tab Content - Details */}
                 {activeTab === "details" && (
-                  <div className="pt-4 space-y-3 text-sm">
+                  <div className="pt-2 space-y-3 text-sm">
                     {director && (
                       <div className="flex">
                         <span className="text-muted-foreground w-24">Director:</span>
@@ -384,16 +372,15 @@ export default function MovieDetails() {
                     )}
                   </div>
                 )}
-
               </div>
 
               {/* Right - Movie Poster */}
-              <div className="hidden lg:block relative">
-                <div className="relative w-[300px] xl:w-[350px]">
+              <div className="hidden lg:block lg:sticky lg:top-24 flex-shrink-0">
+                <div className="relative w-[280px] xl:w-[320px]">
                   {/* Poster with grayscale effect */}
                   <Link 
                     to={getWatchMovieUrl(movie.title)}
-                    className="group relative block rounded-xl overflow-hidden shadow-2xl"
+                    className="group relative block rounded-lg overflow-hidden shadow-2xl"
                   >
                     <img
                       src={getImageUrl(movie.poster_path, "w500")}
@@ -402,8 +389,8 @@ export default function MovieDetails() {
                     />
                     {/* Red play button - always visible */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
-                        <Play className="w-10 h-10 text-primary-foreground ml-1" fill="currentColor" />
+                      <div className="w-16 h-16 xl:w-20 xl:h-20 rounded-full bg-primary/90 flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:bg-primary transition-all duration-300">
+                        <Play className="w-8 h-8 xl:w-10 xl:h-10 text-primary-foreground ml-1" fill="currentColor" />
                       </div>
                     </div>
                   </Link>
