@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -24,6 +23,38 @@ interface AddItemParams {
   release_date?: string | null;
 }
 
+const FAVORITES_KEY = "fmovies_favorites";
+const WATCHLIST_KEY = "fmovies_watchlist";
+
+const generateId = (): string => {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+};
+
+const getStoredList = (key: string, userId: string): ListItem[] => {
+  const stored = localStorage.getItem(key);
+  if (!stored) return [];
+  try {
+    const all = JSON.parse(stored) as ListItem[];
+    return all.filter(item => item.user_id === userId);
+  } catch {
+    return [];
+  }
+};
+
+const saveList = (key: string, items: ListItem[]) => {
+  localStorage.setItem(key, JSON.stringify(items));
+};
+
+const getAllItems = (key: string): ListItem[] => {
+  const stored = localStorage.getItem(key);
+  if (!stored) return [];
+  try {
+    return JSON.parse(stored) as ListItem[];
+  } catch {
+    return [];
+  }
+};
+
 export function useFavorites() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -32,13 +63,7 @@ export function useFavorites() {
     queryKey: ["favorites", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from("favorites")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as ListItem[];
+      return getStoredList(FAVORITES_KEY, user.id);
     },
     enabled: !!user,
   });
@@ -46,16 +71,32 @@ export function useFavorites() {
   const addFavorite = useMutation({
     mutationFn: async (item: AddItemParams) => {
       if (!user) throw new Error("Not authenticated");
-      const { error } = await supabase.from("favorites").insert({
+      
+      const allItems = getAllItems(FAVORITES_KEY);
+      
+      // Check for duplicates
+      const exists = allItems.some(
+        f => f.user_id === user.id && f.tmdb_id === item.tmdb_id && f.media_type === item.media_type
+      );
+      
+      if (exists) {
+        throw new Error("duplicate");
+      }
+
+      const newItem: ListItem = {
+        id: generateId(),
         user_id: user.id,
         tmdb_id: item.tmdb_id,
         media_type: item.media_type,
         title: item.title,
-        poster_path: item.poster_path,
-        vote_average: item.vote_average,
-        release_date: item.release_date,
-      });
-      if (error) throw error;
+        poster_path: item.poster_path || null,
+        vote_average: item.vote_average || null,
+        release_date: item.release_date || null,
+        created_at: new Date().toISOString(),
+      };
+
+      allItems.push(newItem);
+      saveList(FAVORITES_KEY, allItems);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["favorites"] });
@@ -73,13 +114,12 @@ export function useFavorites() {
   const removeFavorite = useMutation({
     mutationFn: async ({ tmdb_id, media_type }: { tmdb_id: number; media_type: string }) => {
       if (!user) throw new Error("Not authenticated");
-      const { error } = await supabase
-        .from("favorites")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("tmdb_id", tmdb_id)
-        .eq("media_type", media_type);
-      if (error) throw error;
+      
+      const allItems = getAllItems(FAVORITES_KEY);
+      const filtered = allItems.filter(
+        f => !(f.user_id === user.id && f.tmdb_id === tmdb_id && f.media_type === media_type)
+      );
+      saveList(FAVORITES_KEY, filtered);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["favorites"] });
@@ -105,13 +145,7 @@ export function useWatchlist() {
     queryKey: ["watchlist", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from("watchlist")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as ListItem[];
+      return getStoredList(WATCHLIST_KEY, user.id);
     },
     enabled: !!user,
   });
@@ -119,16 +153,32 @@ export function useWatchlist() {
   const addToWatchlist = useMutation({
     mutationFn: async (item: AddItemParams) => {
       if (!user) throw new Error("Not authenticated");
-      const { error } = await supabase.from("watchlist").insert({
+      
+      const allItems = getAllItems(WATCHLIST_KEY);
+      
+      // Check for duplicates
+      const exists = allItems.some(
+        w => w.user_id === user.id && w.tmdb_id === item.tmdb_id && w.media_type === item.media_type
+      );
+      
+      if (exists) {
+        throw new Error("duplicate");
+      }
+
+      const newItem: ListItem = {
+        id: generateId(),
         user_id: user.id,
         tmdb_id: item.tmdb_id,
         media_type: item.media_type,
         title: item.title,
-        poster_path: item.poster_path,
-        vote_average: item.vote_average,
-        release_date: item.release_date,
-      });
-      if (error) throw error;
+        poster_path: item.poster_path || null,
+        vote_average: item.vote_average || null,
+        release_date: item.release_date || null,
+        created_at: new Date().toISOString(),
+      };
+
+      allItems.push(newItem);
+      saveList(WATCHLIST_KEY, allItems);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["watchlist"] });
@@ -146,13 +196,12 @@ export function useWatchlist() {
   const removeFromWatchlist = useMutation({
     mutationFn: async ({ tmdb_id, media_type }: { tmdb_id: number; media_type: string }) => {
       if (!user) throw new Error("Not authenticated");
-      const { error } = await supabase
-        .from("watchlist")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("tmdb_id", tmdb_id)
-        .eq("media_type", media_type);
-      if (error) throw error;
+      
+      const allItems = getAllItems(WATCHLIST_KEY);
+      const filtered = allItems.filter(
+        w => !(w.user_id === user.id && w.tmdb_id === tmdb_id && w.media_type === media_type)
+      );
+      saveList(WATCHLIST_KEY, filtered);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["watchlist"] });
