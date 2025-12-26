@@ -18,6 +18,7 @@ import { Play, Star, Clock, Calendar, Plus, Heart, Download, ChevronLeft, Chevro
 import { SharePopover } from "@/components/SharePopover";
 import { useWatchlist, useFavorites } from "@/hooks/useUserLists";
 import { useAutoTag } from "@/hooks/useAutoTag";
+import { useOMDBRatings } from "@/hooks/useOMDBRatings";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,14 @@ export default function MovieDetails() {
   });
 
   const isLoading = isSearching || isLoadingDetails;
+
+  // Fetch OMDB ratings (title/year for lookup)
+  const releaseYear = movie?.release_date?.split("-")[0];
+  const { data: omdbData } = useOMDBRatings(
+    undefined, // TMDB doesn't have imdb_id in basic response
+    movie?.title,
+    releaseYear
+  );
 
   useAutoTag({ tmdbId: movie?.id, mediaType: "movie" });
 
@@ -200,18 +209,35 @@ export default function MovieDetails() {
                 </h1>
 
                 {/* Ratings */}
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* IMDb Rating */}
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-amber-500/20 border border-amber-500/30">
                     <span className="text-amber-400 text-sm font-bold">IMDb</span>
-                    <span className="text-white font-semibold">{movie.vote_average?.toFixed(1)}</span>
+                    <span className="text-white font-semibold">
+                      {omdbData?.ratings?.imdb || movie.vote_average?.toFixed(1)}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-green-500/20 border border-green-500/30">
-                    <span className="text-green-400 text-sm">🍅</span>
-                    <span className="text-white font-semibold">{Math.round((movie.vote_average || 0) * 10)}%</span>
-                  </div>
+                  
+                  {/* Rotten Tomatoes */}
+                  {omdbData?.ratings?.rottenTomatoes && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-red-500/20 border border-red-500/30">
+                      <span className="text-xl">🍅</span>
+                      <span className="text-white font-semibold">{omdbData.ratings.rottenTomatoes}</span>
+                    </div>
+                  )}
+                  
+                  {/* Metacritic */}
+                  {omdbData?.ratings?.metacritic && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-yellow-500/20 border border-yellow-500/30">
+                      <span className="text-yellow-400 text-sm font-bold">MC</span>
+                      <span className="text-white font-semibold">{omdbData.ratings.metacritic}</span>
+                    </div>
+                  )}
+                  
+                  {/* Views count */}
                   <div className="flex items-center gap-2 text-gray-400 text-sm">
                     <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
-                    <span>({movie.vote_count?.toLocaleString()} views)</span>
+                    <span>({omdbData?.imdbVotes || movie.vote_count?.toLocaleString()} votes)</span>
                   </div>
                 </div>
 
