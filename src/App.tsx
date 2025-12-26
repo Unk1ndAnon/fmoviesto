@@ -9,7 +9,6 @@ import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { useCheckNewEpisodes } from "@/hooks/useCheckNewEpisodes";
 import { useSiteVisitTracking } from "@/hooks/useSiteVisits";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { MaintenanceBanner } from "@/components/MaintenanceBanner";
 
 import Index from "./pages/Index";
 import GenreMovies from "./pages/GenreMovies";
@@ -73,7 +72,6 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <MaintenanceBanner />
         <Toaster />
         <Sonner />
         <BrowserRouter>
