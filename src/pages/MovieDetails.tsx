@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getImageUrl, getBackdropUrl } from "@/lib/tmdb";
@@ -22,6 +22,7 @@ import { useOMDBRatings } from "@/hooks/useOMDBRatings";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { incrementViewCount } from "@/lib/viewCounter";
 
 type TabType = "cast" | "details";
 
@@ -57,6 +58,13 @@ export default function MovieDetails() {
   );
 
   useAutoTag({ tmdbId: movie?.id, mediaType: "movie" });
+
+  // Track view count
+  useEffect(() => {
+    if (movie?.id) {
+      incrementViewCount(movie.id, 'movie');
+    }
+  }, [movie?.id]);
 
   const handleWatchlist = () => {
     if (!user) {
