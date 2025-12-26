@@ -3,6 +3,11 @@ import { getCachedData, setCachedData, generateCacheKey, isCacheFresh } from "@/
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
+// Detect if we're running on Vercel (production) or Lovable preview
+const isVercel = typeof window !== 'undefined' && 
+  !window.location.hostname.includes('lovableproject.com') &&
+  !window.location.hostname.includes('localhost');
+
 export interface Movie {
   id: number;
   title: string;
@@ -167,6 +172,40 @@ export const getPosterUrl = (path: string | null, size: "w342" | "w500" | "w780"
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 };
 
+async function fetchTMDBViaVercel<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
+  const response = await fetch('/api/tmdb-proxy', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ endpoint, params }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function fetchTMDBViaSupabase<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('tmdb-proxy', {
+    body: { endpoint, params }
+  });
+
+  if (error) {
+    console.error('TMDB proxy error:', error);
+    throw new Error(`TMDB API error: ${error.message}`);
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  return data as T;
+}
+
 async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
   const cacheKey = generateCacheKey(endpoint, params);
   
@@ -177,33 +216,19 @@ async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {
   }
   
   try {
-    const { data, error } = await supabase.functions.invoke('tmdb-proxy', {
-      body: { endpoint, params }
-    });
-
-    if (error) {
-      console.error('TMDB proxy error:', error);
-      // Try to return cached data as fallback
-      const cached = getCachedData<T>(cacheKey);
-      if (cached) {
-        console.log('Using cached data as fallback for:', endpoint);
-        return cached;
-      }
-      throw new Error(`TMDB API error: ${error.message}`);
-    }
-
-    if (data?.error) {
-      const cached = getCachedData<T>(cacheKey);
-      if (cached) {
-        console.log('Using cached data as fallback for:', endpoint);
-        return cached;
-      }
-      throw new Error(data.error);
+    let data: T;
+    
+    if (isVercel) {
+      // On Vercel, use the Vercel API route
+      data = await fetchTMDBViaVercel<T>(endpoint, params);
+    } else {
+      // On Lovable preview, use Supabase edge function
+      data = await fetchTMDBViaSupabase<T>(endpoint, params);
     }
 
     // Cache successful response
     setCachedData(cacheKey, data);
-    return data as T;
+    return data;
   } catch (e) {
     // Network error - try cache fallback
     const cached = getCachedData<T>(cacheKey);
