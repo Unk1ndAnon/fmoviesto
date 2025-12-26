@@ -42,7 +42,8 @@ const BOT_AGENTS = [
   'messenger',
 ];
 
-const SUPABASE_URL = 'https://fblsoqabliezhxtswfah.supabase.co';
+// Use environment variable for Supabase URL
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://fblsoqabliezhxtswfah.supabase.co';
 
 function isBot(userAgent: string): boolean {
   const ua = userAgent.toLowerCase();
