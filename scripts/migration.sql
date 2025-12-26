@@ -191,7 +191,7 @@ CREATE TABLE public.watch_parties (
   media_type TEXT DEFAULT 'movie',
   season INTEGER,
   episode INTEGER,
-  current_time REAL DEFAULT 0,
+  playback_time REAL DEFAULT 0,
   is_playing BOOLEAN DEFAULT false,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now(),
