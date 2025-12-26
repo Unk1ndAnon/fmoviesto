@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tmdb, getImageUrl, getBackdropUrl } from "@/lib/tmdb";
@@ -23,6 +23,7 @@ import { useAutoTag } from "@/hooks/useAutoTag";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { incrementViewCount } from "@/lib/viewCounter";
 
 type TabType = "cast" | "details" | "episodes";
 
@@ -63,6 +64,13 @@ export default function TVDetails() {
 
   // Auto-tag TV show on page view if not already tagged
   useAutoTag({ tmdbId: show?.id, mediaType: "tv" });
+
+  // Track view count
+  useEffect(() => {
+    if (show?.id) {
+      incrementViewCount(show.id, 'tv');
+    }
+  }, [show?.id]);
 
   const scrollEpisodes = (direction: "left" | "right") => {
     if (episodeScrollRef.current) {

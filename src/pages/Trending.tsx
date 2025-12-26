@@ -1,67 +1,108 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { tmdb, Movie, TVShow } from '@/lib/tmdb';
+import { getMostViewed, getMostViewedMovies, getMostViewedTV } from '@/lib/viewCounter';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { MovieCard } from '@/components/movie/MovieCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Flame, TrendingUp, Film, Tv } from 'lucide-react';
+import { TrendingUp, Film, Tv, Eye } from 'lucide-react';
 
-type TabValue = 'day' | 'week';
 type FilterValue = 'all' | 'movies' | 'tv';
 
 export default function Trending() {
-  const [activeTab, setActiveTab] = useState<TabValue>('day');
   const [filter, setFilter] = useState<FilterValue>('all');
 
-  // Fetch trending movies and TV shows from TMDB
-  const { data: trendingMovies, isLoading: moviesLoading } = useQuery({
-    queryKey: ['trending-movies', activeTab],
-    queryFn: () => tmdb.getTrending(activeTab),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: trendingTV, isLoading: tvLoading } = useQuery({
-    queryKey: ['trending-tv', activeTab],
-    queryFn: () => tmdb.getTrendingTV(activeTab),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const isLoading = moviesLoading || tvLoading;
-
-  // Combine and interleave movies and TV shows
-  const combinedItems: Array<{ item: Movie | TVShow; mediaType: 'movie' | 'tv' }> = [];
-  
-  if (filter === 'movies') {
-    trendingMovies?.results?.forEach(movie => {
-      combinedItems.push({ item: movie, mediaType: 'movie' });
-    });
-  } else if (filter === 'tv') {
-    trendingTV?.results?.forEach(show => {
-      combinedItems.push({ item: show, mediaType: 'tv' });
-    });
-  } else {
-    // Interleave movies and TV shows
-    const movies = trendingMovies?.results || [];
-    const tvShows = trendingTV?.results || [];
-    const maxLength = Math.max(movies.length, tvShows.length);
-    
-    for (let i = 0; i < maxLength; i++) {
-      if (movies[i]) {
-        combinedItems.push({ item: movies[i], mediaType: 'movie' });
-      }
-      if (tvShows[i]) {
-        combinedItems.push({ item: tvShows[i], mediaType: 'tv' });
-      }
+  // Get most viewed items from localStorage
+  const viewRecords = useMemo(() => {
+    switch (filter) {
+      case 'movies':
+        return getMostViewedMovies(50);
+      case 'tv':
+        return getMostViewedTV(50);
+      default:
+        return getMostViewed(50);
     }
-  }
+  }, [filter]);
 
-  const tabConfig = [
-    { value: 'day' as TabValue, label: 'Today', icon: Flame, color: 'text-orange-500' },
-    { value: 'week' as TabValue, label: 'This Week', icon: TrendingUp, color: 'text-blue-500' },
-  ];
+  // Fetch TMDB details for movies
+  const movieQueries = useQueries({
+    queries: viewRecords
+      .filter(item => item.media_type === 'movie')
+      .map(item => ({
+        queryKey: ['movie', item.tmdb_id],
+        queryFn: () => tmdb.getMovieDetails(item.tmdb_id),
+        staleTime: 10 * 60 * 1000,
+      })),
+  });
+
+  // Fetch TMDB details for TV shows
+  const tvQueries = useQueries({
+    queries: viewRecords
+      .filter(item => item.media_type === 'tv')
+      .map(item => ({
+        queryKey: ['tv', item.tmdb_id],
+        queryFn: () => tmdb.getTVDetails(item.tmdb_id),
+        staleTime: 10 * 60 * 1000,
+      })),
+  });
+
+  const isLoading = movieQueries.some(q => q.isLoading) || tvQueries.some(q => q.isLoading);
+
+  // Build maps for quick lookup
+  const movieMap = new Map<number, Movie>();
+  const tvMap = new Map<number, TVShow>();
+  const viewCountMap = new Map<string, number>();
+
+  viewRecords.forEach(record => {
+    viewCountMap.set(`${record.media_type}-${record.tmdb_id}`, record.view_count);
+  });
+
+  movieQueries.forEach((q, idx) => {
+    const record = viewRecords.filter(r => r.media_type === 'movie')[idx];
+    if (q.data && record) {
+      movieMap.set(record.tmdb_id, q.data);
+    }
+  });
+
+  tvQueries.forEach((q, idx) => {
+    const record = viewRecords.filter(r => r.media_type === 'tv')[idx];
+    if (q.data && record) {
+      tvMap.set(record.tmdb_id, q.data);
+    }
+  });
+
+  // Build combined list preserving order by view count
+  type CombinedItem = { 
+    item: Movie | TVShow; 
+    mediaType: 'movie' | 'tv'; 
+    viewCount: number;
+    index: number;
+  };
+
+  const combinedItems: CombinedItem[] = viewRecords
+    .map((record, idx): CombinedItem | null => {
+      if (record.media_type === 'movie') {
+        const movie = movieMap.get(record.tmdb_id);
+        return movie ? { 
+          item: movie, 
+          mediaType: 'movie', 
+          viewCount: record.view_count,
+          index: idx 
+        } : null;
+      } else {
+        const tv = tvMap.get(record.tmdb_id);
+        return tv ? { 
+          item: tv, 
+          mediaType: 'tv', 
+          viewCount: record.view_count,
+          index: idx 
+        } : null;
+      }
+    })
+    .filter((item): item is CombinedItem => item !== null);
 
   const filterConfig = [
     { value: 'all' as FilterValue, label: 'All', icon: TrendingUp },
@@ -69,18 +110,11 @@ export default function Trending() {
     { value: 'tv' as FilterValue, label: 'TV Shows', icon: Tv },
   ];
 
-  const getTitle = () => {
-    switch (activeTab) {
-      case 'day': return 'Trending Today';
-      case 'week': return 'Trending This Week';
-    }
-  };
-
   return (
     <>
       <SEOHead
-        title="Trending on Fmov - Most Popular Movies & TV Shows"
-        description="Discover what's trending on Fmov. See the most popular movies and TV shows today and this week."
+        title="Trending on Fmov - Most Watched Movies & TV Shows"
+        description="Discover what's trending on Fmov. See the most watched movies and TV shows based on your viewing history."
       />
 
       <div className="min-h-screen flex flex-col bg-background">
@@ -95,25 +129,9 @@ export default function Trending() {
                 Trending on Fmov
               </h1>
               <p className="text-muted-foreground">
-                Discover what everyone's watching right now
+                Most watched movies and TV shows
               </p>
             </div>
-
-            {/* Time Period Tabs */}
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="mb-4">
-              <TabsList className="bg-card/50 border border-border h-auto">
-                {tabConfig.map(({ value, label, icon: Icon, color }) => (
-                  <TabsTrigger 
-                    key={value} 
-                    value={value}
-                    className="gap-2 py-2.5 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                  >
-                    <Icon className={`w-4 h-4 ${activeTab === value ? '' : color}`} />
-                    {label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
 
             {/* Filter Tabs */}
             <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterValue)} className="mb-8">
@@ -122,7 +140,7 @@ export default function Trending() {
                   <TabsTrigger 
                     key={value} 
                     value={value}
-                    className="gap-2 py-2 px-3 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground"
+                    className="gap-2 py-2.5 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                   >
                     <Icon className="w-4 h-4" />
                     {label}
@@ -132,9 +150,15 @@ export default function Trending() {
             </Tabs>
 
             {/* Content */}
-            {isLoading ? (
+            {viewRecords.length === 0 ? (
+              <div className="py-16 text-center text-muted-foreground">
+                <Eye className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <h2 className="text-xl font-semibold mb-2">No viewing history yet</h2>
+                <p>Start watching movies and TV shows to see what's trending!</p>
+              </div>
+            ) : isLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {Array.from({ length: 20 }).map((_, i) => (
+                {Array.from({ length: viewRecords.length }).map((_, i) => (
                   <div key={i}>
                     <Skeleton className="aspect-[2/3] rounded-lg" />
                     <div className="pt-3 space-y-1">
@@ -144,21 +168,21 @@ export default function Trending() {
                   </div>
                 ))}
               </div>
-            ) : combinedItems.length === 0 ? (
-              <div className="py-16 text-center text-muted-foreground">
-                <TrendingUp className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <h2 className="text-xl font-semibold mb-2">No trending data available</h2>
-                <p>Check back later for trending content!</p>
-              </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {combinedItems.map(({ item, mediaType }, index) => (
+                {combinedItems.map(({ item, mediaType, viewCount, index }) => (
                   <div key={`${mediaType}-${item.id}`} className="relative">
+                    {/* Rank badge for top 10 */}
                     {index < 10 && (
                       <div className="absolute -top-2 -left-2 z-10 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shadow-lg">
                         {index + 1}
                       </div>
                     )}
+                    {/* View count badge */}
+                    <div className="absolute top-2 right-2 z-10 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                      <Eye className="w-3 h-3" />
+                      {viewCount}
+                    </div>
                     <MovieCard
                       item={item}
                       type={mediaType}
