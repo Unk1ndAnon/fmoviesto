@@ -400,9 +400,9 @@ export default function MovieDetails() {
                       alt={movie.title}
                       className="w-full h-auto grayscale group-hover:grayscale-0 transition-all duration-500"
                     />
-                    {/* Red play button overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                    {/* Red play button - always visible */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
                         <Play className="w-10 h-10 text-primary-foreground ml-1" fill="currentColor" />
                       </div>
                     </div>
