@@ -1,5 +1,22 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  getCacheKey,
+  canFetch,
+  markFetched,
+  getWatchingNowFromCache,
+  setWatchingNowCache,
+  isWatchingNowCacheFresh,
+  getAllWatchingNowFromCache,
+  setAllWatchingNowCache,
+  isAllWatchingNowCacheFresh,
+  getMostWatchedFromCache,
+  setMostWatchedCache,
+  isMostWatchedCacheFresh,
+  shouldBackoff,
+  recordError,
+  clearError,
+} from '@/lib/watchStatsCache';
 
 // Generate or retrieve anonymous session ID
 const getSessionId = (): string => {
@@ -91,7 +108,8 @@ export function useWatchTracking({
         .update({ last_ping: new Date().toISOString() })
         .eq('id', eventId);
     } catch (err) {
-      console.error('Error updating ping:', err);
+      // Silently fail ping updates - non-critical
+      console.warn('Error updating ping:', err);
     }
   }, [eventId]);
 
@@ -150,44 +168,95 @@ interface WatchingNowResult {
 }
 
 export function useWatchingNow(tmdbId: number, mediaType: 'movie' | 'tv'): WatchingNowResult {
-  const [count, setCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [count, setCount] = useState(() => getWatchingNowFromCache(tmdbId, mediaType) ?? 0);
+  const [isLoading, setIsLoading] = useState(!isWatchingNowCacheFresh(tmdbId, mediaType));
   const [error, setError] = useState<Error | null>(null);
+  const fetchingRef = useRef(false);
 
-  const fetchCount = useCallback(async () => {
+  const fetchCount = useCallback(async (force = false) => {
     if (!tmdbId) {
       setCount(0);
       setIsLoading(false);
       return;
     }
 
+    const cacheKey = getCacheKey('watching', tmdbId, mediaType);
+
+    // Check cache first
+    if (!force && isWatchingNowCacheFresh(tmdbId, mediaType)) {
+      const cached = getWatchingNowFromCache(tmdbId, mediaType);
+      if (cached !== null) {
+        setCount(cached);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Rate limiting
+    if (!force && !canFetch(cacheKey)) {
+      const cached = getWatchingNowFromCache(tmdbId, mediaType);
+      if (cached !== null) {
+        setCount(cached);
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    // Error backoff
+    if (shouldBackoff(cacheKey)) {
+      const cached = getWatchingNowFromCache(tmdbId, mediaType);
+      if (cached !== null) {
+        setCount(cached);
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    // Prevent concurrent fetches
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+
     try {
       setIsLoading(true);
+      markFetched(cacheKey);
+
       const { data, error: rpcError } = await supabase.rpc('get_watching_now', {
         p_tmdb_id: tmdbId,
         p_media_type: mediaType,
       });
 
       if (rpcError) throw rpcError;
-      setCount(data || 0);
+      
+      const newCount = data || 0;
+      setCount(newCount);
+      setWatchingNowCache(tmdbId, mediaType, newCount);
       setError(null);
+      clearError(cacheKey);
     } catch (err) {
-      console.error('Error fetching watching now:', err);
+      console.warn('Error fetching watching now:', err);
+      recordError(cacheKey);
       setError(err as Error);
+      
+      // Use stale cache on error
+      const cached = getWatchingNowFromCache(tmdbId, mediaType);
+      if (cached !== null) {
+        setCount(cached);
+      }
     } finally {
       setIsLoading(false);
+      fetchingRef.current = false;
     }
   }, [tmdbId, mediaType]);
 
   useEffect(() => {
     fetchCount();
     
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchCount, 30000);
+    // Refresh every 30 seconds (rate-limited by cache)
+    const interval = setInterval(() => fetchCount(), 30000);
     return () => clearInterval(interval);
   }, [fetchCount]);
 
-  return { count, isLoading, error, refetch: fetchCount };
+  return { count, isLoading, error, refetch: () => fetchCount(true) };
 }
 
 export interface WatchedItem {
@@ -204,42 +273,101 @@ interface MostWatchedResult {
 }
 
 export function useMostWatched(hours: number, limit: number = 20): MostWatchedResult {
-  const [items, setItems] = useState<WatchedItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [items, setItems] = useState<WatchedItem[]>(() => {
+    const cached = getMostWatchedFromCache(hours, limit);
+    return cached?.map(item => ({
+      tmdb_id: item.tmdb_id,
+      media_type: item.media_type as 'movie' | 'tv',
+      view_count: item.view_count,
+    })) ?? [];
+  });
+  const [isLoading, setIsLoading] = useState(!isMostWatchedCacheFresh(hours, limit));
   const [error, setError] = useState<Error | null>(null);
+  const fetchingRef = useRef(false);
 
-  const fetchItems = useCallback(async () => {
+  const fetchItems = useCallback(async (force = false) => {
+    const cacheKey = getCacheKey('most_watched', hours, limit);
+
+    // Check cache first
+    if (!force && isMostWatchedCacheFresh(hours, limit)) {
+      const cached = getMostWatchedFromCache(hours, limit);
+      if (cached) {
+        setItems(cached.map(item => ({
+          tmdb_id: item.tmdb_id,
+          media_type: item.media_type as 'movie' | 'tv',
+          view_count: item.view_count,
+        })));
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Rate limiting
+    if (!force && !canFetch(cacheKey)) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Error backoff
+    if (shouldBackoff(cacheKey)) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Prevent concurrent fetches
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+
     try {
       setIsLoading(true);
+      markFetched(cacheKey);
+
       const { data, error: rpcError } = await supabase.rpc('get_most_watched', {
         p_hours: hours,
         p_limit: limit,
       });
 
       if (rpcError) throw rpcError;
-      setItems((data || []).map((item: any) => ({
+      
+      const mappedItems = (data || []).map((item: { tmdb_id: number; media_type: string; view_count: number }) => ({
         tmdb_id: item.tmdb_id,
         media_type: item.media_type as 'movie' | 'tv',
         view_count: Number(item.view_count),
-      })));
+      }));
+      
+      setItems(mappedItems);
+      setMostWatchedCache(hours, limit, data || []);
       setError(null);
+      clearError(cacheKey);
     } catch (err) {
-      console.error('Error fetching most watched:', err);
+      console.warn('Error fetching most watched:', err);
+      recordError(cacheKey);
       setError(err as Error);
+      
+      // Use stale cache on error
+      const cached = getMostWatchedFromCache(hours, limit);
+      if (cached) {
+        setItems(cached.map(item => ({
+          tmdb_id: item.tmdb_id,
+          media_type: item.media_type as 'movie' | 'tv',
+          view_count: item.view_count,
+        })));
+      }
     } finally {
       setIsLoading(false);
+      fetchingRef.current = false;
     }
   }, [hours, limit]);
 
   useEffect(() => {
     fetchItems();
     
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchItems, 5 * 60 * 1000);
+    // Refresh every 5 minutes (rate-limited by cache)
+    const interval = setInterval(() => fetchItems(), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchItems]);
 
-  return { items, isLoading, error, refetch: fetchItems };
+  return { items, isLoading, error, refetch: () => fetchItems(true) };
 }
 
 export interface WatchingNowItem {
@@ -256,39 +384,98 @@ interface AllWatchingNowResult {
 }
 
 export function useAllWatchingNow(limit: number = 20): AllWatchingNowResult {
-  const [items, setItems] = useState<WatchingNowItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [items, setItems] = useState<WatchingNowItem[]>(() => {
+    const cached = getAllWatchingNowFromCache();
+    return cached?.map(item => ({
+      tmdb_id: item.tmdb_id,
+      media_type: item.media_type as 'movie' | 'tv',
+      viewer_count: item.viewer_count,
+    })) ?? [];
+  });
+  const [isLoading, setIsLoading] = useState(!isAllWatchingNowCacheFresh());
   const [error, setError] = useState<Error | null>(null);
+  const fetchingRef = useRef(false);
 
-  const fetchItems = useCallback(async () => {
+  const fetchItems = useCallback(async (force = false) => {
+    const cacheKey = getCacheKey('all_watching', limit);
+
+    // Check cache first
+    if (!force && isAllWatchingNowCacheFresh()) {
+      const cached = getAllWatchingNowFromCache();
+      if (cached) {
+        setItems(cached.map(item => ({
+          tmdb_id: item.tmdb_id,
+          media_type: item.media_type as 'movie' | 'tv',
+          viewer_count: item.viewer_count,
+        })));
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Rate limiting
+    if (!force && !canFetch(cacheKey)) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Error backoff
+    if (shouldBackoff(cacheKey)) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Prevent concurrent fetches
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+
     try {
       setIsLoading(true);
+      markFetched(cacheKey);
+
       const { data, error: rpcError } = await supabase.rpc('get_all_watching_now', {
         p_limit: limit,
       });
 
       if (rpcError) throw rpcError;
-      setItems((data || []).map((item: any) => ({
+      
+      const mappedItems = (data || []).map((item: { tmdb_id: number; media_type: string; viewer_count: number }) => ({
         tmdb_id: item.tmdb_id,
         media_type: item.media_type as 'movie' | 'tv',
         viewer_count: Number(item.viewer_count),
-      })));
+      }));
+      
+      setItems(mappedItems);
+      setAllWatchingNowCache(data || []);
       setError(null);
+      clearError(cacheKey);
     } catch (err) {
-      console.error('Error fetching all watching now:', err);
+      console.warn('Error fetching all watching now:', err);
+      recordError(cacheKey);
       setError(err as Error);
+      
+      // Use stale cache on error
+      const cached = getAllWatchingNowFromCache();
+      if (cached) {
+        setItems(cached.map(item => ({
+          tmdb_id: item.tmdb_id,
+          media_type: item.media_type as 'movie' | 'tv',
+          viewer_count: item.viewer_count,
+        })));
+      }
     } finally {
       setIsLoading(false);
+      fetchingRef.current = false;
     }
   }, [limit]);
 
   useEffect(() => {
     fetchItems();
     
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchItems, 30000);
+    // Refresh every 30 seconds (rate-limited by cache)
+    const interval = setInterval(() => fetchItems(), 30000);
     return () => clearInterval(interval);
   }, [fetchItems]);
 
-  return { items, isLoading, error, refetch: fetchItems };
+  return { items, isLoading, error, refetch: () => fetchItems(true) };
 }
