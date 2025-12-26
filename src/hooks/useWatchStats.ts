@@ -18,6 +18,9 @@ import {
   clearError,
 } from '@/lib/watchStatsCache';
 
+// Feature flag - set to true to enable watching stats features
+const WATCHING_STATS_ENABLED = false;
+
 // Generate or retrieve anonymous session ID
 const getSessionId = (): string => {
   const key = 'watch_session_id';
@@ -44,8 +47,18 @@ export function useWatchTracking({
   episode,
   enabled = true,
 }: UseWatchTrackingParams) {
-  const [eventId, setEventId] = useState<string | null>(null);
   const [isTracking, setIsTracking] = useState(false);
+  
+  // Feature disabled - return no-op functions
+  if (!WATCHING_STATS_ENABLED) {
+    return {
+      startTracking: () => {},
+      stopTracking: () => {},
+      isTracking: false,
+    };
+  }
+  
+  const [eventId, setEventId] = useState<string | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const sessionId = getSessionId();
 
@@ -168,6 +181,11 @@ interface WatchingNowResult {
 }
 
 export function useWatchingNow(tmdbId: number, mediaType: 'movie' | 'tv'): WatchingNowResult {
+  // Feature disabled - return zeros
+  if (!WATCHING_STATS_ENABLED) {
+    return { count: 0, isLoading: false, error: null, refetch: () => {} };
+  }
+  
   const [count, setCount] = useState(() => getWatchingNowFromCache(tmdbId, mediaType) ?? 0);
   const [isLoading, setIsLoading] = useState(!isWatchingNowCacheFresh(tmdbId, mediaType));
   const [error, setError] = useState<Error | null>(null);
@@ -273,6 +291,11 @@ interface MostWatchedResult {
 }
 
 export function useMostWatched(hours: number, limit: number = 20): MostWatchedResult {
+  // Feature disabled - return empty
+  if (!WATCHING_STATS_ENABLED) {
+    return { items: [], isLoading: false, error: null, refetch: () => {} };
+  }
+  
   const [items, setItems] = useState<WatchedItem[]>(() => {
     const cached = getMostWatchedFromCache(hours, limit);
     return cached?.map(item => ({
@@ -384,6 +407,11 @@ interface AllWatchingNowResult {
 }
 
 export function useAllWatchingNow(limit: number = 20): AllWatchingNowResult {
+  // Feature disabled - return empty
+  if (!WATCHING_STATS_ENABLED) {
+    return { items: [], isLoading: false, error: null, refetch: () => {} };
+  }
+  
   const [items, setItems] = useState<WatchingNowItem[]>(() => {
     const cached = getAllWatchingNowFromCache();
     return cached?.map(item => ({
