@@ -199,79 +199,75 @@ export default function MovieDetails() {
 
           <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 3xl:px-16 py-6 lg:py-12 2xl:py-16 3xl:py-20 max-w-[2000px]">
             {/* Mobile Poster - Only visible on mobile/tablet */}
-            <div className="lg:hidden mb-6">
+            <div className="lg:hidden mb-4">
               <Link 
                 to={getWatchMovieUrl(movie.title)}
-                className="group relative block w-full max-w-[200px] sm:max-w-[240px] mx-auto rounded-xl overflow-hidden shadow-2xl"
+                className="group relative block w-[140px] sm:w-[180px] mx-auto rounded-lg overflow-hidden shadow-xl"
               >
                 <img
-                  src={getImageUrl(movie.poster_path, "w500")}
+                  src={getImageUrl(movie.poster_path, "w342")}
                   alt={movie.title}
-                  className="w-full h-auto grayscale group-hover:grayscale-0 transition-all duration-500"
+                  className="w-full h-auto"
                 />
-                {/* Red play button */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:bg-primary transition-all duration-300">
-                    <Play className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground ml-0.5" fill="currentColor" />
+                {/* Play button */}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                    <Play className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground ml-0.5" fill="currentColor" />
                   </div>
                 </div>
               </Link>
             </div>
 
-            <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-12 xl:gap-16 2xl:gap-20 3xl:gap-24">
+            <div className="flex flex-col lg:flex-row lg:items-start gap-4 lg:gap-12 xl:gap-16 2xl:gap-20 3xl:gap-24">
               {/* Left Content */}
-              <div className="flex-1 space-y-4 lg:space-y-6 2xl:space-y-8 lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl 3xl:max-w-4xl">
+              <div className="flex-1 space-y-3 lg:space-y-6 2xl:space-y-8 lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl 3xl:max-w-4xl">
                 {/* Title */}
-                <h1 className="text-xl sm:text-2xl lg:text-4xl 2xl:text-5xl 3xl:text-6xl font-bold text-foreground leading-tight text-center lg:text-left">
+                <h1 className="text-lg sm:text-xl lg:text-4xl 2xl:text-5xl 3xl:text-6xl font-bold text-foreground leading-tight text-center lg:text-left">
                   {movie.title}
                 </h1>
 
                 {/* Ratings Row */}
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 lg:gap-3">
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 lg:gap-3">
                   {/* IMDb Rating */}
-                  <div className="flex items-center gap-1.5 px-2 py-1 lg:px-3 lg:py-1.5 rounded-md bg-[#1a1d29] border border-border">
-                    <span className="text-rating-gold text-xs lg:text-sm font-bold">IMDb</span>
-                    <span className="text-foreground text-sm font-semibold">
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 lg:px-3 lg:py-1.5 rounded bg-[#1a1d29] border border-border">
+                    <span className="text-rating-gold text-[10px] lg:text-sm font-bold">IMDb</span>
+                    <span className="text-foreground text-xs lg:text-sm font-semibold">
                       {omdbData?.ratings?.imdb || movie.vote_average?.toFixed(1)}
                     </span>
                   </div>
                   
                   {/* Rotten Tomatoes */}
                   {omdbData?.ratings?.rottenTomatoes && (
-                    <div className="flex items-center gap-1.5 px-2 py-1 lg:px-3 lg:py-1.5 rounded-md bg-[#1a1d29] border border-border">
-                      <span className="text-base lg:text-lg">🍅</span>
-                      <span className="text-foreground text-sm font-semibold">{omdbData.ratings.rottenTomatoes}</span>
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 lg:px-3 lg:py-1.5 rounded bg-[#1a1d29] border border-border">
+                      <span className="text-sm lg:text-lg">🍅</span>
+                      <span className="text-foreground text-xs lg:text-sm font-semibold">{omdbData.ratings.rottenTomatoes}</span>
                     </div>
                   )}
                   
                   {/* Votes */}
-                  <div className="flex items-center gap-1.5 text-muted-foreground text-xs lg:text-sm 2xl:text-base">
-                    <Star className="w-3.5 h-3.5 lg:w-4 lg:h-4 2xl:w-5 2xl:h-5 text-rating-gold" fill="currentColor" />
+                  <div className="flex items-center gap-1 text-muted-foreground text-[10px] lg:text-sm 2xl:text-base">
+                    <Star className="w-3 h-3 lg:w-4 lg:h-4 2xl:w-5 2xl:h-5 text-rating-gold" fill="currentColor" />
                     <span>({omdbData?.imdbVotes || movie.vote_count?.toLocaleString()})</span>
                   </div>
                 </div>
 
                 {/* Meta Info */}
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 lg:gap-3 2xl:gap-4 text-xs lg:text-sm 2xl:text-base text-muted-foreground">
-                  <span className="px-2 py-0.5 2xl:px-3 2xl:py-1 rounded bg-secondary text-secondary-foreground text-xs 2xl:text-sm font-medium">HD</span>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 lg:gap-3 2xl:gap-4 text-[10px] lg:text-sm 2xl:text-base text-muted-foreground">
+                  <span className="px-1.5 py-0.5 2xl:px-3 2xl:py-1 rounded bg-secondary text-secondary-foreground text-[10px] lg:text-xs 2xl:text-sm font-medium">HD</span>
                   {movie.runtime && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+                    <span className="flex items-center gap-0.5">
+                      <Clock className="w-3 h-3 lg:w-4 lg:h-4" />
                       {formatRuntime(movie.runtime)}
                     </span>
                   )}
+                  <span>•</span>
                   <span>{year}</span>
-                  <span className="hidden sm:inline">•</span>
-                  <span className="hidden sm:inline">{genres}</span>
-                </div>
-
-                {/* Genres on mobile - separate line */}
-                <div className="sm:hidden text-center text-xs text-muted-foreground">
-                  {genres}
+                  <span>•</span>
+                  <span className="line-clamp-1">{genres}</span>
                 </div>
 
                 {/* Overview */}
-                <p className="text-muted-foreground leading-relaxed text-sm lg:text-base 2xl:text-lg 3xl:text-xl text-center lg:text-left line-clamp-4 lg:line-clamp-none">
+                <p className="text-muted-foreground leading-relaxed text-xs lg:text-base 2xl:text-lg 3xl:text-xl text-center lg:text-left line-clamp-3 lg:line-clamp-none">
                   {movie.overview}
                 </p>
 
@@ -279,18 +275,18 @@ export default function MovieDetails() {
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 lg:gap-3 2xl:gap-4">
                   <Button
                     onClick={() => trailer && setTrailerOpen(true)}
-                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 lg:px-6 2xl:px-8 h-9 lg:h-10 2xl:h-12 text-sm 2xl:text-base"
+                    className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-3 lg:px-6 2xl:px-8 h-8 lg:h-10 2xl:h-12 text-xs lg:text-sm 2xl:text-base"
                   >
-                    <Play className="w-4 h-4 2xl:w-5 2xl:h-5" fill="currentColor" />
+                    <Play className="w-3.5 h-3.5 lg:w-4 lg:h-4 2xl:w-5 2xl:h-5" fill="currentColor" />
                     Trailer
                   </Button>
                   
                   <Button 
                     variant="outline" 
-                    className="gap-2 rounded-full px-4 lg:px-5 h-9 lg:h-10 text-sm border-border bg-secondary/50 hover:bg-secondary text-foreground"
+                    className="gap-1.5 rounded-full px-3 lg:px-5 h-8 lg:h-10 text-xs lg:text-sm border-border bg-secondary/50 hover:bg-secondary text-foreground"
                     onClick={handleWatchlist}
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
                     {inWatchlist ? "Listed" : "List"}
                   </Button>
 
@@ -298,27 +294,27 @@ export default function MovieDetails() {
                     variant="outline"
                     size="icon"
                     className={cn(
-                      "rounded-full h-9 w-9 lg:h-10 lg:w-10 border-border bg-secondary/50 hover:bg-secondary",
+                      "rounded-full h-8 w-8 lg:h-10 lg:w-10 border-border bg-secondary/50 hover:bg-secondary",
                       isFavorite && "bg-destructive/20 border-destructive/50"
                     )}
                     onClick={handleFavorite}
                   >
-                    <Heart className={cn("w-4 h-4", isFavorite ? "fill-destructive text-destructive" : "text-foreground")} />
+                    <Heart className={cn("w-3.5 h-3.5 lg:w-4 lg:h-4", isFavorite ? "fill-destructive text-destructive" : "text-foreground")} />
                   </Button>
 
                   <SharePopover title={movie.title} />
                 </div>
 
                 {/* Tabs */}
-                <div className="flex items-center justify-center lg:justify-start gap-4 lg:gap-6 pt-3 lg:pt-4 border-t border-border overflow-x-auto scroll-hide">
+                <div className="flex items-center justify-center lg:justify-start gap-3 lg:gap-6 pt-2 lg:pt-4 border-t border-border overflow-x-auto scroll-hide">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={cn(
-                        "text-xs lg:text-sm font-medium transition-colors py-2 whitespace-nowrap",
+                        "text-[11px] lg:text-sm font-medium transition-colors py-1.5 lg:py-2 whitespace-nowrap",
                         activeTab === tab.id 
-                          ? "text-foreground border-b-2 border-foreground -mb-[2px]" 
+                          ? "text-foreground border-b-2 border-primary -mb-[2px]" 
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
@@ -329,28 +325,28 @@ export default function MovieDetails() {
 
                 {/* Tab Content - Cast */}
                 {activeTab === "cast" && cast.length > 0 && (
-                  <div className="pt-2">
-                    <div className="flex items-start gap-4 lg:gap-6 overflow-x-auto pb-4 scroll-hide justify-center lg:justify-start">
+                  <div className="pt-1 lg:pt-2">
+                    <div className="flex items-start gap-3 lg:gap-6 overflow-x-auto pb-3 lg:pb-4 scroll-hide justify-center lg:justify-start">
                       {cast.map((person) => (
                         <Link
                           key={person.id}
                           to={`/actor/${generateSlug(person.name)}`}
-                          className="flex flex-col items-center gap-1.5 lg:gap-2 min-w-[60px] lg:min-w-[70px] group"
+                          className="flex flex-col items-center gap-1 lg:gap-2 min-w-[50px] lg:min-w-[70px] group"
                         >
-                          <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full overflow-hidden bg-secondary ring-2 ring-transparent group-hover:ring-primary transition-all">
+                          <div className="w-10 h-10 lg:w-16 lg:h-16 rounded-full overflow-hidden bg-secondary ring-2 ring-transparent group-hover:ring-primary transition-all">
                             {person.profile_path ? (
                               <img
                                 src={getImageUrl(person.profile_path, "w185")}
                                 alt={person.name}
-                                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
+                                className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm lg:text-lg">
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs lg:text-lg">
                                 {person.name[0]}
                               </div>
                             )}
                           </div>
-                          <span className="text-[10px] lg:text-xs text-muted-foreground text-center line-clamp-1 max-w-[60px] lg:max-w-[70px] group-hover:text-foreground transition-colors">
+                          <span className="text-[9px] lg:text-xs text-muted-foreground text-center line-clamp-1 max-w-[50px] lg:max-w-[70px] group-hover:text-foreground transition-colors">
                             {person.name.split(' ')[0]}
                           </span>
                         </Link>
@@ -361,10 +357,10 @@ export default function MovieDetails() {
 
                 {/* Tab Content - Details */}
                 {activeTab === "details" && (
-                  <div className="pt-2 space-y-2 lg:space-y-3 text-xs lg:text-sm">
+                  <div className="pt-1 lg:pt-2 space-y-1.5 lg:space-y-3 text-[10px] lg:text-sm">
                     {director && (
                       <div className="flex justify-center lg:justify-start">
-                        <span className="text-muted-foreground w-20 lg:w-24">Director:</span>
+                        <span className="text-muted-foreground w-16 lg:w-24">Director:</span>
                         <Link 
                           to={`/director/${generateSlug(director.name)}`}
                           className="text-foreground hover:text-primary transition-colors"
@@ -374,22 +370,22 @@ export default function MovieDetails() {
                       </div>
                     )}
                     <div className="flex justify-center lg:justify-start">
-                      <span className="text-muted-foreground w-20 lg:w-24">Release:</span>
+                      <span className="text-muted-foreground w-16 lg:w-24">Release:</span>
                       <span className="text-foreground">{movie.release_date}</span>
                     </div>
                     <div className="flex justify-center lg:justify-start">
-                      <span className="text-muted-foreground w-20 lg:w-24">Status:</span>
+                      <span className="text-muted-foreground w-16 lg:w-24">Status:</span>
                       <span className="text-foreground">{movie.status}</span>
                     </div>
                     {movie.budget > 0 && (
                       <div className="flex justify-center lg:justify-start">
-                        <span className="text-muted-foreground w-20 lg:w-24">Budget:</span>
+                        <span className="text-muted-foreground w-16 lg:w-24">Budget:</span>
                         <span className="text-foreground">${movie.budget.toLocaleString()}</span>
                       </div>
                     )}
                     {movie.revenue > 0 && (
                       <div className="flex justify-center lg:justify-start">
-                        <span className="text-muted-foreground w-20 lg:w-24">Revenue:</span>
+                        <span className="text-muted-foreground w-16 lg:w-24">Revenue:</span>
                         <span className="text-foreground">${movie.revenue.toLocaleString()}</span>
                       </div>
                     )}
