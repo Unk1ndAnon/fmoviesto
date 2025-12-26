@@ -328,7 +328,7 @@ export default function MovieDetails() {
                               <img
                                 src={getImageUrl(person.profile_path, "w185")}
                                 alt={person.name}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xl">
