@@ -1,12 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCachedData, setCachedData, generateCacheKey, isCacheFresh } from "@/lib/apiCache";
+import { isVercelDeployment } from "@/lib/api-config";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
-
-// Detect if we're running on Vercel (production) or Lovable preview
-const isVercel = typeof window !== 'undefined' && 
-  !window.location.hostname.includes('lovableproject.com') &&
-  !window.location.hostname.includes('localhost');
 
 export interface Movie {
   id: number;
@@ -218,7 +214,7 @@ async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {
   try {
     let data: T;
     
-    if (isVercel) {
+    if (isVercelDeployment()) {
       // On Vercel, use the Vercel API route
       data = await fetchTMDBViaVercel<T>(endpoint, params);
     } else {
