@@ -199,83 +199,108 @@ export default function MovieDetails() {
             </>
           )}
 
-          <div className="relative container mx-auto px-4 py-8 lg:py-12">
-            <div className="flex flex-col lg:flex-row lg:items-start gap-8 lg:gap-16">
+          <div className="relative container mx-auto px-4 py-6 lg:py-12">
+            {/* Mobile Poster - Only visible on mobile */}
+            <div className="lg:hidden mb-6">
+              <Link 
+                to={getWatchMovieUrl(movie.title)}
+                className="group relative block w-full max-w-[200px] mx-auto rounded-xl overflow-hidden shadow-2xl"
+              >
+                <img
+                  src={getImageUrl(movie.poster_path, "w500")}
+                  alt={movie.title}
+                  className="w-full h-auto grayscale group-hover:grayscale-0 transition-all duration-500"
+                />
+                {/* Red play button */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-primary/90 flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:bg-primary transition-all duration-300">
+                    <Play className="w-7 h-7 text-primary-foreground ml-0.5" fill="currentColor" />
+                  </div>
+                </div>
+              </Link>
+            </div>
+
+            <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-16">
               {/* Left Content */}
-              <div className="flex-1 space-y-6 lg:max-w-xl xl:max-w-2xl">
+              <div className="flex-1 space-y-4 lg:space-y-6 lg:max-w-xl xl:max-w-2xl">
                 {/* Title */}
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground leading-tight">
+                <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold text-foreground leading-tight text-center lg:text-left">
                   {movie.title}
                 </h1>
 
                 {/* Ratings Row */}
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 lg:gap-3">
                   {/* IMDb Rating */}
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#1a1d29] border border-border">
-                    <span className="text-rating-gold text-sm font-bold">IMDb</span>
-                    <span className="text-foreground font-semibold">
+                  <div className="flex items-center gap-1.5 px-2 py-1 lg:px-3 lg:py-1.5 rounded-md bg-[#1a1d29] border border-border">
+                    <span className="text-rating-gold text-xs lg:text-sm font-bold">IMDb</span>
+                    <span className="text-foreground text-sm font-semibold">
                       {omdbData?.ratings?.imdb || movie.vote_average?.toFixed(1)}
                     </span>
                   </div>
                   
                   {/* Rotten Tomatoes */}
                   {omdbData?.ratings?.rottenTomatoes && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#1a1d29] border border-border">
-                      <span className="text-lg">🍅</span>
-                      <span className="text-foreground font-semibold">{omdbData.ratings.rottenTomatoes}</span>
+                    <div className="flex items-center gap-1.5 px-2 py-1 lg:px-3 lg:py-1.5 rounded-md bg-[#1a1d29] border border-border">
+                      <span className="text-base lg:text-lg">🍅</span>
+                      <span className="text-foreground text-sm font-semibold">{omdbData.ratings.rottenTomatoes}</span>
                     </div>
                   )}
                   
                   {/* Votes */}
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                    <Star className="w-4 h-4 text-rating-gold" fill="currentColor" />
-                    <span>({omdbData?.imdbVotes || movie.vote_count?.toLocaleString()} votes)</span>
+                  <div className="flex items-center gap-1.5 text-muted-foreground text-xs lg:text-sm">
+                    <Star className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-rating-gold" fill="currentColor" />
+                    <span>({omdbData?.imdbVotes || movie.vote_count?.toLocaleString()})</span>
                   </div>
                 </div>
 
                 {/* Meta Info */}
-                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 text-xs lg:text-sm text-muted-foreground">
                   <span className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-medium">HD</span>
                   {movie.runtime && (
                     <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
+                      <Clock className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
                       {formatRuntime(movie.runtime)}
                     </span>
                   )}
                   <span>{year}</span>
-                  <span>•</span>
-                  <span>{genres}</span>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="hidden sm:inline">{genres}</span>
+                </div>
+
+                {/* Genres on mobile - separate line */}
+                <div className="sm:hidden text-center text-xs text-muted-foreground">
+                  {genres}
                 </div>
 
                 {/* Overview */}
-                <p className="text-muted-foreground leading-relaxed text-sm lg:text-base">
+                <p className="text-muted-foreground leading-relaxed text-sm lg:text-base text-center lg:text-left line-clamp-4 lg:line-clamp-none">
                   {movie.overview}
                 </p>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 lg:gap-3">
                   <Button
                     onClick={() => trailer && setTrailerOpen(true)}
-                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6 h-10"
+                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 lg:px-6 h-9 lg:h-10 text-sm"
                   >
                     <Play className="w-4 h-4" fill="currentColor" />
-                    Watch Trailer
+                    Trailer
                   </Button>
                   
                   <Button 
                     variant="outline" 
-                    className="gap-2 rounded-full px-5 h-10 border-border bg-secondary/50 hover:bg-secondary text-foreground"
+                    className="gap-2 rounded-full px-4 lg:px-5 h-9 lg:h-10 text-sm border-border bg-secondary/50 hover:bg-secondary text-foreground"
                     onClick={handleWatchlist}
                   >
                     <Plus className="w-4 h-4" />
-                    {inWatchlist ? "In List" : "Add List"}
+                    {inWatchlist ? "Listed" : "List"}
                   </Button>
 
                   <Button
                     variant="outline"
                     size="icon"
                     className={cn(
-                      "rounded-full h-10 w-10 border-border bg-secondary/50 hover:bg-secondary",
+                      "rounded-full h-9 w-9 lg:h-10 lg:w-10 border-border bg-secondary/50 hover:bg-secondary",
                       isFavorite && "bg-destructive/20 border-destructive/50"
                     )}
                     onClick={handleFavorite}
@@ -287,13 +312,13 @@ export default function MovieDetails() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex items-center gap-6 pt-4 border-t border-border">
+                <div className="flex items-center justify-center lg:justify-start gap-4 lg:gap-6 pt-3 lg:pt-4 border-t border-border overflow-x-auto scroll-hide">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={cn(
-                        "text-sm font-medium transition-colors py-2",
+                        "text-xs lg:text-sm font-medium transition-colors py-2 whitespace-nowrap",
                         activeTab === tab.id 
                           ? "text-foreground border-b-2 border-foreground -mb-[2px]" 
                           : "text-muted-foreground hover:text-foreground"
@@ -307,14 +332,14 @@ export default function MovieDetails() {
                 {/* Tab Content - Cast */}
                 {activeTab === "cast" && cast.length > 0 && (
                   <div className="pt-2">
-                    <div className="flex items-start gap-6 overflow-x-auto pb-4 scroll-hide">
+                    <div className="flex items-start gap-4 lg:gap-6 overflow-x-auto pb-4 scroll-hide justify-center lg:justify-start">
                       {cast.map((person) => (
                         <Link
                           key={person.id}
                           to={`/actor/${generateSlug(person.name)}`}
-                          className="flex flex-col items-center gap-2 min-w-[70px] group"
+                          className="flex flex-col items-center gap-1.5 lg:gap-2 min-w-[60px] lg:min-w-[70px] group"
                         >
-                          <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full overflow-hidden bg-secondary ring-2 ring-transparent group-hover:ring-primary transition-all">
+                          <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full overflow-hidden bg-secondary ring-2 ring-transparent group-hover:ring-primary transition-all">
                             {person.profile_path ? (
                               <img
                                 src={getImageUrl(person.profile_path, "w185")}
@@ -322,13 +347,13 @@ export default function MovieDetails() {
                                 className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-lg">
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm lg:text-lg">
                                 {person.name[0]}
                               </div>
                             )}
                           </div>
-                          <span className="text-xs text-muted-foreground text-center line-clamp-1 max-w-[70px] group-hover:text-foreground transition-colors">
-                            {person.name.split(' ')[0]}...
+                          <span className="text-[10px] lg:text-xs text-muted-foreground text-center line-clamp-1 max-w-[60px] lg:max-w-[70px] group-hover:text-foreground transition-colors">
+                            {person.name.split(' ')[0]}
                           </span>
                         </Link>
                       ))}
@@ -338,10 +363,10 @@ export default function MovieDetails() {
 
                 {/* Tab Content - Details */}
                 {activeTab === "details" && (
-                  <div className="pt-2 space-y-3 text-sm">
+                  <div className="pt-2 space-y-2 lg:space-y-3 text-xs lg:text-sm">
                     {director && (
-                      <div className="flex">
-                        <span className="text-muted-foreground w-24">Director:</span>
+                      <div className="flex justify-center lg:justify-start">
+                        <span className="text-muted-foreground w-20 lg:w-24">Director:</span>
                         <Link 
                           to={`/director/${generateSlug(director.name)}`}
                           className="text-foreground hover:text-primary transition-colors"
@@ -350,23 +375,23 @@ export default function MovieDetails() {
                         </Link>
                       </div>
                     )}
-                    <div className="flex">
-                      <span className="text-muted-foreground w-24">Release:</span>
+                    <div className="flex justify-center lg:justify-start">
+                      <span className="text-muted-foreground w-20 lg:w-24">Release:</span>
                       <span className="text-foreground">{movie.release_date}</span>
                     </div>
-                    <div className="flex">
-                      <span className="text-muted-foreground w-24">Status:</span>
+                    <div className="flex justify-center lg:justify-start">
+                      <span className="text-muted-foreground w-20 lg:w-24">Status:</span>
                       <span className="text-foreground">{movie.status}</span>
                     </div>
                     {movie.budget > 0 && (
-                      <div className="flex">
-                        <span className="text-muted-foreground w-24">Budget:</span>
+                      <div className="flex justify-center lg:justify-start">
+                        <span className="text-muted-foreground w-20 lg:w-24">Budget:</span>
                         <span className="text-foreground">${movie.budget.toLocaleString()}</span>
                       </div>
                     )}
                     {movie.revenue > 0 && (
-                      <div className="flex">
-                        <span className="text-muted-foreground w-24">Revenue:</span>
+                      <div className="flex justify-center lg:justify-start">
+                        <span className="text-muted-foreground w-20 lg:w-24">Revenue:</span>
                         <span className="text-foreground">${movie.revenue.toLocaleString()}</span>
                       </div>
                     )}
@@ -374,7 +399,7 @@ export default function MovieDetails() {
                 )}
               </div>
 
-              {/* Right - Movie Poster */}
+              {/* Right - Movie Poster (Desktop only) */}
               <div className="hidden lg:block lg:sticky lg:top-24 flex-shrink-0">
                 <div className="relative w-[280px] xl:w-[320px]">
                   {/* Poster with grayscale effect */}
