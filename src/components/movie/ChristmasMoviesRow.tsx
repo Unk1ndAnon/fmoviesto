@@ -8,7 +8,15 @@ import { MovieCard } from "./MovieCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Feature flag - set to true to enable Christmas movies row
+const CHRISTMAS_MOVIES_ENABLED = false;
+
 export function ChristmasMoviesRow() {
+  // Feature disabled
+  if (!CHRISTMAS_MOVIES_ENABLED) {
+    return null;
+  }
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const { data: collectionMovies, isLoading: collectionLoading } = useChristmasMovies(12);
 
