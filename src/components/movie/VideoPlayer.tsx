@@ -18,6 +18,7 @@ export interface VideoSource {
   url: string;
   isCustom: boolean;
   isHLS?: boolean;
+  noAds?: boolean;
 }
 
 interface VideoPlayerProps {
@@ -80,6 +81,7 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
         url: url || "",
         isCustom: false,
         isHLS: false,
+        noAds: (source as any).noAds || false,
       };
     }).filter(s => s.url); // Filter out sources with null/empty URLs
     
@@ -142,6 +144,9 @@ export function ServerDropdown({ sources, currentSource, onSelectSource }: Serve
               )}
             />
             <span className="flex-1">{source.name}</span>
+            {source.noAds && (
+              <span className="text-xs text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded font-medium">No Ads</span>
+            )}
             {source.isHLS && (
               <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">HLS</span>
             )}
