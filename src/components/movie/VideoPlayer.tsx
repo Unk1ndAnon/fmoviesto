@@ -65,12 +65,23 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
       isHLS: isHLSUrl(embed.url),
     }));
     
-    const defaultSources = EMBED_SOURCES.map((source, index) => ({
-      name: source.name,
-      url: getEmbedUrl(id, type, index, season, episode),
-      isCustom: false,
-      isHLS: false,
-    }));
+    // Filter out movie-only sources when viewing TV shows
+    const filteredEmbedSources = EMBED_SOURCES.filter((source) => {
+      if (type === "tv" && (source as any).movieOnly) {
+        return false;
+      }
+      return true;
+    });
+    
+    const defaultSources = filteredEmbedSources.map((source) => {
+      const url = source.getUrl(id, type, season, episode);
+      return {
+        name: source.name,
+        url: url || "",
+        isCustom: false,
+        isHLS: false,
+      };
+    }).filter(s => s.url); // Filter out sources with null/empty URLs
     
     // Deduplicate by URL - custom sources take priority
     const customUrls = new Set(customSources.map(s => s.url));
