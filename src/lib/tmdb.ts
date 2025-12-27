@@ -389,6 +389,8 @@ export const EMBED_SOURCES = [
     type === "tv" ? `https://vidsrc-embed.ru/embed/tv/${id}/${season}-${episode}` : `https://vidsrc-embed.ru/embed/${id}` },
   { name: "SuperEmbed", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
     type === "tv" ? `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}` : `https://multiembed.mov/?video_id=${id}&tmdb=1` },
+  { name: "Fmov", getUrl: (id: number, type: "movie" | "tv") => 
+    type === "movie" ? `http://cwkgkwwcc0cwo0o4sk8ocgos.45.77.64.108.sslip.io/movie/${id}` : null, movieOnly: true },
 ];
 
 export const getEmbedUrl = (id: number, type: "movie" | "tv", sourceIndex: number = 0, season?: number, episode?: number): string => {
