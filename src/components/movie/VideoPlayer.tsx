@@ -39,8 +39,13 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
 
   useEffect(() => {
     const fetchAdminData = async () => {
-      const data = await adminStorage.get(id, type);
-      setAdminData(data);
+      try {
+        const data = await adminStorage.get(id, type);
+        setAdminData(data);
+      } catch (error) {
+        console.warn("Failed to fetch admin data:", error);
+        setAdminData(null);
+      }
     };
     fetchAdminData();
   }, [id, type]);
