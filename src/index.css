@@ -225,4 +225,12 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Hide scrollable elements when fullscreen to prevent visual artifacts */
+  :fullscreen .fullscreen-hide,
+  :-webkit-full-screen .fullscreen-hide,
+  :-moz-full-screen .fullscreen-hide,
+  :-ms-fullscreen .fullscreen-hide {
+    display: none !important;
+  }
 }
