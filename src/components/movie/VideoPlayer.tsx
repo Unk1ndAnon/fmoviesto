@@ -262,15 +262,15 @@ export function VideoPlayer({
   if (!isPlaying && backdrop) {
     return (
       <div className="w-full">
-        {/* Server Notice */}
-        {showNotice && <ServerNotice onDismiss={handleDismissNotice} />}
-        
         {/* Server Dropdown - Above Player (only when not external) */}
         {!externalControls && (
           <div className="mb-3">
             <InternalServerDropdown />
           </div>
         )}
+
+        {/* Server Notice */}
+        {showNotice && <ServerNotice onDismiss={handleDismissNotice} />}
 
         {/* Player Preview */}
         <div 
@@ -295,15 +295,15 @@ export function VideoPlayer({
 
   return (
     <div className="w-full">
-      {/* Server Notice */}
-      {showNotice && <ServerNotice onDismiss={handleDismissNotice} />}
-      
       {/* Server Dropdown - Above Player (only when not external) */}
       {!externalControls && (
         <div className="mb-3">
           <InternalServerDropdown />
         </div>
       )}
+
+      {/* Server Notice */}
+      {showNotice && <ServerNotice onDismiss={handleDismissNotice} />}
 
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
