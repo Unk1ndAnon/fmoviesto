@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { AlertTriangle, RefreshCw, Play, Server, ChevronDown, X, Info } from "lucide-react";
+import { AlertTriangle, RefreshCw, Play, Server, ChevronDown } from "lucide-react";
 import { EMBED_SOURCES, getEmbedUrl } from "@/lib/tmdb";
 import { adminStorage, AdminMovie } from "@/lib/admin";
 import { validateEmbedUrl } from "@/lib/url-validation";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { HLSPlayer, isHLSUrl } from "./HLSPlayer";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 
 export interface VideoSource {
   name: string;
@@ -159,24 +159,6 @@ export function ServerDropdown({ sources, currentSource, onSelectSource }: Serve
   );
 }
 
-// Server notice component
-function ServerNotice({ onDismiss }: { onDismiss: () => void }) {
-  return (
-    <Alert className="mb-3 bg-muted/50 border-border relative">
-      <Info className="h-4 w-4 text-primary" />
-      <AlertDescription className="text-sm text-muted-foreground pr-8">
-        If the video doesn't load or play, try switching to a different server from the dropdown below.
-      </AlertDescription>
-      <button
-        onClick={onDismiss}
-        className="absolute right-2 top-2 p-1 rounded-md hover:bg-background/80 transition-colors"
-        aria-label="Dismiss"
-      >
-        <X className="h-4 w-4 text-muted-foreground" />
-      </button>
-    </Alert>
-  );
-}
 
 export function VideoPlayer({ 
   id, 
@@ -194,16 +176,6 @@ export function VideoPlayer({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showNotice, setShowNotice] = useState(() => {
-    // Check if user has dismissed the notice before
-    const dismissed = localStorage.getItem('server-notice-dismissed');
-    return !dismissed;
-  });
-
-  const handleDismissNotice = () => {
-    setShowNotice(false);
-    localStorage.setItem('server-notice-dismissed', 'true');
-  };
   
   const sources = useVideoSources(id, type, season, episode);
   
@@ -262,9 +234,6 @@ export function VideoPlayer({
   if (!isPlaying && backdrop) {
     return (
       <div className="w-full">
-        {/* Server Notice */}
-        {showNotice && <ServerNotice onDismiss={handleDismissNotice} />}
-
         {/* Server Dropdown - Above Player (only when not external) */}
         {!externalControls && (
           <div className="mb-3">
@@ -295,9 +264,6 @@ export function VideoPlayer({
 
   return (
     <div className="w-full">
-      {/* Server Notice */}
-      {showNotice && <ServerNotice onDismiss={handleDismissNotice} />}
-
       {/* Server Dropdown - Above Player (only when not external) */}
       {!externalControls && (
         <div className="mb-3">
