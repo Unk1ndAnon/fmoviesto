@@ -12,7 +12,7 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { VideoObjectJsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight, Heart, Bookmark, Calendar, Users, MessageCircle, Eye } from "lucide-react";
+import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight, Heart, Bookmark, Calendar, Users, MessageCircle, Eye, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites, useWatchlist } from "@/hooks/useUserLists";
@@ -25,6 +25,7 @@ import { PlaybackSync } from "@/components/watch-party/PlaybackSync";
 import { SyncCountdownOverlay } from "@/components/watch-party/SyncCountdownOverlay";
 import { HowToWatchTooltip } from "@/components/movie/HowToWatchTooltip";
 import { useWatchTracking, useWatchingNow } from "@/hooks/useWatchStats";
+import { useDevToolsDetection } from "@/hooks/useDevToolsDetection";
 
 function WatchActionButtons({
   itemId,
@@ -120,6 +121,7 @@ export default function Watch() {
   const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);
   const [currentSource, setCurrentSource] = useState(0);
+  const isDevToolsOpen = useDevToolsDetection();
   
   // Detect TV from URL (has seasonEpisode param)
   const isTV = !!seasonEpisode;
@@ -479,17 +481,32 @@ export default function Watch() {
               </div>
 
               {/* Player */}
-              <VideoPlayer
-                id={itemId}
-                type={isTV ? "tv" : "movie"}
-                season={isTV ? season : undefined}
-                episode={isTV ? episode : undefined}
-                title={title}
-                backdrop={getBackdropUrl(item.backdrop_path)}
-                externalControls
-                currentSource={currentSource}
-                onSourceChange={setCurrentSource}
-              />
+              {isDevToolsOpen ? (
+                <div 
+                  className="aspect-video bg-black rounded-lg flex flex-col items-center justify-center gap-4"
+                  data-protected="true"
+                >
+                  <ShieldAlert className="w-16 h-16 text-destructive" />
+                  <h3 className="text-xl font-semibold text-foreground">Player Hidden</h3>
+                  <p className="text-muted-foreground text-center max-w-md px-4">
+                    Please close Developer Tools to continue watching.
+                  </p>
+                </div>
+              ) : (
+                <div data-protected="true">
+                  <VideoPlayer
+                    id={itemId}
+                    type={isTV ? "tv" : "movie"}
+                    season={isTV ? season : undefined}
+                    episode={isTV ? episode : undefined}
+                    title={title}
+                    backdrop={getBackdropUrl(item.backdrop_path)}
+                    externalControls
+                    currentSource={currentSource}
+                    onSourceChange={setCurrentSource}
+                  />
+                </div>
+              )}
 
               {/* How to Watch Tooltip - First visit only */}
               <HowToWatchTooltip />
