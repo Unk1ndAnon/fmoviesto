@@ -369,10 +369,10 @@ export const tmdb = {
 };
 
 export const EMBED_SOURCES = [
-  { name: "Vidify", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
-    type === "tv" ? `https://player.vidify.top/embed/tv/${id}/${season}/${episode}` : `https://player.vidify.top/embed/movie/${id}` },
   { name: "Fmov (no-ads)", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
     type === "tv" ? `http://cwkgkwwcc0cwo0o4sk8ocgos.45.77.64.108.sslip.io/tv/${id}/${season}/${episode}?player=art&theme=d71d1d&autoplay=true&title=true&poster=true` : `http://cwkgkwwcc0cwo0o4sk8ocgos.45.77.64.108.sslip.io/movie/${id}?player=art&theme=d71d1d&autoplay=true&title=true&poster=true` },
+  { name: "Vidify", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
+    type === "tv" ? `https://player.vidify.top/embed/tv/${id}/${season}/${episode}` : `https://player.vidify.top/embed/movie/${id}` },
   { name: "Videasy", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
     type === "tv" ? `https://player.videasy.net/tv/${id}/${season}/${episode}` : `https://player.videasy.net/movie/${id}` },
   { name: "FMovies4U", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
