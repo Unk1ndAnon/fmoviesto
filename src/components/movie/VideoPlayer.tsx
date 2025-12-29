@@ -24,6 +24,7 @@ export interface VideoSource {
   quality?: string;
   provider?: string;
   isApiStream?: boolean; // Streams from external API
+  streamType?: 'hls' | 'mp4' | 'unknown'; // Stream format type
 }
 
 interface StreamsApiResponse {
@@ -70,18 +71,35 @@ async function fetchStreamsFromApi(
       return [];
     }
     
-    if (!data?.success || !data?.streams?.length) return [];
+    console.log("[Streams] API response:", data);
     
-    return data.streams.map((stream: any) => ({
-      name: stream.name || stream.title,
-      url: stream.url,
-      isCustom: false,
-      isHLS: stream.url.includes('m3u8-proxy') || stream.url.includes('.m3u8'),
-      noAds: true,
-      quality: stream.quality,
-      provider: stream.provider,
-      isApiStream: true,
-    }));
+    // Handle both response formats: {success, streams} or {streams} or direct array
+    const streams = data?.streams || (Array.isArray(data) ? data : []);
+    if (!streams?.length) {
+      console.log("[Streams] No streams found in response");
+      return [];
+    }
+    
+    console.log(`[Streams] Found ${streams.length} streams`);
+    
+    return streams.map((stream: any) => {
+      const url = stream.url || stream.file || '';
+      const streamType = stream.type || '';
+      const isHLS = url.includes('.m3u8') || url.includes('m3u8-proxy') || streamType === 'hls';
+      const isMP4 = url.includes('.mp4') || streamType === 'mp4';
+      
+      return {
+        name: stream.name || stream.title || stream.provider || 'Stream',
+        url: url,
+        isCustom: false,
+        isHLS: isHLS,
+        noAds: true,
+        quality: stream.quality || (isHLS ? 'HLS' : isMP4 ? 'MP4' : ''),
+        provider: stream.provider,
+        isApiStream: true,
+        streamType: isHLS ? 'hls' : isMP4 ? 'mp4' : 'unknown',
+      };
+    }).filter((s: VideoSource) => s.url);
   } catch (error) {
     console.warn("Failed to fetch streams from API:", error);
     return [];
@@ -370,9 +388,14 @@ export function VideoPlayer({
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
         {isCurrentApiStream ? (
-          // Use ArtPlayer for m3u8/HLS API streams
+          // Use ArtPlayer for API streams (HLS/MP4)
           <ArtPlayerComponent
-            files={[{ file: currentEmbedUrl, type: 'hls' }]}
+            files={[{ 
+              file: currentEmbedUrl, 
+              type: currentSourceData?.streamType === 'mp4' ? 'mp4' : 
+                    currentSourceData?.streamType === 'hls' ? 'hls' :
+                    currentEmbedUrl.includes('.mp4') ? 'mp4' : 'hls'
+            }]}
             id={id}
             title={title}
             poster={backdrop}
