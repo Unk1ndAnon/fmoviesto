@@ -14,7 +14,9 @@ import {
   Check,
   SkipBack,
   SkipForward,
-  Loader2
+  Loader2,
+  List,
+  ChevronLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -27,11 +29,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+export interface VideoSourceItem {
+  name: string;
+  url: string;
+  isCustom?: boolean;
+  isHLS?: boolean;
+  noAds?: boolean;
+  quality?: string;
+  provider?: string;
+  isApiStream?: boolean;
+}
 
 interface FmovPlayerProps {
   url: string;
   title: string;
   poster?: string;
+  sources?: VideoSourceItem[];
+  currentSourceIndex?: number;
+  onSourceChange?: (index: number) => void;
   onLoad?: () => void;
   onError?: () => void;
   onNext?: () => void;
@@ -69,6 +86,9 @@ export function FmovPlayer({
   url, 
   title, 
   poster,
+  sources = [],
+  currentSourceIndex = 0,
+  onSourceChange,
   onLoad, 
   onError, 
   onNext,
@@ -90,6 +110,7 @@ export function FmovPlayer({
   const [showControls, setShowControls] = useState(true);
   const [buffered, setBuffered] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSourceList, setShowSourceList] = useState(false);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
@@ -100,6 +121,8 @@ export function FmovPlayer({
 
   const isHLS = isHLSStream(url);
   const isMP4 = isMP4Stream(url);
+  
+  const hasSources = sources.length > 0;
 
   const initPlayer = useCallback(() => {
     const video = videoRef.current;
@@ -483,6 +506,11 @@ export function FmovPlayer({
     );
   }
 
+  const handleSourceSelect = (index: number) => {
+    onSourceChange?.(index);
+    setShowSourceList(false);
+  };
+
   return (
     <div 
       ref={containerRef}
@@ -494,6 +522,64 @@ export function FmovPlayer({
       onMouseMove={handleMouseMove}
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >
+      {/* Source List Sidebar */}
+      {hasSources && (
+        <div 
+          className={cn(
+            "absolute left-0 top-0 bottom-0 w-56 bg-zinc-900/95 backdrop-blur-sm z-30 transition-transform duration-300 border-r border-zinc-700 flex flex-col",
+            showSourceList ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          <div className="flex items-center justify-between p-3 border-b border-zinc-700">
+            <span className="text-white font-medium text-sm">Sources</span>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setShowSourceList(false)}
+              className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+          </div>
+          <ScrollArea className="flex-1">
+            <div className="p-2 space-y-1">
+              {sources.map((source, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSourceSelect(index)}
+                  className={cn(
+                    "w-full text-left px-3 py-2 rounded-md transition-colors flex items-center gap-2 text-sm",
+                    currentSourceIndex === index 
+                      ? "bg-primary/20 text-white" 
+                      : "text-white/80 hover:bg-white/10 hover:text-white"
+                  )}
+                >
+                  <div 
+                    className={cn(
+                      "w-2 h-2 rounded-full shrink-0",
+                      currentSourceIndex === index ? "bg-green-500" : "bg-zinc-600"
+                    )} 
+                  />
+                  <span className="flex-1 truncate">{source.name}</span>
+                  {source.quality && (
+                    <span className="text-xs text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded shrink-0">
+                      {source.quality}
+                    </span>
+                  )}
+                  {source.noAds && (
+                    <span className="text-xs text-green-400 bg-green-500/20 px-1.5 py-0.5 rounded shrink-0">
+                      No Ads
+                    </span>
+                  )}
+                  {currentSourceIndex === index && (
+                    <span className="text-xs text-muted-foreground shrink-0">Active</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
       {/* Loading overlay */}
       {isLoading && isPlaying && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20 pointer-events-none">
@@ -642,6 +728,21 @@ export function FmovPlayer({
           </div>
 
           <div className="flex items-center gap-1">
+            {/* Source List Toggle */}
+            {hasSources && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowSourceList(!showSourceList)}
+                className={cn(
+                  "text-white hover:bg-white/20 h-9 w-9",
+                  showSourceList && "bg-white/20"
+                )}
+              >
+                <List className="w-5 h-5" />
+              </Button>
+            )}
+
             {/* Subtitles */}
             {subtitleTracks.length > 0 && (
               <DropdownMenu>

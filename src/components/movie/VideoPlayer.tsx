@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { HLSPlayer, isHLSUrl } from "./HLSPlayer";
-import { FmovPlayer, isFmovStream } from "./FmovPlayer";
+import { FmovPlayer, isFmovStream, VideoSourceItem } from "./FmovPlayer";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface VideoSource {
@@ -267,7 +267,6 @@ export function VideoPlayer({
   const currentSourceData = sources[currentSource];
   const currentEmbedUrl = currentSourceData?.url || "";
   const isCurrentHLS = currentSourceData?.isHLS || false;
-  const isCurrentApiStream = currentSourceData?.isApiStream || false;
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -303,26 +302,13 @@ export function VideoPlayer({
     }
   };
 
-  // Internal Server Dropdown (only used when not externally controlled)
-  const InternalServerDropdown = () => (
-    <ServerDropdown 
-      sources={sources} 
-      currentSource={currentSource} 
-      onSelectSource={handleSelectSource} 
-    />
-  );
+  // Check if we have any API streams (to use unified FmovPlayer)
+  const hasApiStreams = sources.some(s => s.isApiStream);
 
   // Click to Play overlay
   if (!isPlaying && backdrop) {
     return (
       <div className="w-full">
-        {/* Server Dropdown - Above Player (only when not external) */}
-        {!externalControls && (
-          <div className="mb-3">
-            <InternalServerDropdown />
-          </div>
-        )}
-
         {/* Player Preview */}
         <div 
           className="relative aspect-video bg-black overflow-hidden rounded-lg cursor-pointer group"
@@ -346,21 +332,17 @@ export function VideoPlayer({
 
   return (
     <div className="w-full">
-      {/* Server Dropdown - Above Player (only when not external) */}
-      {!externalControls && (
-        <div className="mb-3">
-          <InternalServerDropdown />
-        </div>
-      )}
-
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
-        {isCurrentApiStream ? (
-          // Use FmovPlayer for API streams (HLS and MP4)
+        {hasApiStreams ? (
+          // Use FmovPlayer with integrated source list for API streams
           <FmovPlayer
             url={currentEmbedUrl}
             title={title}
             poster={backdrop}
+            sources={sources as VideoSourceItem[]}
+            currentSourceIndex={currentSource}
+            onSourceChange={handleSelectSource}
             onLoad={handleLoad}
             onError={handleError}
             className="w-full h-full"

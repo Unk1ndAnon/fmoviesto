@@ -6,7 +6,7 @@ import { slugToTitle, generateSlug, getWatchMovieUrl, getWatchTVUrl, getMovieUrl
 import { generateMovieKeywords, generateTVKeywords } from "@/lib/seo-keywords";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { VideoPlayer, ServerDropdown, useVideoSources } from "@/components/movie/VideoPlayer";
+import { VideoPlayer } from "@/components/movie/VideoPlayer";
 import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { VideoObjectJsonLd } from "@/components/seo/JsonLd";
@@ -129,7 +129,6 @@ export default function Watch() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);
-  const [currentSource, setCurrentSource] = useState(0);
   const isDevToolsOpen = useDevToolsDetection();
   
   // Detect TV from URL (has seasonEpisode param)
@@ -183,15 +182,6 @@ export default function Watch() {
   const year = isTV 
     ? (show?.first_air_date ? new Date(show.first_air_date).getFullYear() : "")
     : (movie?.release_date ? new Date(movie.release_date).getFullYear() : "");
-
-  // Video sources hook
-  const videoSources = useVideoSources(
-    itemId || 0, 
-    isTV ? 'tv' : 'movie', 
-    title,
-    isTV ? season : undefined, 
-    isTV ? episode : undefined
-  );
 
   // Sync event state for overlay
   const [currentSyncEvent, setCurrentSyncEvent] = useState<SyncEvent | null>(null);
@@ -444,17 +434,10 @@ export default function Watch() {
             >
               {/* Constrained Player Container */}
               <div className="max-w-4xl">
-              {/* Server Dropdown & Watch Party - Inline */}
+              {/* Watch Party & Watching Badge - Above Player */}
               <div className="flex items-center justify-between gap-2 mb-4">
-                {/* Server Dropdown */}
+                {/* Watching Now Badge */}
                 <div className="flex items-center gap-3">
-                  <ServerDropdown
-                    sources={videoSources}
-                    currentSource={currentSource}
-                    onSelectSource={setCurrentSource}
-                  />
-                  
-                  {/* Watching Now Badge */}
                   {watchingCount > 0 && (
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/90 text-primary-foreground text-xs font-medium animate-pulse">
                       <Eye className="w-3 h-3" />
@@ -511,9 +494,6 @@ export default function Watch() {
                     episode={isTV ? episode : undefined}
                     title={title}
                     backdrop={getBackdropUrl(item.backdrop_path)}
-                    externalControls
-                    currentSource={currentSource}
-                    onSourceChange={setCurrentSource}
                   />
                 </div>
               )}
