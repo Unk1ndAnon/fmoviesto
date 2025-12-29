@@ -43,8 +43,20 @@ export default function TVShows() {
   const year = searchParams.get("year");
   const sortBy = searchParams.get("sort") || "popularity.desc";
   const minRating = searchParams.get("rating");
-  const [page, setPage] = useState(1);
+  const page = parseInt(searchParams.get("page") || "1", 10);
   const [showFilters, setShowFilters] = useState(false);
+
+  const setPage = (newPage: number | ((prev: number) => number)) => {
+    const pageValue = typeof newPage === 'function' ? newPage(page) : newPage;
+    const newParams = new URLSearchParams(searchParams);
+    if (pageValue === 1) {
+      newParams.delete("page");
+    } else {
+      newParams.set("page", String(pageValue));
+    }
+    setSearchParams(newParams);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const { data: genres } = useQuery({
     queryKey: ["tvGenres"],
@@ -90,13 +102,12 @@ export default function TVShows() {
     } else {
       newParams.delete(key);
     }
+    newParams.delete("page"); // Reset to page 1
     setSearchParams(newParams);
-    setPage(1);
   };
 
   const clearFilters = () => {
     setSearchParams({});
-    setPage(1);
   };
 
   const hasActiveFilters = genreId || year || minRating || sortBy !== "popularity.desc";
@@ -148,7 +159,6 @@ export default function TVShows() {
                     size="sm"
                     onClick={() => {
                       setSearchParams({ category: cat.id });
-                      setPage(1);
                     }}
                   >
                     {cat.label}
