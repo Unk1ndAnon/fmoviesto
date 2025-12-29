@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import Hls from "hls.js";
 import { AlertTriangle, RefreshCw, Volume2, VolumeX, Maximize, Pause, Play, Settings, Subtitles, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,25 @@ export function MeowHLSPlayer({ url, title, subtitles = [], onLoad, onError, cla
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Convert relative proxy URLs to absolute Supabase URLs
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+  
+  const resolvedUrl = useMemo(() => {
+    if (url.startsWith('/functions/v1/')) {
+      return `${supabaseUrl}${url}`;
+    }
+    return url;
+  }, [url, supabaseUrl]);
+
+  const resolvedSubtitles = useMemo(() => {
+    return subtitles.map(sub => ({
+      ...sub,
+      url: sub.url.startsWith('/functions/v1/')
+        ? `${supabaseUrl}${sub.url}`
+        : sub.url,
+    }));
+  }, [subtitles, supabaseUrl]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -56,7 +75,7 @@ export function MeowHLSPlayer({ url, title, subtitles = [], onLoad, onError, cla
   // Add external subtitles to video
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || subtitles.length === 0) return;
+    if (!video || resolvedSubtitles.length === 0) return;
 
     // Clear existing tracks
     while (video.textTracks.length > 0) {
@@ -65,7 +84,7 @@ export function MeowHLSPlayer({ url, title, subtitles = [], onLoad, onError, cla
     }
 
     // Add subtitle tracks
-    subtitles.forEach((sub, index) => {
+    resolvedSubtitles.forEach((sub, index) => {
       const track = document.createElement('track');
       track.kind = 'subtitles';
       track.label = sub.label;
@@ -74,11 +93,11 @@ export function MeowHLSPlayer({ url, title, subtitles = [], onLoad, onError, cla
       if (index === 0) track.default = true;
       video.appendChild(track);
     });
-  }, [subtitles]);
+  }, [resolvedSubtitles]);
 
   const initHls = useCallback(() => {
     const video = videoRef.current;
-    if (!video || !url) return;
+    if (!video || !resolvedUrl) return;
 
     setIsLoading(true);
     setHasError(false);
@@ -114,8 +133,8 @@ export function MeowHLSPlayer({ url, title, subtitles = [], onLoad, onError, cla
       hlsRef.current = hls;
 
       hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-        console.log("[MeowHLS] Media attached, loading source:", url);
-        hls.loadSource(url);
+        console.log("[MeowHLS] Media attached, loading source:", resolvedUrl);
+        hls.loadSource(resolvedUrl);
       });
 
       hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
@@ -176,7 +195,7 @@ export function MeowHLSPlayer({ url, title, subtitles = [], onLoad, onError, cla
 
       hls.attachMedia(video);
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = url;
+      video.src = resolvedUrl;
       video.addEventListener("loadedmetadata", () => {
         setIsLoading(false);
         onLoad?.();
@@ -200,12 +219,12 @@ export function MeowHLSPlayer({ url, title, subtitles = [], onLoad, onError, cla
         hlsRef.current = null;
       }
     };
-  }, [url, onLoad, onError, retryCount]);
+  }, [resolvedUrl, onLoad, onError, retryCount]);
 
   useEffect(() => {
     const cleanup = initHls();
     return cleanup;
-  }, [url]);
+  }, [resolvedUrl]);
 
   useEffect(() => {
     const video = videoRef.current;
