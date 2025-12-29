@@ -18,7 +18,7 @@ import { Play, Star, Clock, Plus, Heart, ChevronRight } from "lucide-react";
 import { SharePopover } from "@/components/SharePopover";
 import { useWatchlist, useFavorites } from "@/hooks/useUserLists";
 import { useAutoTag } from "@/hooks/useAutoTag";
-import { useOMDBRatings } from "@/hooks/useOMDBRatings";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthPromptDialog } from "@/components/AuthPromptDialog";
 import { cn } from "@/lib/utils";
@@ -49,13 +49,6 @@ export default function MovieDetails() {
 
   const isLoading = isSearching || isLoadingDetails;
 
-  // Fetch OMDB ratings (title/year for lookup)
-  const releaseYear = movie?.release_date?.split("-")[0];
-  const { data: omdbData } = useOMDBRatings(
-    undefined,
-    movie?.title,
-    releaseYear
-  );
 
   useAutoTag({ tmdbId: movie?.id, mediaType: "movie" });
 
@@ -241,26 +234,18 @@ export default function MovieDetails() {
 
                 {/* Ratings Row */}
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 lg:gap-3">
-                  {/* IMDb Rating */}
+                  {/* TMDb Rating */}
                   <div className="flex items-center gap-1 px-1.5 py-0.5 lg:px-3 lg:py-1.5 rounded bg-[#1a1d29] border border-border">
-                    <span className="text-rating-gold text-[10px] lg:text-sm font-bold">IMDb</span>
+                    <span className="text-rating-gold text-[10px] lg:text-sm font-bold">TMDb</span>
                     <span className="text-foreground text-xs lg:text-sm font-semibold">
-                      {omdbData?.ratings?.imdb || movie.vote_average?.toFixed(1)}
+                      {movie.vote_average?.toFixed(1)}
                     </span>
                   </div>
-                  
-                  {/* Rotten Tomatoes */}
-                  {omdbData?.ratings?.rottenTomatoes && (
-                    <div className="flex items-center gap-1 px-1.5 py-0.5 lg:px-3 lg:py-1.5 rounded bg-[#1a1d29] border border-border">
-                      <span className="text-sm lg:text-lg">🍅</span>
-                      <span className="text-foreground text-xs lg:text-sm font-semibold">{omdbData.ratings.rottenTomatoes}</span>
-                    </div>
-                  )}
                   
                   {/* Votes */}
                   <div className="flex items-center gap-1 text-muted-foreground text-[10px] lg:text-sm 2xl:text-base">
                     <Star className="w-3 h-3 lg:w-4 lg:h-4 2xl:w-5 2xl:h-5 text-rating-gold" fill="currentColor" />
-                    <span>({omdbData?.imdbVotes || movie.vote_count?.toLocaleString()})</span>
+                    <span>({movie.vote_count?.toLocaleString()})</span>
                   </div>
                 </div>
 

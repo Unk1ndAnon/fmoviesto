@@ -18,5 +18,3 @@ verify_jwt = false
 [functions.check-new-episodes]
 verify_jwt = true
 
-[functions.omdb-ratings]
-verify_jwt = false
