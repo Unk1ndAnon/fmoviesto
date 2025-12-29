@@ -282,9 +282,9 @@ export default function TVDetails() {
 
                 {/* Ratings Row */}
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 lg:gap-3">
-                  {/* IMDb Rating */}
+                  {/* TMDb Rating */}
                   <div className="flex items-center gap-1 px-1.5 py-0.5 lg:px-3 lg:py-1.5 rounded bg-[#1a1d29] border border-border">
-                    <span className="text-rating-gold text-[10px] lg:text-sm font-bold">IMDb</span>
+                    <span className="text-rating-gold text-[10px] lg:text-sm font-bold">TMDb</span>
                     <span className="text-foreground text-xs lg:text-sm font-semibold">
                       {show.vote_average?.toFixed(1)}
                     </span>
