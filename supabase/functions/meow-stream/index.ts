@@ -7,23 +7,38 @@ const corsHeaders = {
 
 const MAIN_URL = 'https://api.hlowb.com';
 
-// Derive AES key from base64 API key
-function deriveKey(apiKeyB64: string): Uint8Array {
-  // The key from API is base64 encoded - decode it
-  const apiKeyBytes = Uint8Array.from(atob(apiKeyB64), c => c.charCodeAt(0));
-  console.log('[MeowTV] Key derivation:', { 
-    inputLen: apiKeyB64.length, 
-    decodedLen: apiKeyBytes.length,
-    sample: apiKeyB64.slice(0, 8)
-  });
+// Stream secret from MeowTV app - used for AES-256-GCM decryption
+const STREAM_SECRET = atob('cG1TMENBTUcxUnVxNDlXYk15aEUzZmgxc091TFlFTDlydEZhellZbGpWSTJqNEJQU29nNzNoVzdBN3hNaGNlSEQwaXdyUHJWVkRYTHZ4eVdy');
+
+// Derive AES-256 key using SHA-256 hash of the stream secret
+async function deriveKey256(): Promise<Uint8Array> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(STREAM_SECRET);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return new Uint8Array(hashBuffer);
+}
+
+// Derive AES-128 key from the security key (for API responses)
+function deriveKey128(apiKey: string): Uint8Array {
+  // Try using the key as raw UTF-8 bytes first (padded/truncated to 16)
+  const encoder = new TextEncoder();
+  const keyBytes = encoder.encode(apiKey);
   
-  // Pad with zeros if less than 16 bytes, truncate if more
-  if (apiKeyBytes.length >= 16) {
-    return apiKeyBytes.slice(0, 16);
+  if (keyBytes.length >= 16) {
+    return keyBytes.slice(0, 16);
   }
+  
   const padded = new Uint8Array(16);
-  padded.set(apiKeyBytes);
+  padded.set(keyBytes);
   return padded;
+}
+
+// Convert base64url to standard base64 and decode
+function base64UrlToBytes(b64url: string): Uint8Array {
+  let s = b64url.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  const pad = s.length % 4;
+  if (pad !== 0) s += '='.repeat(4 - pad);
+  return Uint8Array.from(atob(s), c => c.charCodeAt(0));
 }
 
 // Handle large integers in JSON to avoid precision loss
@@ -36,7 +51,7 @@ function parseJsonPreserveBigInt<T = unknown>(text: string): T {
   return JSON.parse(safe);
 }
 
-// Extract encrypted data from response (might be raw base64 or JSON with data field)
+// Extract encrypted data from response
 function extractEncryptedData(text: string): string {
   try {
     const json = JSON.parse(text);
@@ -47,22 +62,95 @@ function extractEncryptedData(text: string): string {
   return text;
 }
 
-// AES-128-CBC Decryption (IV = Key as per MeowTV implementation)
-async function decryptData(responseText: string, apiKeyB64: string): Promise<string | null> {
+// AES-256-GCM Decryption for enc2: prefixed strings (stream URLs)
+async function decryptEnc2(value: string): Promise<string | null> {
+  if (!value || !value.startsWith('enc2:')) return value;
+
+  try {
+    const blob = base64UrlToBytes(value.substring(5));
+    if (blob.length <= 12) return null;
+
+    const iv = blob.subarray(0, 12);
+    const ctAndTag = blob.subarray(12);
+    const authTagLength = 16;
+    if (ctAndTag.length <= authTagLength) return null;
+
+    const ciphertext = ctAndTag.subarray(0, ctAndTag.length - authTagLength);
+    const authTag = ctAndTag.subarray(ctAndTag.length - authTagLength);
+
+    // Combine ciphertext and auth tag for Web Crypto API
+    const combined = new Uint8Array(ciphertext.length + authTag.length);
+    combined.set(ciphertext);
+    combined.set(authTag, ciphertext.length);
+
+    const keyBytes = await deriveKey256();
+    
+    // Convert to ArrayBuffer for Deno compatibility
+    const keyBuffer = keyBytes.buffer.slice(keyBytes.byteOffset, keyBytes.byteOffset + keyBytes.byteLength) as ArrayBuffer;
+    const ivBuffer = iv.buffer.slice(iv.byteOffset, iv.byteOffset + iv.byteLength) as ArrayBuffer;
+    
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyBuffer,
+      { name: 'AES-GCM' },
+      false,
+      ['decrypt']
+    );
+
+    const decryptedBuffer = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: new Uint8Array(ivBuffer), tagLength: 128 },
+      cryptoKey,
+      combined
+    );
+
+    return new TextDecoder().decode(decryptedBuffer);
+  } catch (error) {
+    console.error('[MeowTV] enc2 decryption failed:', error);
+    return null;
+  }
+}
+
+// Decrypt inline enc2: strings in text
+function decryptInline(value: string): Promise<string> {
+  if (!value.includes('enc2:')) return Promise.resolve(value);
+  
+  if (value.startsWith('enc2:')) {
+    return decryptEnc2(value).then(decrypted => 
+      (decrypted ?? value).split(/\r?\n/)[0].trim()
+    );
+  }
+  
+  // Handle multiple enc2: tokens in a string
+  const tokens = value.match(/enc2:[A-Za-z0-9_-]+/g) || [];
+  if (tokens.length === 0) return Promise.resolve(value);
+  
+  return Promise.all(tokens.map(t => decryptEnc2(t))).then(decrypted => {
+    let result = value;
+    tokens.forEach((token, i) => {
+      result = result.replace(token, decrypted[i] ?? token);
+    });
+    return result;
+  });
+}
+
+// AES-128-CBC Decryption for API responses
+async function decryptApiResponse(responseText: string, apiKey: string): Promise<string | null> {
   try {
     const encryptedB64 = extractEncryptedData(responseText);
-    console.log('[MeowTV] Decrypting:', { 
+    console.log('[MeowTV] Decrypting API response:', { 
       responseLen: responseText.length, 
       encryptedLen: encryptedB64.length,
+      keyLen: apiKey.length,
       sample: encryptedB64.slice(0, 32)
     });
     
-    const aesKey = deriveKey(apiKeyB64);
+    // Try UTF-8 key first (as raw characters)
+    const aesKey = deriveKey128(apiKey);
     const iv = aesKey.slice(); // IV is same as Key in MeowTV
 
     const encryptedData = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
 
-    // Use ArrayBuffer for Deno compatibility
+    // Convert to ArrayBuffer for Deno compatibility
     const keyBuffer = aesKey.buffer.slice(aesKey.byteOffset, aesKey.byteOffset + aesKey.byteLength) as ArrayBuffer;
     const ivBuffer = iv.buffer.slice(iv.byteOffset, iv.byteOffset + iv.byteLength) as ArrayBuffer;
 
@@ -80,9 +168,46 @@ async function decryptData(responseText: string, apiKeyB64: string): Promise<str
       encryptedData
     );
 
-    return new TextDecoder().decode(decryptedBuffer);
+    const decrypted = new TextDecoder().decode(decryptedBuffer);
+    console.log('[MeowTV] Decryption successful, length:', decrypted.length);
+    return decrypted;
   } catch (error) {
-    console.error('[MeowTV] Decryption failed:', error);
+    console.error('[MeowTV] API decryption failed:', error);
+    
+    // Try alternative: base64 decode the key
+    try {
+      console.log('[MeowTV] Trying base64 decoded key...');
+      const encryptedB64 = extractEncryptedData(responseText);
+      const keyBytes = Uint8Array.from(atob(apiKey), c => c.charCodeAt(0));
+      
+      // Pad to 16 bytes
+      const aesKey = new Uint8Array(16);
+      aesKey.set(keyBytes.slice(0, Math.min(keyBytes.length, 16)));
+      
+      const iv = aesKey.slice();
+      const encryptedData = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
+
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        aesKey,
+        { name: 'AES-CBC' },
+        false,
+        ['decrypt']
+      );
+
+      const decryptedBuffer = await crypto.subtle.decrypt(
+        { name: 'AES-CBC', iv },
+        cryptoKey,
+        encryptedData
+      );
+
+      const decrypted = new TextDecoder().decode(decryptedBuffer);
+      console.log('[MeowTV] Base64 key decryption successful');
+      return decrypted;
+    } catch (e2) {
+      console.error('[MeowTV] Base64 key decryption also failed:', e2);
+    }
+    
     return null;
   }
 }
@@ -110,7 +235,11 @@ async function getSecurityKey(retries: number = 3): Promise<{ key: string | null
       }
 
       if (json && json.code === 200 && json.data) {
-        console.log('[MeowTV] getSecurityKey ok', { attempt, hasCookie: Boolean(cookie), keyLen: json.data?.length ?? 0 });
+        console.log('[MeowTV] getSecurityKey ok', { 
+          attempt, 
+          hasCookie: Boolean(cookie), 
+          key: json.data // Log full key for debugging
+        });
         return { key: json.data, cookie };
       }
 
@@ -122,20 +251,21 @@ async function getSecurityKey(retries: number = 3): Promise<{ key: string | null
   return { key: null, cookie: null };
 }
 
-// Search for content in MeowTV by title to get their internal ID
+// Search for content in MeowTV by title
 async function searchContent(query: string, key: string): Promise<any[]> {
   const url = `${MAIN_URL}/film-api/v1.1.0/movie/searchByKeyword?channel=IndiaA&clientType=1&keyword=${encodeURIComponent(query)}&lang=en-US&mode=1&packageName=com.external.castle&page=1&size=30`;
 
   try {
     const res = await fetch(url);
     const payload = await res.text();
-    const decryptedJson = await decryptData(payload, key);
+    const decryptedJson = await decryptApiResponse(payload, key);
     if (!decryptedJson) {
       console.warn('[MeowTV] search decrypt failed');
       return [];
     }
 
     const data = parseJsonPreserveBigInt<{ data?: { rows?: any[] } }>(decryptedJson);
+    console.log('[MeowTV] Search results:', data?.data?.rows?.length || 0);
     return data?.data?.rows || [];
   } catch (e) {
     console.error('[MeowTV] search error:', e);
@@ -150,7 +280,7 @@ async function fetchDetails(movieId: string, key: string): Promise<any | null> {
   try {
     const res = await fetch(url);
     const payload = await res.text();
-    const decryptedJson = await decryptData(payload, key);
+    const decryptedJson = await decryptApiResponse(payload, key);
     if (!decryptedJson) return null;
     return parseJsonPreserveBigInt<{ data?: any }>(decryptedJson)?.data;
   } catch {
@@ -201,7 +331,7 @@ async function fetchStreamUrl(
       });
 
       const payload = await res.text();
-      const decryptedJson = await decryptData(payload, key);
+      const decryptedJson = await decryptApiResponse(payload, key);
       if (!decryptedJson) {
         console.warn('[MeowTV] fetchStreamUrl decrypt failed', { resolution, status: res.status });
         continue;
@@ -209,16 +339,31 @@ async function fetchStreamUrl(
 
       const data = JSON.parse(decryptedJson)?.data;
       if (data && data.videoUrl) {
+        let videoUrl = data.videoUrl;
+        
+        // Decrypt enc2: prefixed URLs
+        if (videoUrl.startsWith('enc2:')) {
+          const decryptedUrl = await decryptEnc2(videoUrl);
+          if (decryptedUrl) {
+            videoUrl = decryptedUrl;
+            console.log('[MeowTV] Decrypted stream URL successfully');
+          }
+        }
+        
         const qualityLabel = resolution === 3 ? '1080p' : resolution === 2 ? '720p' : '480p';
-        collectedQualities.push({ quality: qualityLabel, url: data.videoUrl });
+        collectedQualities.push({ quality: qualityLabel, url: videoUrl });
 
         if (!bestVideoUrl) {
-          bestVideoUrl = data.videoUrl;
-          bestSubtitles = (data.subtitles || []).map((s: any) => ({
-            language: s.abbreviate || s.title || 'Unknown',
-            label: s.title || s.abbreviate || 'Subtitles',
-            url: s.url || ''
-          })).filter((s: any) => Boolean(s.url));
+          bestVideoUrl = videoUrl;
+          bestSubtitles = (data.subtitles || []).map((s: any) => {
+            let subUrl = s.url || '';
+            // Subtitles might also be enc2: encrypted
+            return {
+              language: s.abbreviate || s.title || 'Unknown',
+              label: s.title || s.abbreviate || 'Subtitles',
+              url: subUrl
+            };
+          }).filter((s: any) => Boolean(s.url));
         }
       }
     } catch (e) {
@@ -227,6 +372,14 @@ async function fetchStreamUrl(
   }
 
   if (!bestVideoUrl) return null;
+
+  // Decrypt subtitle URLs if needed
+  for (let i = 0; i < bestSubtitles.length; i++) {
+    if (bestSubtitles[i].url.startsWith('enc2:')) {
+      const decrypted = await decryptEnc2(bestSubtitles[i].url);
+      if (decrypted) bestSubtitles[i].url = decrypted;
+    }
+  }
 
   return {
     videoUrl: bestVideoUrl,
@@ -242,14 +395,12 @@ async function findMeowContent(
   title: string,
   key: string
 ): Promise<any | null> {
-  // Search by title
   const results = await searchContent(title, key);
   if (!results.length) {
     console.warn('[MeowTV] No results found for:', title);
     return null;
   }
 
-  // Try to find best match
   const normalizedTitle = title.toLowerCase().trim();
   const match = results.find((r: any) => {
     const rTitle = (r.title || '').toLowerCase().trim();
@@ -265,7 +416,6 @@ interface StreamResult {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -279,7 +429,6 @@ serve(async (req) => {
     let episode: string | null = url.searchParams.get('episode');
     let title: string | null = url.searchParams.get('title');
 
-    // Support POST JSON body
     if (!tmdbId && req.method !== 'GET') {
       const contentType = req.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
@@ -308,7 +457,6 @@ serve(async (req) => {
       );
     }
 
-    // Get security key
     const { key, cookie } = await getSecurityKey();
     if (!key) {
       return new Response(
@@ -317,7 +465,6 @@ serve(async (req) => {
       );
     }
 
-    // Find content in MeowTV
     const content = await findMeowContent(parseInt(tmdbId), type as 'movie' | 'tv', title, key);
     if (!content) {
       return new Response(
@@ -329,7 +476,6 @@ serve(async (req) => {
     const meowMovieId = content.id?.toString();
     console.log('[MeowTV] Found content:', { title: content.title, meowId: meowMovieId });
 
-    // Get details for episodes if TV show
     let episodeId = meowMovieId;
     if (type === 'tv' && season && episode) {
       const details = await fetchDetails(meowMovieId, key);
@@ -337,7 +483,6 @@ serve(async (req) => {
         const seasonNum = parseInt(season);
         const episodeNum = parseInt(episode);
         
-        // Find matching episode
         const ep = details.episodes.find((e: any) => 
           (e.seasonNumber || 1) === seasonNum && e.number === episodeNum
         ) || details.episodes[episodeNum - 1];
@@ -349,7 +494,6 @@ serve(async (req) => {
       }
     }
 
-    // Get stream URL
     const streamData = await fetchStreamUrl(meowMovieId, episodeId, key, cookie);
     if (!streamData) {
       return new Response(
