@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OMDBRatings {
   imdb?: string;
@@ -18,22 +19,21 @@ export function useOMDBRatings(imdbId?: string, title?: string, year?: string) {
   return useQuery({
     queryKey: ["omdb-ratings", imdbId, title, year],
     queryFn: async (): Promise<OMDBData | null> => {
-      const params = new URLSearchParams();
-      if (imdbId) params.set("imdbId", imdbId);
-      if (title) params.set("title", title);
-      if (year) params.set("year", year);
+      const { data, error } = await supabase.functions.invoke("omdb-ratings", {
+        body: { imdbId, title, year },
+      });
 
-      const response = await fetch(`/api/omdb-ratings?${params.toString()}`);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        console.error("OMDB API error:", response.statusText);
+      if (error) {
+        console.error("OMDB API error:", error);
         return null;
       }
 
-      return response.json() as Promise<OMDBData>;
+      if (data?.error) {
+        console.log("OMDB returned no results:", data.error);
+        return null;
+      }
+
+      return data as OMDBData;
     },
     enabled: !!(imdbId || title),
     staleTime: 1000 * 60 * 60, // 1 hour cache
