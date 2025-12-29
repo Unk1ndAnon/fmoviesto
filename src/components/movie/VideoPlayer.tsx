@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { HLSPlayer, isHLSUrl } from "./HLSPlayer";
+import { FmovPlayer, isFmovStream } from "./FmovPlayer";
 
 const STREAMS_API_BASE = "http://twkg0oc0co8c8g8gskkkc48k.80.240.19.37.sslip.io";
 
@@ -23,6 +24,7 @@ export interface VideoSource {
   noAds?: boolean;
   quality?: string;
   provider?: string;
+  isApiStream?: boolean; // Streams from external API
 }
 
 interface StreamsApiResponse {
@@ -87,6 +89,7 @@ async function fetchStreamsFromApi(
       noAds: true,
       quality: stream.quality,
       provider: stream.provider,
+      isApiStream: true, // Mark as API stream for FmovPlayer
     }));
   } catch (error) {
     console.warn("Failed to fetch streams from API:", error);
@@ -273,6 +276,7 @@ export function VideoPlayer({
   const currentSourceData = sources[currentSource];
   const currentEmbedUrl = currentSourceData?.url || "";
   const isCurrentHLS = currentSourceData?.isHLS || false;
+  const isCurrentApiStream = currentSourceData?.isApiStream || false;
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -360,7 +364,17 @@ export function VideoPlayer({
 
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
-        {isCurrentHLS ? (
+        {isCurrentApiStream ? (
+          // Use FmovPlayer for API streams (HLS and MP4)
+          <FmovPlayer
+            url={currentEmbedUrl}
+            title={title}
+            poster={backdrop}
+            onLoad={handleLoad}
+            onError={handleError}
+            className="w-full h-full"
+          />
+        ) : isCurrentHLS ? (
           <HLSPlayer
             url={currentEmbedUrl}
             title={title}
