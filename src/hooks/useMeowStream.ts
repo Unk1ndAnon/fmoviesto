@@ -44,45 +44,34 @@ export function useMeowStream(
       setSubtitles([]);
 
       try {
-        const params = new URLSearchParams({
-          tmdb_id: tmdbId.toString(),
-          type: type,
-        });
+        const payload: {
+          tmdb_id: number;
+          type: 'movie' | 'tv';
+          season?: number;
+          episode?: number;
+        } = {
+          tmdb_id: tmdbId,
+          type,
+        };
 
         if (type === 'tv' && season && episode) {
-          params.append('season', season.toString());
-          params.append('episode', episode.toString());
+          payload.season = season;
+          payload.episode = episode;
         }
 
         const { data, error: fnError } = await supabase.functions.invoke('meow-stream', {
-          body: null,
-          headers: {},
+          body: payload,
         });
 
-        // Since we can't pass query params directly, we need to use fetch
-        const projectId = 'fblsoqabliezhxtswfah';
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/meow-stream?${params.toString()}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        if (fnError) throw fnError;
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `HTTP ${response.status}`);
-        }
+        const result = data as any;
 
-        const result = await response.json();
-
-        if (result.streams && result.streams.length > 0) {
+        if (result?.streams?.length) {
           setStreams(result.streams);
           setSubtitles(result.subtitles || []);
         } else {
-          setError('No streams available');
+          setError(result?.error || 'No streams available');
         }
       } catch (err) {
         console.error('[useMeowStream] Error:', err);

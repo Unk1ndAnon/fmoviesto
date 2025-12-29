@@ -89,9 +89,7 @@ interface StreamResult {
 
 async function fetchMovieStream(tmdbId: number): Promise<StreamResult> {
   console.log(`[MeowTV] Fetching movie stream for TMDB ID: ${tmdbId}`);
-  
-  const { key, iv } = await getSecurityKey();
-  
+
   const response = await fetch(`${MEOW_API_BASE}/api/v1/movie/${tmdbId}`, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -99,23 +97,21 @@ async function fetchMovieStream(tmdbId: number): Promise<StreamResult> {
       'Referer': 'https://meowtv.to/',
     },
   });
-  
+
   if (!response.ok) {
     console.error(`[MeowTV] API response error: ${response.status}`);
     throw new Error(`API returned ${response.status}`);
   }
-  
+
   const data = await response.json();
   console.log('[MeowTV] Raw response:', JSON.stringify(data).substring(0, 200));
-  
-  return parseStreamResponse(data, key, iv);
+
+  return parseStreamResponse(data);
 }
 
 async function fetchTVStream(tmdbId: number, season: number, episode: number): Promise<StreamResult> {
   console.log(`[MeowTV] Fetching TV stream for TMDB ID: ${tmdbId}, S${season}E${episode}`);
-  
-  const { key, iv } = await getSecurityKey();
-  
+
   const response = await fetch(`${MEOW_API_BASE}/api/v1/tv/${tmdbId}/${season}/${episode}`, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -123,39 +119,36 @@ async function fetchTVStream(tmdbId: number, season: number, episode: number): P
       'Referer': 'https://meowtv.to/',
     },
   });
-  
+
   if (!response.ok) {
     console.error(`[MeowTV] API response error: ${response.status}`);
     throw new Error(`API returned ${response.status}`);
   }
-  
+
   const data = await response.json();
   console.log('[MeowTV] Raw response:', JSON.stringify(data).substring(0, 200));
-  
-  return parseStreamResponse(data, key, iv);
+
+  return parseStreamResponse(data);
 }
 
-async function parseStreamResponse(data: any, key: Uint8Array, iv: Uint8Array): Promise<StreamResult> {
-  const result: StreamResult = {
-    streams: [],
-    subtitles: [],
-  };
-  
-  // Check if data is encrypted
-  if (data.encrypted || data.e) {
+async function parseStreamResponse(data: any): Promise<StreamResult> {
+  // If data is encrypted, only then attempt to fetch the security key.
+  if (data?.encrypted || data?.e) {
     const encryptedContent = data.data || data.d || data.content;
-    if (encryptedContent) {
-      try {
-        const decrypted = await decryptAES(encryptedContent, key, iv);
-        const parsed = JSON.parse(decrypted);
-        return parseDecryptedData(parsed);
-      } catch (error) {
-        console.error('[MeowTV] Decryption failed:', error);
-        throw new Error('Failed to decrypt stream data');
-      }
+    if (!encryptedContent) throw new Error('Encrypted response missing payload');
+
+    const { key, iv } = await getSecurityKey();
+
+    try {
+      const decrypted = await decryptAES(encryptedContent, key, iv);
+      const parsed = JSON.parse(decrypted);
+      return parseDecryptedData(parsed);
+    } catch (error) {
+      console.error('[MeowTV] Decryption failed:', error);
+      throw new Error('Failed to decrypt stream data');
     }
   }
-  
+
   // Data is not encrypted, parse directly
   return parseDecryptedData(data);
 }
@@ -226,18 +219,33 @@ serve(async (req) => {
   
   try {
     const url = new URL(req.url);
-    const tmdbId = url.searchParams.get('tmdb_id');
-    const type = url.searchParams.get('type') || 'movie';
-    const season = url.searchParams.get('season');
-    const episode = url.searchParams.get('episode');
-    
+
+    let tmdbId: string | null = url.searchParams.get('tmdb_id');
+    let type: string = url.searchParams.get('type') || 'movie';
+    let season: string | null = url.searchParams.get('season');
+    let episode: string | null = url.searchParams.get('episode');
+
+    // Also support POST JSON body so the web app can call this via functions.invoke
+    if (!tmdbId && req.method !== 'GET') {
+      const contentType = req.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const body = await req.json().catch(() => null) as any;
+        if (body) {
+          tmdbId = body.tmdb_id?.toString?.() ?? null;
+          type = body.type || type;
+          season = body.season != null ? String(body.season) : season;
+          episode = body.episode != null ? String(body.episode) : episode;
+        }
+      }
+    }
+
     if (!tmdbId) {
       return new Response(
         JSON.stringify({ error: 'Missing tmdb_id parameter' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
+
     const id = parseInt(tmdbId);
     
     let result: StreamResult;
