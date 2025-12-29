@@ -274,6 +274,16 @@ export function VideoPlayer({
   const isCurrentHLS = currentSourceData?.isHLS || false;
   const isCurrentApiStream = currentSourceData?.isApiStream === true;
 
+  // Auto-clear loading state for iframe sources (onLoad doesn't always fire)
+  useEffect(() => {
+    if (isPlaying && isLoading && !isCurrentApiStream && !isCurrentHLS) {
+      const timeout = setTimeout(() => {
+        setIsLoading(false);
+      }, 3000); // Clear loading after 3 seconds for iframe sources
+      return () => clearTimeout(timeout);
+    }
+  }, [isPlaying, isLoading, isCurrentApiStream, isCurrentHLS]);
+
   const handleLoad = () => {
     setIsLoading(false);
     setHasError(false);
