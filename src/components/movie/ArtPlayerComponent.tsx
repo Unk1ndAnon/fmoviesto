@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback, useState } from "react";
+import { useEffect, useRef, useMemo, useCallback } from "react";
 import Artplayer from "artplayer";
 import Hls from "hls.js";
 import artplayerPluginHlsControl from "artplayer-plugin-hls-control";
@@ -42,6 +42,7 @@ interface ArtPlayerProps {
   showPoster?: boolean;
   onLoad?: () => void;
   onError?: () => void;
+  onSourceChange?: (newIndex: number) => void; // Notify parent when source changes
   className?: string;
 }
 
@@ -72,13 +73,14 @@ export default function ArtPlayerComponent({
   showPoster = false,
   onLoad,
   onError,
+  onSourceChange,
   className,
 }: ArtPlayerProps) {
   const artRef = useRef<HTMLDivElement>(null);
   const playerInstanceRef = useRef<Artplayer | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   
-  const [currentFileIndex, setCurrentFileIndex] = useState(0);
+  // Use only the first file - source switching is handled by parent component
 
   const currentContentId = id;
   const currentContentType = season && episode ? "series" : "movie";
@@ -153,16 +155,12 @@ export default function ArtPlayerComponent({
 
   const debouncedSaveProgress = useMemo(() => debounce(saveProgressToLocalStorage, 5000), [saveProgressToLocalStorage]);
 
-  const tryNextSource = useCallback(() => {
-    if (currentFileIndex < files.length - 1) {
-      const nextIndex = currentFileIndex + 1;
-      console.warn(`HLS error. Switching to source ${nextIndex + 1}`);
-      setCurrentFileIndex(nextIndex);
-    } else {
-      console.error("All sources failed to load.");
-      onError?.();
-    }
-  }, [files, currentFileIndex, onError]);
+  // Remove automatic source switching - let the user manually switch via the server dropdown
+  // This prevents fullscreen exit and unexpected behavior
+  const handleHlsError = useCallback(() => {
+    console.error("HLS playback error occurred");
+    onError?.();
+  }, [onError]);
 
   useEffect(() => {
     if (!artRef.current) {
@@ -170,11 +168,12 @@ export default function ArtPlayerComponent({
     }
 
     const playerRef = playerInstanceRef.current;
+    // Check if content changed - only compare id, season, episode now (no internal file index)
     const isNewContent = playerRef && (
       (playerRef.option as unknown as { id?: string | number }).id !== currentContentId ||
       (playerRef.option as unknown as { season?: number }).season !== currentSeasonNumber ||
       (playerRef.option as unknown as { episode?: number }).episode !== currentEpisodeNumber ||
-      (playerRef.option as unknown as { currentFileIndex?: number }).currentFileIndex !== currentFileIndex
+      (playerRef.option as unknown as { fileUrl?: string }).fileUrl !== files[0]?.file
     );
 
     if (playerRef && !isNewContent) {
@@ -193,7 +192,8 @@ export default function ArtPlayerComponent({
       return;
     }
 
-    const defaultFile = files[currentFileIndex] || files[0];
+    // Always use the first file - parent controls which source is active
+    const defaultFile = files[0];
     if (!defaultFile) {
       if (artRef.current) {
         artRef.current.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100%; color: white;">No playable source found.</div>';
@@ -243,26 +243,9 @@ export default function ArtPlayerComponent({
       ];
     };
 
+    // Remove internal source switching settings - parent controls sources via ServerDropdown
     const getSourcesSettings = (): unknown[] => {
-      if (!files || files.length <= 1) return [];
-      return [
-        {
-          html: 'Sources',
-          tooltip: `Source ${currentFileIndex + 1}`,
-          icon: '<svg width="22px" height="22px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 16.5C14.4853 16.5 16.5 14.4853 16.5 12C16.5 9.51472 14.4853 7.5 12 7.5C9.51472 7.5 7.5 9.51472 7.5 12C7.5 14.4853 9.51472 16.5 12 16.5Z" stroke="#ffffff" stroke-width="1.5"></path><path d="M2 12H7" stroke="#ffffff" stroke-width="1.5"></path><path d="M17 12H22" stroke="#ffffff" stroke-width="1.5"></path></svg>',
-          selector: files.map((f, index) => ({
-            html: `Source ${index + 1}`,
-            url: f.file,
-            default: index === currentFileIndex,
-            index: index,
-          })),
-          onSelect: function (item: unknown) {
-            const typedItem = item as { index: number; html: string };
-            setCurrentFileIndex(typedItem.index);
-            return typedItem.html;
-          },
-        },
-      ];
+      return [];
     };
 
     const art = new Artplayer({
@@ -350,7 +333,7 @@ export default function ArtPlayerComponent({
                   case Hls.ErrorTypes.NETWORK_ERROR:
                     console.error("HLS Network Error:", data);
                     if (data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR || data.details === Hls.ErrorDetails.FRAG_LOAD_ERROR) {
-                      tryNextSource();
+                      handleHlsError();
                     }
                     break;
                   case Hls.ErrorTypes.MEDIA_ERROR:
@@ -358,13 +341,13 @@ export default function ArtPlayerComponent({
                     hls.recoverMediaError();
                     setTimeout(() => {
                       if (video.paused) {
-                        tryNextSource();
+                        handleHlsError();
                       }
                     }, 2000);
                     break;
                   default:
                     console.error("HLS Fatal Error:", data);
-                    tryNextSource();
+                    handleHlsError();
                     break;
                 }
               }
@@ -385,7 +368,7 @@ export default function ArtPlayerComponent({
             video.src = url;
           } else {
             artInstance.notice.show = "Unsupported format: m3u8";
-            tryNextSource();
+            handleHlsError();
           }
         },
       },
@@ -399,7 +382,7 @@ export default function ArtPlayerComponent({
     (art.option as unknown as { id: string | number }).id = currentContentId;
     (art.option as unknown as { season?: number }).season = currentSeasonNumber;
     (art.option as unknown as { episode?: number }).episode = currentEpisodeNumber;
-    (art.option as unknown as { currentFileIndex: number }).currentFileIndex = currentFileIndex;
+    (art.option as unknown as { fileUrl?: string }).fileUrl = files[0]?.file;
 
     playerInstanceRef.current = art;
 
@@ -460,8 +443,7 @@ export default function ArtPlayerComponent({
     currentPoster,
     currentBackdrop,
     debouncedSaveProgress,
-    currentFileIndex,
-    tryNextSource,
+    handleHlsError,
     autoplay,
     theme,
     subtitleColor,
