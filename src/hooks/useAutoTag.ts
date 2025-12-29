@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+// Feature flag - set to true to enable auto-tagging
+const AUTO_TAG_ENABLED = false;
+
 interface UseAutoTagOptions {
   tmdbId: number | undefined;
   mediaType: "movie" | "tv";
@@ -11,6 +14,9 @@ export function useAutoTag({ tmdbId, mediaType, enabled = true }: UseAutoTagOpti
   const triggeredRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    // Feature disabled
+    if (!AUTO_TAG_ENABLED) return;
+    
     if (!tmdbId || !enabled) return;
 
     const key = `${mediaType}-${tmdbId}`;
