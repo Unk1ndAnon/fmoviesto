@@ -157,10 +157,15 @@ export default function ArtPlayerComponent({
 
   // Remove automatic source switching - let the user manually switch via the server dropdown
   // This prevents fullscreen exit and unexpected behavior
+  // IMPORTANT: Only log errors, don't call onError() as it can trigger re-renders and navigation
   const handleHlsError = useCallback(() => {
-    console.error("HLS playback error occurred");
-    onError?.();
-  }, [onError]);
+    console.error("HLS playback error occurred - user should manually switch server");
+    // Show notice in player instead of triggering parent error handler
+    // This prevents component unmount/remount cycles that exit fullscreen
+    if (playerInstanceRef.current) {
+      playerInstanceRef.current.notice.show = "Playback error - try switching servers";
+    }
+  }, []);
 
   useEffect(() => {
     if (!artRef.current) {
@@ -411,7 +416,9 @@ export default function ArtPlayerComponent({
     });
 
     art.on('error', () => {
-      onError?.();
+      // Don't call onError - just show notice to prevent re-renders/navigation
+      console.error("ArtPlayer error occurred");
+      art.notice.show = "Playback error - try switching servers";
     });
 
     art.on("timeupdate", () => {
@@ -450,7 +457,6 @@ export default function ArtPlayerComponent({
     subtitleFontSize,
     showPoster,
     onLoad,
-    onError,
     saveProgressToLocalStorage,
   ]);
 
