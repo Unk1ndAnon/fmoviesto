@@ -19,7 +19,7 @@ import {
 } from '@/lib/watchStatsCache';
 
 // Feature flag - set to true to enable watching stats features
-const WATCHING_STATS_ENABLED = false;
+const WATCHING_STATS_ENABLED = true;
 
 // Generate or retrieve anonymous session ID
 const getSessionId = (): string => {
