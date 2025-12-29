@@ -1,8 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getCachedData, setCachedData, generateCacheKey, isCacheFresh } from "@/lib/apiCache";
+import { getCachedData, setCachedData, generateCacheKey, isCacheFresh, isCacheStale } from "@/lib/apiCache";
 import { isVercelDeployment } from "@/lib/api-config";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
+
+// In-flight request deduplication
+const pendingRequests = new Map<string, Promise<unknown>>();
 
 export interface Movie {
   id: number;
@@ -205,35 +208,71 @@ async function fetchTMDBViaSupabase<T>(endpoint: string, params: Record<string, 
 async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
   const cacheKey = generateCacheKey(endpoint, params);
   
-  // If cache is fresh, return cached data immediately
-  if (isCacheFresh(cacheKey)) {
-    const cached = getCachedData<T>(cacheKey);
-    if (cached) return cached;
+  // Check for cached data first
+  const cached = getCachedData<T>(cacheKey);
+  
+  // If cache is fresh, return immediately
+  if (cached && isCacheFresh(cacheKey)) {
+    return cached;
   }
   
-  try {
-    let data: T;
-    
-    if (isVercelDeployment()) {
-      // On Vercel, use the Vercel API route
-      data = await fetchTMDBViaVercel<T>(endpoint, params);
-    } else {
-      // On Lovable preview, use Supabase edge function
-      data = await fetchTMDBViaSupabase<T>(endpoint, params);
-    }
-
-    // Cache successful response
-    setCachedData(cacheKey, data);
-    return data;
-  } catch (e) {
-    // Network error - try cache fallback
-    const cached = getCachedData<T>(cacheKey);
-    if (cached) {
-      console.log('Using cached data as fallback (network error) for:', endpoint);
-      return cached;
-    }
-    throw e;
+  // If cache is stale but valid, return it immediately and revalidate in background
+  if (cached && isCacheStale(cacheKey)) {
+    // Revalidate in background without blocking
+    revalidateInBackground(endpoint, params, cacheKey);
+    return cached;
   }
+  
+  // Check for pending request (deduplication)
+  const pendingKey = cacheKey;
+  if (pendingRequests.has(pendingKey)) {
+    return pendingRequests.get(pendingKey) as Promise<T>;
+  }
+  
+  // Create new request
+  const requestPromise = (async (): Promise<T> => {
+    try {
+      let data: T;
+      
+      if (isVercelDeployment()) {
+        data = await fetchTMDBViaVercel<T>(endpoint, params);
+      } else {
+        data = await fetchTMDBViaSupabase<T>(endpoint, params);
+      }
+
+      setCachedData(cacheKey, data);
+      return data;
+    } catch (e) {
+      // Network error - try cache fallback
+      if (cached) {
+        console.log('Using cached data as fallback for:', endpoint);
+        return cached;
+      }
+      throw e;
+    } finally {
+      pendingRequests.delete(pendingKey);
+    }
+  })();
+  
+  pendingRequests.set(pendingKey, requestPromise);
+  return requestPromise;
+}
+
+// Background revalidation for stale-while-revalidate pattern
+function revalidateInBackground(endpoint: string, params: Record<string, string>, cacheKey: string): void {
+  (async () => {
+    try {
+      let data;
+      if (isVercelDeployment()) {
+        data = await fetchTMDBViaVercel(endpoint, params);
+      } else {
+        data = await fetchTMDBViaSupabase(endpoint, params);
+      }
+      setCachedData(cacheKey, data);
+    } catch {
+      // Silently fail background revalidation
+    }
+  })();
 }
 
 export const tmdb = {
