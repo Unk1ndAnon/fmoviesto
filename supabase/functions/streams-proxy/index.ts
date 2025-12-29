@@ -55,7 +55,28 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log(`[StreamsProxy] Success: ${data.count || 0} streams found`);
+    
+    // Get proxy base URL
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const hlsProxyBase = `${supabaseUrl}/functions/v1/hls-proxy`;
+    
+    // Wrap stream URLs with proxy for CORS bypass
+    if (data.streams && Array.isArray(data.streams)) {
+      data.streams = data.streams.map((stream: any) => {
+        if (stream.url) {
+          // Check if URL needs proxying (m3u8 or mp4)
+          const needsProxy = stream.url.includes('.m3u8') || stream.url.includes('.mp4');
+          if (needsProxy) {
+            stream.originalUrl = stream.url;
+            stream.url = `${hlsProxyBase}?url=${encodeURIComponent(stream.url)}`;
+            stream.proxied = true;
+          }
+        }
+        return stream;
+      });
+    }
+    
+    console.log(`[StreamsProxy] Success: ${data.count || data.streams?.length || 0} streams found`);
 
     return new Response(
       JSON.stringify(data),
