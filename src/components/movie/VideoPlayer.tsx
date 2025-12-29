@@ -155,8 +155,11 @@ export function useVideoSources(id: number, type: "movie" | "tv", title: string,
       isHLS: isHLSUrl(embed.url),
     }));
     
-    // Filter out movie-only sources when viewing TV shows
+    // Filter out disabled and movie-only sources when viewing TV shows
     const filteredEmbedSources = EMBED_SOURCES.filter((source) => {
+      if ((source as any).disabled) {
+        return false;
+      }
       if (type === "tv" && (source as any).movieOnly) {
         return false;
       }
