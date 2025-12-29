@@ -73,7 +73,7 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
       isHLS: isHLSUrl(embed.url),
     }));
     
-    // Add MeowTV as a special source (direct HLS)
+    // Add MeowTV as a special source (direct HLS) - at the end since API may be unstable
     const meowSource: VideoSource = {
       name: "MeowTV",
       url: MEOW_SOURCE_MARKER,
@@ -106,8 +106,8 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
     const customUrls = new Set(customSources.map(s => s.url));
     const filteredDefaults = defaultSources.filter(s => !customUrls.has(s.url));
     
-    // MeowTV first, then custom, then defaults
-    return [meowSource, ...customSources, ...filteredDefaults];
+    // Custom first, then default embeds, then MeowTV at the end (experimental)
+    return [...customSources, ...filteredDefaults, meowSource];
   }, [validCustomEmbeds, id, type, season, episode]);
 
   return sources;

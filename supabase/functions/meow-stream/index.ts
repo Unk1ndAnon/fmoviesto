@@ -37,19 +37,27 @@ async function decryptAES(encryptedData: string, key: Uint8Array, iv: Uint8Array
 
 // Get security key from MeowTV API
 async function getSecurityKey(): Promise<{ key: Uint8Array; iv: Uint8Array }> {
+  console.log('[MeowTV] Fetching security key from:', `${MEOW_API_BASE}/api/v1/sec`);
+  
   const response = await fetch(`${MEOW_API_BASE}/api/v1/sec`, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Accept': 'application/json',
       'Referer': 'https://meowtv.to/',
+      'Origin': 'https://meowtv.to',
     },
   });
   
+  console.log('[MeowTV] Security key response status:', response.status);
+  
   if (!response.ok) {
-    throw new Error('Failed to get security key');
+    const errorText = await response.text().catch(() => 'No response body');
+    console.error('[MeowTV] Security key error response:', errorText);
+    throw new Error(`Failed to get security key: ${response.status}`);
   }
   
   const data = await response.json();
+  console.log('[MeowTV] Security key response keys:', Object.keys(data));
   
   // The key and iv are returned as hex strings
   const keyHex = data.key || data.k;
