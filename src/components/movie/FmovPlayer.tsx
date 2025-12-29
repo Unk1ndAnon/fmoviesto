@@ -110,7 +110,7 @@ export function FmovPlayer({
   const [showControls, setShowControls] = useState(true);
   const [buffered, setBuffered] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showSourceList, setShowSourceList] = useState(false);
+  const [showSourceList, setShowSourceList] = useState(true); // Open by default
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
