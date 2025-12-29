@@ -23,6 +23,7 @@ export interface MeowStreamResult {
 export function useMeowStream(
   tmdbId: number,
   type: 'movie' | 'tv',
+  title: string,
   season?: number,
   episode?: number,
   enabled: boolean = false
@@ -33,7 +34,7 @@ export function useMeowStream(
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!enabled || !tmdbId) {
+    if (!enabled || !tmdbId || !title) {
       return;
     }
 
@@ -47,11 +48,13 @@ export function useMeowStream(
         const payload: {
           tmdb_id: number;
           type: 'movie' | 'tv';
+          title: string;
           season?: number;
           episode?: number;
         } = {
           tmdb_id: tmdbId,
           type,
+          title,
         };
 
         if (type === 'tv' && season && episode) {
@@ -82,7 +85,7 @@ export function useMeowStream(
     };
 
     fetchStream();
-  }, [tmdbId, type, season, episode, enabled]);
+  }, [tmdbId, type, title, season, episode, enabled]);
 
   return { streams, subtitles, isLoading, error };
 }

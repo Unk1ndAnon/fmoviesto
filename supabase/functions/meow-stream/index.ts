@@ -5,14 +5,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const MEOW_API_BASE = 'https://api.hlowb.com';
+const MAIN_URL = 'https://api.hlowb.com';
 
-// AES-128-CBC Decryption
-async function decryptAES(encryptedData: string, key: Uint8Array, iv: Uint8Array): Promise<string> {
+// Derive AES key from base64 API key
+function deriveKey(apiKeyB64: string): Uint8Array {
+  const apiKeyBytes = Uint8Array.from(atob(apiKeyB64), c => c.charCodeAt(0));
+  // Pad or truncate to 16 bytes
+  if (apiKeyBytes.length >= 16) {
+    return apiKeyBytes.slice(0, 16);
+  }
+  const padded = new Uint8Array(16);
+  padded.set(apiKeyBytes);
+  return padded;
+}
+
+// AES-128-CBC Decryption (IV = Key as per MeowTV implementation)
+async function decryptData(encryptedB64: string, apiKeyB64: string): Promise<string | null> {
   try {
-    const keyBuffer = key.buffer.slice(key.byteOffset, key.byteOffset + key.byteLength) as ArrayBuffer;
+    const aesKey = deriveKey(apiKeyB64);
+    const iv = aesKey.slice(); // IV is same as Key in MeowTV
+
+    const encryptedData = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
+
+    // Use ArrayBuffer for Deno compatibility
+    const keyBuffer = aesKey.buffer.slice(aesKey.byteOffset, aesKey.byteOffset + aesKey.byteLength) as ArrayBuffer;
     const ivBuffer = iv.buffer.slice(iv.byteOffset, iv.byteOffset + iv.byteLength) as ArrayBuffer;
-    
+
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
       keyBuffer,
@@ -20,200 +38,195 @@ async function decryptAES(encryptedData: string, key: Uint8Array, iv: Uint8Array
       false,
       ['decrypt']
     );
-    
-    const encryptedBytes = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+
     const decryptedBuffer = await crypto.subtle.decrypt(
       { name: 'AES-CBC', iv: new Uint8Array(ivBuffer) },
       cryptoKey,
-      encryptedBytes
+      encryptedData
     );
-    
+
     return new TextDecoder().decode(decryptedBuffer);
   } catch (error) {
-    console.error('Decryption error:', error);
-    throw new Error('Failed to decrypt stream data');
+    console.error('[MeowTV] Decryption failed:', error);
+    return null;
   }
 }
 
 // Get security key from MeowTV API
-async function getSecurityKey(): Promise<{ key: Uint8Array; iv: Uint8Array }> {
-  console.log('[MeowTV] Fetching security key from:', `${MEOW_API_BASE}/api/v1/sec`);
+async function getSecurityKey(retries: number = 3): Promise<{ key: string | null; cookie: string | null }> {
+  const url = `${MAIN_URL}/v0.1/system/getSecurityKey/1?channel=IndiaA&clientType=1&lang=en-US`;
   
-  const response = await fetch(`${MEOW_API_BASE}/api/v1/sec`, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'application/json',
-      'Referer': 'https://meowtv.to/',
-      'Origin': 'https://meowtv.to',
-    },
-  });
-  
-  console.log('[MeowTV] Security key response status:', response.status);
-  
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'No response body');
-    console.error('[MeowTV] Security key error response:', errorText);
-    throw new Error(`Failed to get security key: ${response.status}`);
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`[MeowTV] Fetching security key, attempt ${attempt}`);
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: { 'User-Agent': 'okhttp/4.9.0' }
+      });
+      
+      const cookie = res.headers.get('set-cookie');
+      const text = await res.text();
+
+      let json: { code: number; msg: string; data: string } | null = null;
+      try {
+        json = JSON.parse(text);
+      } catch (parseErr) {
+        console.warn('[MeowTV] getSecurityKey parse error', { attempt, text: text.slice(0, 200) });
+      }
+
+      if (json && json.code === 200 && json.data) {
+        console.log('[MeowTV] getSecurityKey ok', { attempt, hasCookie: Boolean(cookie), keyLen: json.data?.length ?? 0 });
+        return { key: json.data, cookie };
+      }
+
+      console.warn('[MeowTV] getSecurityKey bad response', { attempt, code: json?.code, msg: json?.msg });
+    } catch (e) {
+      console.warn('[MeowTV] getSecurityKey failed', { attempt, error: String(e) });
+    }
   }
-  
-  const data = await response.json();
-  console.log('[MeowTV] Security key response keys:', Object.keys(data));
-  
-  // The key and iv are returned as hex strings
-  const keyHex = data.key || data.k;
-  const ivHex = data.iv || data.i;
-  
-  if (!keyHex || !ivHex) {
-    throw new Error('Invalid security key response');
-  }
-  
-  const key = new Uint8Array(keyHex.match(/.{1,2}/g)!.map((byte: string) => parseInt(byte, 16)));
-  const iv = new Uint8Array(ivHex.match(/.{1,2}/g)!.map((byte: string) => parseInt(byte, 16)));
-  
-  return { key, iv };
+  return { key: null, cookie: null };
 }
 
-// Fetch stream data from MeowTV
-interface StreamResult {
-  streams: Array<{
-    url: string;
-    quality: string;
-    type: string;
-  }>;
-  subtitles: Array<{
-    url: string;
-    lang: string;
-    label: string;
-  }>;
-}
+// Search for content in MeowTV by title to get their internal ID
+async function searchContent(query: string, key: string): Promise<any[]> {
+  const url = `${MAIN_URL}/film-api/v1.1.0/movie/searchByKeyword?channel=IndiaA&clientType=1&keyword=${encodeURIComponent(query)}&lang=en-US&mode=1&packageName=com.external.castle&page=1&size=30`;
 
-async function fetchMovieStream(tmdbId: number): Promise<StreamResult> {
-  console.log(`[MeowTV] Fetching movie stream for TMDB ID: ${tmdbId}`);
+  try {
+    const res = await fetch(url);
+    const payload = await res.text();
+    const decryptedJson = await decryptData(payload, key);
+    if (!decryptedJson) {
+      console.warn('[MeowTV] search decrypt failed');
+      return [];
+    }
 
-  const response = await fetch(`${MEOW_API_BASE}/api/v1/movie/${tmdbId}`, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'application/json',
-      'Referer': 'https://meowtv.to/',
-    },
-  });
-
-  if (!response.ok) {
-    console.error(`[MeowTV] API response error: ${response.status}`);
-    throw new Error(`API returned ${response.status}`);
+    const data = JSON.parse(decryptedJson);
+    return data?.data?.rows || [];
+  } catch (e) {
+    console.error('[MeowTV] search error:', e);
+    return [];
   }
-
-  const data = await response.json();
-  console.log('[MeowTV] Raw response:', JSON.stringify(data).substring(0, 200));
-
-  return parseStreamResponse(data);
 }
 
-async function fetchTVStream(tmdbId: number, season: number, episode: number): Promise<StreamResult> {
-  console.log(`[MeowTV] Fetching TV stream for TMDB ID: ${tmdbId}, S${season}E${episode}`);
+// Get movie/show details from MeowTV
+async function fetchDetails(movieId: string, key: string): Promise<any | null> {
+  const url = `${MAIN_URL}/film-api/v1.9.9/movie?channel=IndiaA&clientType=1&lang=en-US&movieId=${movieId}&packageName=com.external.castle`;
 
-  const response = await fetch(`${MEOW_API_BASE}/api/v1/tv/${tmdbId}/${season}/${episode}`, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'application/json',
-      'Referer': 'https://meowtv.to/',
-    },
-  });
-
-  if (!response.ok) {
-    console.error(`[MeowTV] API response error: ${response.status}`);
-    throw new Error(`API returned ${response.status}`);
+  try {
+    const res = await fetch(url);
+    const payload = await res.text();
+    const decryptedJson = await decryptData(payload, key);
+    if (!decryptedJson) return null;
+    return JSON.parse(decryptedJson)?.data;
+  } catch {
+    return null;
   }
-
-  const data = await response.json();
-  console.log('[MeowTV] Raw response:', JSON.stringify(data).substring(0, 200));
-
-  return parseStreamResponse(data);
 }
 
-async function parseStreamResponse(data: any): Promise<StreamResult> {
-  // If data is encrypted, only then attempt to fetch the security key.
-  if (data?.encrypted || data?.e) {
-    const encryptedContent = data.data || data.d || data.content;
-    if (!encryptedContent) throw new Error('Encrypted response missing payload');
+// Get video stream URL
+async function fetchStreamUrl(
+  movieId: string,
+  episodeId: string,
+  key: string,
+  cookie: string | null,
+  languageId?: number
+): Promise<{ videoUrl: string; subtitles: any[]; qualities: any[] } | null> {
+  const resolutions = [3, 2, 1]; // 1080p, 720p, 480p
+  const collectedQualities: { quality: string; url: string }[] = [];
+  let bestVideoUrl: string | null = null;
+  let bestSubtitles: { language: string; url: string; label: string }[] = [];
+  const cookieHeader = cookie || 'hd=on';
 
-    const { key, iv } = await getSecurityKey();
+  for (const resolution of resolutions) {
+    const url = `${MAIN_URL}/film-api/v2.0.1/movie/getVideo2?clientType=1&packageName=com.external.castle&channel=IndiaA&lang=en-US`;
+    const body: Record<string, string> = {
+      mode: '1',
+      appMarket: 'GuanWang',
+      clientType: '1',
+      woolUser: 'false',
+      apkSignKey: 'ED0955EB04E67A1D9F3305B95454FED485261475',
+      androidVersion: '13',
+      movieId,
+      episodeId,
+      isNewUser: 'true',
+      resolution: resolution.toString(),
+      packageName: 'com.external.castle'
+    };
+    if (languageId) body.languageId = String(languageId);
 
     try {
-      const decrypted = await decryptAES(encryptedContent, key, iv);
-      const parsed = JSON.parse(decrypted);
-      return parseDecryptedData(parsed);
-    } catch (error) {
-      console.error('[MeowTV] Decryption failed:', error);
-      throw new Error('Failed to decrypt stream data');
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'User-Agent': 'okhttp/4.9.0',
+          'Cookie': cookieHeader
+        },
+        body: JSON.stringify(body)
+      });
+
+      const payload = await res.text();
+      const decryptedJson = await decryptData(payload, key);
+      if (!decryptedJson) {
+        console.warn('[MeowTV] fetchStreamUrl decrypt failed', { resolution, status: res.status });
+        continue;
+      }
+
+      const data = JSON.parse(decryptedJson)?.data;
+      if (data && data.videoUrl) {
+        const qualityLabel = resolution === 3 ? '1080p' : resolution === 2 ? '720p' : '480p';
+        collectedQualities.push({ quality: qualityLabel, url: data.videoUrl });
+
+        if (!bestVideoUrl) {
+          bestVideoUrl = data.videoUrl;
+          bestSubtitles = (data.subtitles || []).map((s: any) => ({
+            language: s.abbreviate || s.title || 'Unknown',
+            label: s.title || s.abbreviate || 'Subtitles',
+            url: s.url || ''
+          })).filter((s: any) => Boolean(s.url));
+        }
+      }
+    } catch (e) {
+      console.error('[MeowTV] fetchStreamUrl error:', e);
     }
   }
 
-  // Data is not encrypted, parse directly
-  return parseDecryptedData(data);
-}
+  if (!bestVideoUrl) return null;
 
-function wrapWithProxy(url: string): string {
-  const absoluteUrl = url.startsWith('http') ? url : `https:${url}`;
-  return `/functions/v1/meow-proxy?url=${encodeURIComponent(absoluteUrl)}`;
-}
-
-function parseDecryptedData(data: any): StreamResult {
-  const result: StreamResult = {
-    streams: [],
-    subtitles: [],
+  return {
+    videoUrl: bestVideoUrl,
+    subtitles: bestSubtitles,
+    qualities: collectedQualities
   };
-  
-  // Parse streams - handle various response formats
-  const sources = data.sources || data.streams || data.playlist || [];
-  
-  if (Array.isArray(sources)) {
-    for (const source of sources) {
-      const url = source.url || source.file || source.src;
-      if (url && (url.includes('.m3u8') || url.includes('hls') || source.type === 'hls')) {
-        result.streams.push({
-          url: wrapWithProxy(url),
-          quality: source.quality || source.label || 'Auto',
-          type: 'hls',
-        });
-      }
-    }
-  } else if (typeof sources === 'string' && sources.includes('.m3u8')) {
-    result.streams.push({
-      url: wrapWithProxy(sources),
-      quality: 'Auto',
-      type: 'hls',
-    });
+}
+
+// Find MeowTV content by TMDB title search
+async function findMeowContent(
+  tmdbId: number,
+  type: 'movie' | 'tv',
+  title: string,
+  key: string
+): Promise<any | null> {
+  // Search by title
+  const results = await searchContent(title, key);
+  if (!results.length) {
+    console.warn('[MeowTV] No results found for:', title);
+    return null;
   }
-  
-  // Also check for single source
-  const singleUrl = data.url || data.file || data.source;
-  if (singleUrl && !result.streams.find(s => s.url.includes(encodeURIComponent(singleUrl)))) {
-    result.streams.push({
-      url: wrapWithProxy(singleUrl),
-      quality: data.quality || 'Auto',
-      type: 'hls',
-    });
-  }
-  
-  // Parse subtitles - also proxy them
-  const subs = data.subtitles || data.tracks || data.captions || [];
-  if (Array.isArray(subs)) {
-    for (const sub of subs) {
-      const url = sub.url || sub.file || sub.src;
-      if (url) {
-        result.subtitles.push({
-          url: wrapWithProxy(url),
-          lang: sub.lang || sub.language || sub.srclang || 'en',
-          label: sub.label || sub.name || sub.language || 'English',
-        });
-      }
-    }
-  }
-  
-  console.log(`[MeowTV] Parsed ${result.streams.length} streams, ${result.subtitles.length} subtitles`);
-  
-  return result;
+
+  // Try to find best match
+  const normalizedTitle = title.toLowerCase().trim();
+  const match = results.find((r: any) => {
+    const rTitle = (r.title || '').toLowerCase().trim();
+    return rTitle === normalizedTitle || rTitle.includes(normalizedTitle) || normalizedTitle.includes(rTitle);
+  }) || results[0];
+
+  return match;
+}
+
+interface StreamResult {
+  streams: Array<{ url: string; quality: string; type: string }>;
+  subtitles: Array<{ url: string; lang: string; label: string }>;
 }
 
 serve(async (req) => {
@@ -221,7 +234,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-  
+
   try {
     const url = new URL(req.url);
 
@@ -229,8 +242,9 @@ serve(async (req) => {
     let type: string = url.searchParams.get('type') || 'movie';
     let season: string | null = url.searchParams.get('season');
     let episode: string | null = url.searchParams.get('episode');
+    let title: string | null = url.searchParams.get('title');
 
-    // Also support POST JSON body so the web app can call this via functions.invoke
+    // Support POST JSON body
     if (!tmdbId && req.method !== 'GET') {
       const contentType = req.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
@@ -240,6 +254,7 @@ serve(async (req) => {
           type = body.type || type;
           season = body.season != null ? String(body.season) : season;
           episode = body.episode != null ? String(body.episode) : episode;
+          title = body.title || title;
         }
       }
     }
@@ -251,41 +266,90 @@ serve(async (req) => {
       );
     }
 
-    const id = parseInt(tmdbId);
-    
-    let result: StreamResult;
-    
-    if (type === 'tv') {
-      if (!season || !episode) {
-        return new Response(
-          JSON.stringify({ error: 'Missing season or episode parameter for TV' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      result = await fetchTVStream(id, parseInt(season), parseInt(episode));
-    } else {
-      result = await fetchMovieStream(id);
-    }
-    
-    if (result.streams.length === 0) {
+    if (!title) {
       return new Response(
-        JSON.stringify({ error: 'No streams found', streams: [], subtitles: [] }),
+        JSON.stringify({ error: 'Missing title parameter - required for MeowTV search' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get security key
+    const { key, cookie } = await getSecurityKey();
+    if (!key) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to get MeowTV security key', streams: [], subtitles: [] }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Find content in MeowTV
+    const content = await findMeowContent(parseInt(tmdbId), type as 'movie' | 'tv', title, key);
+    if (!content) {
+      return new Response(
+        JSON.stringify({ error: 'Content not found in MeowTV', streams: [], subtitles: [] }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
+
+    const meowMovieId = content.id?.toString();
+    console.log('[MeowTV] Found content:', { title: content.title, meowId: meowMovieId });
+
+    // Get details for episodes if TV show
+    let episodeId = meowMovieId;
+    if (type === 'tv' && season && episode) {
+      const details = await fetchDetails(meowMovieId, key);
+      if (details?.episodes) {
+        const seasonNum = parseInt(season);
+        const episodeNum = parseInt(episode);
+        
+        // Find matching episode
+        const ep = details.episodes.find((e: any) => 
+          (e.seasonNumber || 1) === seasonNum && e.number === episodeNum
+        ) || details.episodes[episodeNum - 1];
+        
+        if (ep) {
+          episodeId = ep.id?.toString() || meowMovieId;
+          console.log('[MeowTV] Found episode:', { season: seasonNum, episode: episodeNum, episodeId });
+        }
+      }
+    }
+
+    // Get stream URL
+    const streamData = await fetchStreamUrl(meowMovieId, episodeId, key, cookie);
+    if (!streamData) {
+      return new Response(
+        JSON.stringify({ error: 'No streams available', streams: [], subtitles: [] }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const result: StreamResult = {
+      streams: streamData.qualities.map(q => ({
+        url: q.url,
+        quality: q.quality,
+        type: 'hls'
+      })),
+      subtitles: streamData.subtitles.map(s => ({
+        url: s.url,
+        lang: s.language,
+        label: s.label
+      }))
+    };
+
+    console.log(`[MeowTV] Returning ${result.streams.length} streams, ${result.subtitles.length} subtitles`);
+
     return new Response(
       JSON.stringify(result),
-      { 
-        status: 200, 
-        headers: { 
-          ...corsHeaders, 
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
-        } 
+          'Cache-Control': 'public, max-age=300',
+        }
       }
     );
-    
+
   } catch (error) {
     console.error('[MeowTV] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stream';
