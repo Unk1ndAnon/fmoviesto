@@ -106,8 +106,8 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
     const customUrls = new Set(customSources.map(s => s.url));
     const filteredDefaults = defaultSources.filter(s => !customUrls.has(s.url));
     
-    // Custom first, then default embeds, then MeowTV at the end (experimental)
-    return [...customSources, ...filteredDefaults, meowSource];
+    // Custom first, then MeowTV (experimental direct HLS), then default embeds
+    return [...customSources, meowSource, ...filteredDefaults];
   }, [validCustomEmbeds, id, type, season, episode]);
 
   return sources;
@@ -146,7 +146,7 @@ export function ServerDropdown({ sources, currentSource, onSelectSource }: Serve
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        className="w-48 bg-card border-border z-50"
+        className="w-56 max-h-80 overflow-y-auto bg-card border-border z-50"
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
         {sources.map((source, index) => (
