@@ -21,7 +21,7 @@ import { useWatchlist, useFavorites } from "@/hooks/useUserLists";
 import { useTVFollows } from "@/hooks/useTVFollows";
 import { useAutoTag } from "@/hooks/useAutoTag";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+import { AuthPromptDialog } from "@/components/AuthPromptDialog";
 import { cn } from "@/lib/utils";
 import { incrementViewCount } from "@/lib/viewCounter";
 
@@ -82,9 +82,13 @@ export default function TVDetails() {
     }
   };
 
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [authPromptAction, setAuthPromptAction] = useState<"favorites" | "watchlist" | "follow">("favorites");
+
   const handleWatchlist = () => {
     if (!user) {
-      toast.error("Please sign in to add to watchlist");
+      setAuthPromptAction("watchlist");
+      setAuthPromptOpen(true);
       return;
     }
     if (!show) return;
@@ -106,7 +110,8 @@ export default function TVDetails() {
 
   const handleFavorite = () => {
     if (!user) {
-      toast.error("Please sign in to add to favorites");
+      setAuthPromptAction("favorites");
+      setAuthPromptOpen(true);
       return;
     }
     if (!show) return;
@@ -128,7 +133,8 @@ export default function TVDetails() {
 
   const handleFollow = () => {
     if (!user) {
-      toast.error("Please sign in to follow shows");
+      setAuthPromptAction("follow");
+      setAuthPromptOpen(true);
       return;
     }
     if (!show) return;
@@ -641,6 +647,11 @@ export default function TVDetails() {
           title={show.name}
         />
       )}
+      <AuthPromptDialog
+        open={authPromptOpen}
+        onOpenChange={setAuthPromptOpen}
+        action={authPromptAction}
+      />
     </>
   );
 }

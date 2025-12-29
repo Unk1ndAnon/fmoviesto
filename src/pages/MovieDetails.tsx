@@ -20,7 +20,7 @@ import { useWatchlist, useFavorites } from "@/hooks/useUserLists";
 import { useAutoTag } from "@/hooks/useAutoTag";
 import { useOMDBRatings } from "@/hooks/useOMDBRatings";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+import { AuthPromptDialog } from "@/components/AuthPromptDialog";
 import { cn } from "@/lib/utils";
 import { incrementViewCount } from "@/lib/viewCounter";
 
@@ -66,9 +66,13 @@ export default function MovieDetails() {
     }
   }, [movie?.id]);
 
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [authPromptAction, setAuthPromptAction] = useState<"favorites" | "watchlist">("favorites");
+
   const handleWatchlist = () => {
     if (!user) {
-      toast.error("Please sign in to add to watchlist");
+      setAuthPromptAction("watchlist");
+      setAuthPromptOpen(true);
       return;
     }
     if (!movie) return;
@@ -90,7 +94,8 @@ export default function MovieDetails() {
 
   const handleFavorite = () => {
     if (!user) {
-      toast.error("Please sign in to add to favorites");
+      setAuthPromptAction("favorites");
+      setAuthPromptOpen(true);
       return;
     }
     if (!movie) return;
@@ -484,6 +489,11 @@ export default function MovieDetails() {
           title={movie.title}
         />
       )}
+      <AuthPromptDialog
+        open={authPromptOpen}
+        onOpenChange={setAuthPromptOpen}
+        action={authPromptAction}
+      />
     </>
   );
 }

@@ -16,7 +16,7 @@ import { ArrowLeft, Play, Star, Film, ChevronLeft, ChevronRight, Heart, Bookmark
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites, useWatchlist } from "@/hooks/useUserLists";
-import { toast } from "sonner";
+import { AuthPromptDialog } from "@/components/AuthPromptDialog";
 import { useWatchParty, SyncEvent } from "@/hooks/useWatchParty";
 import { useVidifySync } from "@/hooks/useVidifySync";
 import { WatchPartyButton } from "@/components/watch-party/WatchPartyButton";
@@ -49,11 +49,13 @@ function WatchActionButtons({
 
   const inFavorites = isFavorite(itemId, mediaType);
   const inWatchlist = isInWatchlist(itemId, mediaType);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [authPromptAction, setAuthPromptAction] = useState<"favorites" | "watchlist">("favorites");
 
   const handleFavorite = () => {
     if (!user) {
-      toast.error("Please sign in to add favorites");
-      navigate("/auth");
+      setAuthPromptAction("favorites");
+      setAuthPromptOpen(true);
       return;
     }
     if (inFavorites) {
@@ -72,8 +74,8 @@ function WatchActionButtons({
 
   const handleWatchlist = () => {
     if (!user) {
-      toast.error("Please sign in to add to watchlist");
-      navigate("/auth");
+      setAuthPromptAction("watchlist");
+      setAuthPromptOpen(true);
       return;
     }
     if (inWatchlist) {
@@ -91,26 +93,33 @@ function WatchActionButtons({
   };
 
   return (
-    <div className="flex gap-2 mb-6">
-      <Button
-        variant={inFavorites ? "default" : "outline"}
-        size="sm"
-        className="flex-1 gap-2"
-        onClick={handleFavorite}
-      >
-        <Heart className={cn("w-4 h-4", inFavorites && "fill-current")} />
-        {inFavorites ? "Favorited" : "Favorite"}
-      </Button>
-      <Button
-        variant={inWatchlist ? "default" : "outline"}
-        size="sm"
-        className="flex-1 gap-2"
-        onClick={handleWatchlist}
-      >
-        <Bookmark className={cn("w-4 h-4", inWatchlist && "fill-current")} />
-        {inWatchlist ? "In Watchlist" : "Watchlist"}
-      </Button>
-    </div>
+    <>
+      <div className="flex gap-2 mb-6">
+        <Button
+          variant={inFavorites ? "default" : "outline"}
+          size="sm"
+          className="flex-1 gap-2"
+          onClick={handleFavorite}
+        >
+          <Heart className={cn("w-4 h-4", inFavorites && "fill-current")} />
+          {inFavorites ? "Favorited" : "Favorite"}
+        </Button>
+        <Button
+          variant={inWatchlist ? "default" : "outline"}
+          size="sm"
+          className="flex-1 gap-2"
+          onClick={handleWatchlist}
+        >
+          <Bookmark className={cn("w-4 h-4", inWatchlist && "fill-current")} />
+          {inWatchlist ? "In Watchlist" : "Watchlist"}
+        </Button>
+      </div>
+      <AuthPromptDialog
+        open={authPromptOpen}
+        onOpenChange={setAuthPromptOpen}
+        action={authPromptAction}
+      />
+    </>
   );
 }
 
