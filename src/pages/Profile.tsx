@@ -290,7 +290,7 @@ export default function Profile() {
                   <div>
                     <p className="text-sm text-muted-foreground">Member since</p>
                     <p className="text-foreground">
-                      {new Date(user.createdAt).toLocaleDateString("en-US", {
+                      {new Date(user.created_at || Date.now()).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
