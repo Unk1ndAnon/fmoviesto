@@ -258,7 +258,12 @@ export function VideoPlayer({
   const [hasError, setHasError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   
-  const sources = useVideoSources(id, type, title, season, episode);
+  const rawSources = useVideoSources(id, type, title, season, episode);
+  
+  // Separate API streams (m3u8) from iframe sources - API streams first for priority
+  const apiStreamSources = rawSources.filter(s => s.isApiStream);
+  const iframeSources = rawSources.filter(s => !s.isApiStream);
+  const sources = [...apiStreamSources, ...iframeSources];
   
   // Use external or internal source control
   const currentSource = externalControls && externalSource !== undefined ? externalSource : internalSource;
@@ -267,6 +272,7 @@ export function VideoPlayer({
   const currentSourceData = sources[currentSource];
   const currentEmbedUrl = currentSourceData?.url || "";
   const isCurrentHLS = currentSourceData?.isHLS || false;
+  const isCurrentApiStream = currentSourceData?.isApiStream === true;
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -302,9 +308,6 @@ export function VideoPlayer({
     }
   };
 
-  // Check if we have any API streams (to use unified FmovPlayer)
-  const hasApiStreams = sources.some(s => s.isApiStream);
-
   // Click to Play overlay
   if (!isPlaying && backdrop) {
     return (
@@ -334,8 +337,8 @@ export function VideoPlayer({
     <div className="w-full">
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
-        {hasApiStreams ? (
-          // Use FmovPlayer with integrated source list for API streams
+        {isCurrentApiStream ? (
+          // Use FmovPlayer for m3u8/HLS API streams with integrated source list
           <FmovPlayer
             url={currentEmbedUrl}
             title={title}
@@ -397,6 +400,17 @@ export function VideoPlayer({
           </>
         )}
       </div>
+
+      {/* Server selection - show when not using FmovPlayer's integrated list */}
+      {!isCurrentApiStream && sources.length > 1 && (
+        <div className="mt-3">
+          <ServerDropdown
+            sources={sources}
+            currentSource={currentSource}
+            onSelectSource={handleSelectSource}
+          />
+        </div>
+      )}
     </div>
   );
 }
