@@ -1,35 +1,35 @@
 import { useState, useMemo } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { tmdb, Movie, TVShow } from '@/lib/tmdb';
-import { getMostViewed, getMostViewedMovies, getMostViewedTV } from '@/lib/viewCounter';
+import { useMostWatched } from '@/hooks/useWatchStats';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { MovieCard } from '@/components/movie/MovieCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, Film, Tv, Eye } from 'lucide-react';
+import { TrendingUp, Film, Tv, Eye, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type FilterValue = 'all' | 'movies' | 'tv';
 
 export default function Trending() {
   const [filter, setFilter] = useState<FilterValue>('all');
 
-  // Get most viewed items from localStorage
-  const viewRecords = useMemo(() => {
-    switch (filter) {
-      case 'movies':
-        return getMostViewedMovies(50);
-      case 'tv':
-        return getMostViewedTV(50);
-      default:
-        return getMostViewed(50);
-    }
-  }, [filter]);
+  // Get most watched items from Supabase (last 168 hours = 7 days)
+  const { items: watchedItems, isLoading: isWatchedLoading, refetch } = useMostWatched(168, 50);
+
+  // Filter items based on selected filter
+  const filteredWatched = useMemo(() => {
+    if (filter === 'all') return watchedItems;
+    return watchedItems.filter(item => 
+      filter === 'movies' ? item.media_type === 'movie' : item.media_type === 'tv'
+    );
+  }, [watchedItems, filter]);
 
   // Fetch TMDB details for movies
   const movieQueries = useQueries({
-    queries: viewRecords
+    queries: filteredWatched
       .filter(item => item.media_type === 'movie')
       .map(item => ({
         queryKey: ['movie', item.tmdb_id],
@@ -40,7 +40,7 @@ export default function Trending() {
 
   // Fetch TMDB details for TV shows
   const tvQueries = useQueries({
-    queries: viewRecords
+    queries: filteredWatched
       .filter(item => item.media_type === 'tv')
       .map(item => ({
         queryKey: ['tv', item.tmdb_id],
@@ -49,26 +49,26 @@ export default function Trending() {
       })),
   });
 
-  const isLoading = movieQueries.some(q => q.isLoading) || tvQueries.some(q => q.isLoading);
+  const isLoading = isWatchedLoading || movieQueries.some(q => q.isLoading) || tvQueries.some(q => q.isLoading);
 
   // Build maps for quick lookup
   const movieMap = new Map<number, Movie>();
   const tvMap = new Map<number, TVShow>();
   const viewCountMap = new Map<string, number>();
 
-  viewRecords.forEach(record => {
+  filteredWatched.forEach(record => {
     viewCountMap.set(`${record.media_type}-${record.tmdb_id}`, record.view_count);
   });
 
   movieQueries.forEach((q, idx) => {
-    const record = viewRecords.filter(r => r.media_type === 'movie')[idx];
+    const record = filteredWatched.filter(r => r.media_type === 'movie')[idx];
     if (q.data && record) {
       movieMap.set(record.tmdb_id, q.data);
     }
   });
 
   tvQueries.forEach((q, idx) => {
-    const record = viewRecords.filter(r => r.media_type === 'tv')[idx];
+    const record = filteredWatched.filter(r => r.media_type === 'tv')[idx];
     if (q.data && record) {
       tvMap.set(record.tmdb_id, q.data);
     }
@@ -82,7 +82,7 @@ export default function Trending() {
     index: number;
   };
 
-  const combinedItems: CombinedItem[] = viewRecords
+  const combinedItems: CombinedItem[] = filteredWatched
     .map((record, idx): CombinedItem | null => {
       if (record.media_type === 'movie') {
         const movie = movieMap.get(record.tmdb_id);
@@ -114,7 +114,7 @@ export default function Trending() {
     <>
       <SEOHead
         title="Trending on Fmov - Most Watched Movies & TV Shows"
-        description="Discover what's trending on Fmov. See the most watched movies and TV shows based on your viewing history."
+        description="Discover what's trending on Fmov. See the most watched movies and TV shows based on real-time viewing data."
       />
 
       <div className="min-h-screen flex flex-col bg-background">
@@ -123,14 +123,25 @@ export default function Trending() {
         <main className="flex-1 pt-20">
           <div className="container mx-auto px-4 py-8">
             {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2 flex items-center gap-3">
-                <TrendingUp className="w-8 h-8 text-primary" />
-                Trending on Fmov
-              </h1>
-              <p className="text-muted-foreground">
-                Most watched movies and TV shows
-              </p>
+            <div className="mb-8 flex items-start justify-between">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2 flex items-center gap-3">
+                  <TrendingUp className="w-8 h-8 text-primary" />
+                  Trending on Fmov
+                </h1>
+                <p className="text-muted-foreground">
+                  Most watched movies and TV shows in the last 7 days
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                className="gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </Button>
             </div>
 
             {/* Filter Tabs */}
@@ -150,15 +161,15 @@ export default function Trending() {
             </Tabs>
 
             {/* Content */}
-            {viewRecords.length === 0 ? (
+            {!isWatchedLoading && filteredWatched.length === 0 ? (
               <div className="py-16 text-center text-muted-foreground">
                 <Eye className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <h2 className="text-xl font-semibold mb-2">No viewing history yet</h2>
+                <h2 className="text-xl font-semibold mb-2">No trending content yet</h2>
                 <p>Start watching movies and TV shows to see what's trending!</p>
               </div>
             ) : isLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {Array.from({ length: viewRecords.length }).map((_, i) => (
+                {Array.from({ length: 12 }).map((_, i) => (
                   <div key={i}>
                     <Skeleton className="aspect-[2/3] rounded-lg" />
                     <div className="pt-3 space-y-1">
