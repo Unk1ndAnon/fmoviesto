@@ -72,8 +72,9 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
       isCustom: true,
       isHLS: isHLSUrl(embed.url),
     }));
-    // MeowTV disabled temporarily - API decryption issues
-    // TODO: Fix MeowTV integration when API stabilizes
+    
+    // MeowTV disabled - proprietary encryption not compatible
+    // Their API uses non-standard AES with 12-byte keys which can't be replicated
     // const meowSource: VideoSource = {
     //   name: "MeowTV",
     //   url: MEOW_SOURCE_MARKER,
@@ -106,7 +107,7 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
     const customUrls = new Set(customSources.map(s => s.url));
     const filteredDefaults = defaultSources.filter(s => !customUrls.has(s.url));
     
-    // Custom first, then default embeds (MeowTV disabled temporarily)
+    // Custom first, then default embeds (MeowTV disabled)
     return [...customSources, ...filteredDefaults];
   }, [validCustomEmbeds, id, type, season, episode]);
 
