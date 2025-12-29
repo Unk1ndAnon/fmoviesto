@@ -614,7 +614,7 @@ export default function Watch() {
               {isTV && seasonData?.episodes && (
                 <div className="mt-6">
                   <h3 className="font-semibold text-foreground mb-4">{title} - Season {season} - Episodes</h3>
-                  <div className="grid gap-2 max-h-96 overflow-y-auto fullscreen-hide">
+                  <div className="grid gap-2 max-h-96 overflow-y-auto scroll-hide fullscreen-hide">
                     {seasonData.episodes.map((ep) => (
                       <Link
                         key={ep.id}

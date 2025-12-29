@@ -233,4 +233,22 @@
   :-ms-fullscreen .fullscreen-hide {
     display: none !important;
   }
+
+  /* Hide all scrollbars in fullscreen mode */
+  :fullscreen *,
+  :-webkit-full-screen *,
+  :-moz-full-screen *,
+  :-ms-fullscreen * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  :fullscreen *::-webkit-scrollbar,
+  :-webkit-full-screen *::-webkit-scrollbar,
+  :-moz-full-screen *::-webkit-scrollbar,
+  :-ms-fullscreen *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
 }
