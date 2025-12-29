@@ -95,7 +95,7 @@ export default function Index() {
             <div className="h-[70vh] md:h-[85vh] bg-card animate-pulse flex items-center justify-center">
               <div className="text-center space-y-4">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-muted-foreground">Učitavanje...</p>
+                <p className="text-muted-foreground">Loading...</p>
               </div>
             </div>
           ) : (
