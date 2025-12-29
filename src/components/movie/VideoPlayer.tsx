@@ -212,7 +212,7 @@ export function VideoPlayer({
   const isCurrentMeow = currentSourceData?.isMeow || false;
   
   // Fetch MeowTV stream when MeowTV source is selected
-  const meowStream = useMeowStream(id, type, season, episode, isCurrentMeow && isPlaying);
+  const meowStream = useMeowStream(id, type, title, season, episode, isCurrentMeow && isPlaying);
 
   const handleLoad = () => {
     setIsLoading(false);
