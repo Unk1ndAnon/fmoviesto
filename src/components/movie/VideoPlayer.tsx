@@ -51,6 +51,7 @@ interface VideoPlayerProps {
   externalControls?: boolean;
   currentSource?: number;
   onSourceChange?: (index: number) => void;
+  externalSources?: VideoSource[]; // Use external sources when provided
 }
 
 // Fetch streams from edge function proxy
@@ -273,6 +274,7 @@ export function VideoPlayer({
   externalControls = false,
   currentSource: externalSource,
   onSourceChange,
+  externalSources,
 }: VideoPlayerProps) {
   const [internalSource, setInternalSource] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -281,9 +283,12 @@ export function VideoPlayer({
   
   const rawSources = useVideoSources(id, type, title, season, episode);
   
+  // Use external sources if provided, otherwise use internal hook
+  const effectiveSources = externalSources || rawSources;
+  
   // Separate API streams (m3u8) from iframe sources - API streams first for priority
-  const apiStreamSources = rawSources.filter(s => s.isApiStream);
-  const iframeSources = rawSources.filter(s => !s.isApiStream);
+  const apiStreamSources = effectiveSources.filter(s => s.isApiStream);
+  const iframeSources = effectiveSources.filter(s => !s.isApiStream);
   const sources = [...apiStreamSources, ...iframeSources];
   
   // Use external or internal source control
@@ -343,17 +348,6 @@ export function VideoPlayer({
   if (!isPlaying && backdrop) {
     return (
       <div className="w-full">
-        {/* Server Dropdown above player */}
-        {sources.length > 1 && (
-          <div className="mb-3">
-            <ServerDropdown
-              sources={sources}
-              currentSource={currentSource}
-              onSelectSource={handleSelectSource}
-            />
-          </div>
-        )}
-        
         {/* Player Preview */}
         <div 
           className="relative aspect-video bg-black overflow-hidden rounded-lg cursor-pointer group"
@@ -377,17 +371,6 @@ export function VideoPlayer({
 
   return (
     <div className="w-full">
-      {/* Server Dropdown above player */}
-      {sources.length > 1 && (
-        <div className="mb-3">
-          <ServerDropdown
-            sources={sources}
-            currentSource={currentSource}
-            onSelectSource={handleSelectSource}
-          />
-        </div>
-      )}
-
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
         {isCurrentApiStream ? (
