@@ -9,8 +9,15 @@ const MAIN_URL = 'https://api.hlowb.com';
 
 // Derive AES key from base64 API key
 function deriveKey(apiKeyB64: string): Uint8Array {
+  // The key from API is base64 encoded - decode it
   const apiKeyBytes = Uint8Array.from(atob(apiKeyB64), c => c.charCodeAt(0));
-  // Pad or truncate to 16 bytes
+  console.log('[MeowTV] Key derivation:', { 
+    inputLen: apiKeyB64.length, 
+    decodedLen: apiKeyBytes.length,
+    sample: apiKeyB64.slice(0, 8)
+  });
+  
+  // Pad with zeros if less than 16 bytes, truncate if more
   if (apiKeyBytes.length >= 16) {
     return apiKeyBytes.slice(0, 16);
   }
@@ -44,6 +51,12 @@ function extractEncryptedData(text: string): string {
 async function decryptData(responseText: string, apiKeyB64: string): Promise<string | null> {
   try {
     const encryptedB64 = extractEncryptedData(responseText);
+    console.log('[MeowTV] Decrypting:', { 
+      responseLen: responseText.length, 
+      encryptedLen: encryptedB64.length,
+      sample: encryptedB64.slice(0, 32)
+    });
+    
     const aesKey = deriveKey(apiKeyB64);
     const iv = aesKey.slice(); // IV is same as Key in MeowTV
 
