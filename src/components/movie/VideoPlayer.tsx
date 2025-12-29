@@ -55,6 +55,7 @@ interface VideoPlayerProps {
 async function fetchStreamsFromApi(
   id: number, 
   type: "movie" | "tv", 
+  title: string,
   season?: number, 
   episode?: number
 ): Promise<VideoSource[]> {
@@ -64,8 +65,12 @@ async function fetchStreamsFromApi(
       endpoint = `${STREAMS_API_BASE}/api/streams/tv/${id}/${season}/${episode}`;
     }
     
-    const response = await fetch(endpoint, { 
-      signal: AbortSignal.timeout(10000) 
+    // Add title as query parameter for MeowTV
+    const url = new URL(endpoint);
+    url.searchParams.set('title', title);
+    
+    const response = await fetch(url.toString(), { 
+      signal: AbortSignal.timeout(15000) 
     });
     
     if (!response.ok) return [];
@@ -90,7 +95,7 @@ async function fetchStreamsFromApi(
 }
 
 // Export hook for getting sources
-export function useVideoSources(id: number, type: "movie" | "tv", season?: number, episode?: number) {
+export function useVideoSources(id: number, type: "movie" | "tv", title: string, season?: number, episode?: number) {
   const [adminData, setAdminData] = useState<AdminMovie | null>(null);
   const [apiStreams, setApiStreams] = useState<VideoSource[]>([]);
   const [isLoadingApi, setIsLoadingApi] = useState(true);
@@ -110,8 +115,9 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
 
   // Fetch from streams API
   useEffect(() => {
+    if (!title) return;
     setIsLoadingApi(true);
-    fetchStreamsFromApi(id, type, season, episode)
+    fetchStreamsFromApi(id, type, title, season, episode)
       .then(streams => {
         setApiStreams(streams);
         setIsLoadingApi(false);
@@ -120,7 +126,7 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
         setApiStreams([]);
         setIsLoadingApi(false);
       });
-  }, [id, type, season, episode]);
+  }, [id, type, title, season, episode]);
 
   const validCustomEmbeds = useMemo(() => {
     return (adminData?.embeds || []).filter(embed => {
@@ -258,7 +264,7 @@ export function VideoPlayer({
   const [hasError, setHasError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   
-  const sources = useVideoSources(id, type, season, episode);
+  const sources = useVideoSources(id, type, title, season, episode);
   
   // Use external or internal source control
   const currentSource = externalControls && externalSource !== undefined ? externalSource : internalSource;

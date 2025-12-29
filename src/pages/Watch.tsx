@@ -188,6 +188,7 @@ export default function Watch() {
   const videoSources = useVideoSources(
     itemId || 0, 
     isTV ? 'tv' : 'movie', 
+    title,
     isTV ? season : undefined, 
     isTV ? episode : undefined
   );
