@@ -13,8 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { HLSPlayer, isHLSUrl } from "./HLSPlayer";
 import { FmovPlayer, isFmovStream } from "./FmovPlayer";
-
-const STREAMS_API_BASE = "http://twkg0oc0co8c8g8gskkkc48k.80.240.19.37.sslip.io";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface VideoSource {
   name: string;
@@ -53,7 +52,7 @@ interface VideoPlayerProps {
   onSourceChange?: (index: number) => void;
 }
 
-// Fetch streams from external API
+// Fetch streams from edge function proxy
 async function fetchStreamsFromApi(
   id: number, 
   type: "movie" | "tv", 
@@ -62,26 +61,18 @@ async function fetchStreamsFromApi(
   episode?: number
 ): Promise<VideoSource[]> {
   try {
-    let endpoint = `${STREAMS_API_BASE}/api/streams/${type}/${id}`;
-    if (type === "tv" && season && episode) {
-      endpoint = `${STREAMS_API_BASE}/api/streams/tv/${id}/${season}/${episode}`;
-    }
-    
-    // Add title as query parameter for MeowTV
-    const url = new URL(endpoint);
-    url.searchParams.set('title', title);
-    
-    const response = await fetch(url.toString(), { 
-      signal: AbortSignal.timeout(15000) 
+    const { data, error } = await supabase.functions.invoke('streams-proxy', {
+      body: { type, id, title, season, episode }
     });
     
-    if (!response.ok) return [];
+    if (error) {
+      console.warn("Streams proxy error:", error);
+      return [];
+    }
     
-    const data: StreamsApiResponse = await response.json();
+    if (!data?.success || !data?.streams?.length) return [];
     
-    if (!data.success || !data.streams?.length) return [];
-    
-    return data.streams.map(stream => ({
+    return data.streams.map((stream: any) => ({
       name: stream.name || stream.title,
       url: stream.url,
       isCustom: false,
@@ -89,7 +80,7 @@ async function fetchStreamsFromApi(
       noAds: true,
       quality: stream.quality,
       provider: stream.provider,
-      isApiStream: true, // Mark as API stream for FmovPlayer
+      isApiStream: true,
     }));
   } catch (error) {
     console.warn("Failed to fetch streams from API:", error);

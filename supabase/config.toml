@@ -24,3 +24,5 @@ verify_jwt = false
 [functions.meow-proxy]
 verify_jwt = false
 
+[functions.streams-proxy]
+verify_jwt = false
