@@ -13,12 +13,29 @@ import {
 import { cn } from "@/lib/utils";
 import { HLSPlayer, isHLSUrl } from "./HLSPlayer";
 
+const STREAMS_API_BASE = "http://twkg0oc0co8c8g8gskkkc48k.80.240.19.37.sslip.io";
+
 export interface VideoSource {
   name: string;
   url: string;
   isCustom: boolean;
   isHLS?: boolean;
   noAds?: boolean;
+  quality?: string;
+  provider?: string;
+}
+
+interface StreamsApiResponse {
+  success: boolean;
+  tmdbId: string;
+  count: number;
+  streams: Array<{
+    title: string;
+    name?: string;
+    url: string;
+    quality: string;
+    provider: string;
+  }>;
 }
 
 interface VideoPlayerProps {
@@ -34,9 +51,49 @@ interface VideoPlayerProps {
   onSourceChange?: (index: number) => void;
 }
 
+// Fetch streams from external API
+async function fetchStreamsFromApi(
+  id: number, 
+  type: "movie" | "tv", 
+  season?: number, 
+  episode?: number
+): Promise<VideoSource[]> {
+  try {
+    let endpoint = `${STREAMS_API_BASE}/api/streams/${type}/${id}`;
+    if (type === "tv" && season && episode) {
+      endpoint = `${STREAMS_API_BASE}/api/streams/tv/${id}/${season}/${episode}`;
+    }
+    
+    const response = await fetch(endpoint, { 
+      signal: AbortSignal.timeout(10000) 
+    });
+    
+    if (!response.ok) return [];
+    
+    const data: StreamsApiResponse = await response.json();
+    
+    if (!data.success || !data.streams?.length) return [];
+    
+    return data.streams.map(stream => ({
+      name: stream.name || stream.title,
+      url: stream.url,
+      isCustom: false,
+      isHLS: stream.url.includes('m3u8-proxy') || stream.url.includes('.m3u8'),
+      noAds: true,
+      quality: stream.quality,
+      provider: stream.provider,
+    }));
+  } catch (error) {
+    console.warn("Failed to fetch streams from API:", error);
+    return [];
+  }
+}
+
 // Export hook for getting sources
 export function useVideoSources(id: number, type: "movie" | "tv", season?: number, episode?: number) {
   const [adminData, setAdminData] = useState<AdminMovie | null>(null);
+  const [apiStreams, setApiStreams] = useState<VideoSource[]>([]);
+  const [isLoadingApi, setIsLoadingApi] = useState(true);
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -50,6 +107,20 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
     };
     fetchAdminData();
   }, [id, type]);
+
+  // Fetch from streams API
+  useEffect(() => {
+    setIsLoadingApi(true);
+    fetchStreamsFromApi(id, type, season, episode)
+      .then(streams => {
+        setApiStreams(streams);
+        setIsLoadingApi(false);
+      })
+      .catch(() => {
+        setApiStreams([]);
+        setIsLoadingApi(false);
+      });
+  }, [id, type, season, episode]);
 
   const validCustomEmbeds = useMemo(() => {
     return (adminData?.embeds || []).filter(embed => {
@@ -85,12 +156,20 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
       };
     }).filter(s => s.url);
     
-    // Deduplicate by URL - custom sources take priority
-    const customUrls = new Set(customSources.map(s => s.url));
-    const filteredDefaults = defaultSources.filter(s => !customUrls.has(s.url));
+    // Deduplicate by URL - API streams first, then custom, then defaults
+    const allSources = [...apiStreams, ...customSources, ...defaultSources];
+    const seenUrls = new Set<string>();
+    const uniqueSources: VideoSource[] = [];
     
-    return [...customSources, ...filteredDefaults];
-  }, [validCustomEmbeds, id, type, season, episode]);
+    for (const source of allSources) {
+      if (!seenUrls.has(source.url)) {
+        seenUrls.add(source.url);
+        uniqueSources.push(source);
+      }
+    }
+    
+    return uniqueSources;
+  }, [validCustomEmbeds, apiStreams, id, type, season, episode]);
 
   return sources;
 }
@@ -143,11 +222,14 @@ export function ServerDropdown({ sources, currentSource, onSelectSource }: Serve
                 currentSource === index ? "bg-green-500" : "bg-muted-foreground/30"
               )}
             />
-            <span className="flex-1">{source.name}</span>
+            <span className="flex-1 truncate">{source.name}</span>
+            {source.quality && (
+              <span className="text-xs text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded font-medium">{source.quality}</span>
+            )}
             {source.noAds && (
               <span className="text-xs text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded font-medium">No Ads</span>
             )}
-            {source.isHLS && (
+            {source.isHLS && !source.quality && (
               <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">HLS</span>
             )}
             {currentSource === index && <span className="text-xs text-muted-foreground">Active</span>}
