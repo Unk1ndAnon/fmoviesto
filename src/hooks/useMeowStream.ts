@@ -34,7 +34,9 @@ export function useMeowStream(
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!enabled || !tmdbId || !title) {
+    // Don't fetch if not enabled or missing required params
+    // title must be non-empty string for MeowTV search
+    if (!enabled || !tmdbId || !title || title.trim() === '') {
       return;
     }
 
