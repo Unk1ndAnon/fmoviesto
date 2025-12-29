@@ -1,0 +1,117 @@
+.artplayercontainer {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.artplayercontainer .art-video-player {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.artplayercontainer .art-video-player .art-video {
+  background: #000;
+}
+
+.artplayercontainer .art-video-player .art-control-progress {
+  height: 4px;
+}
+
+.artplayercontainer .art-video-player .art-control-progress:hover {
+  height: 6px;
+}
+
+.artplayercontainer .art-video-player .art-progress-loaded,
+.artplayercontainer .art-video-player .art-progress-played {
+  background: hsl(var(--primary)) !important;
+}
+
+.artplayercontainer .art-video-player .art-progress-indicator {
+  background: hsl(var(--primary)) !important;
+}
+
+.artplayercontainer .art-video-player .art-bottom {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  padding-bottom: 8px;
+}
+
+.artplayercontainer .art-video-player .art-controls {
+  padding: 0 12px;
+}
+
+.artplayercontainer .art-video-player .art-icon {
+  color: #fff;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+
+.artplayercontainer .art-video-player .art-icon:hover {
+  opacity: 1;
+}
+
+.artplayercontainer .art-video-player .art-setting {
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.artplayercontainer .art-video-player .art-setting-item {
+  transition: background 0.2s;
+}
+
+.artplayercontainer .art-video-player .art-setting-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.artplayercontainer .art-video-player .art-setting-item-right {
+  color: hsl(var(--primary));
+}
+
+.artplayercontainer .art-video-player .art-notice {
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+.artplayercontainer .art-video-player .art-subtitle {
+  font-family: inherit;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.artplayercontainer .art-video-player .art-loading {
+  background: transparent;
+}
+
+.artplayercontainer .art-video-player .art-state {
+  opacity: 0.9;
+}
+
+.artplayercontainer .art-video-player .art-contextmenu {
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.artplayercontainer .art-video-player .art-info {
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+}
+
+/* Quality selector specific styling */
+.artplayercontainer .art-video-player .art-setting-panel {
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 8px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .artplayercontainer .art-video-player .art-controls {
+    padding: 0 8px;
+  }
+  
+  .artplayercontainer .art-video-player .art-control-time {
+    font-size: 12px;
+  }
+}

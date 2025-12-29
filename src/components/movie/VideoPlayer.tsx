@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { HLSPlayer, isHLSUrl } from "./HLSPlayer";
-import { FmovPlayer, isFmovStream, VideoSourceItem } from "./FmovPlayer";
+import ArtPlayerComponent, { isArtPlayerStream } from "./ArtPlayerComponent";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface VideoSource {
@@ -360,11 +360,15 @@ export function VideoPlayer({
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
         {isCurrentApiStream ? (
-          // Use FmovPlayer for m3u8/HLS API streams
-          <FmovPlayer
-            url={currentEmbedUrl}
+          // Use ArtPlayer for m3u8/HLS API streams
+          <ArtPlayerComponent
+            files={[{ file: currentEmbedUrl, type: 'hls' }]}
+            id={id}
             title={title}
             poster={backdrop}
+            season={season}
+            episode={episode}
+            autoplay={true}
             onLoad={handleLoad}
             onError={handleError}
             className="w-full h-full"
