@@ -342,7 +342,24 @@ export const tmdb = {
 
   // Search and get best matching result (for slug-based routing)
   searchMovieByTitle: async (title: string): Promise<Movie | null> => {
-    const result = await fetchTMDB<{ results: Movie[] }>("/search/movie", { query: title });
+    // First try standard search
+    let result = await fetchTMDB<{ results: Movie[] }>("/search/movie", { query: title });
+    
+    // If no results and title might have been mangled, try variations
+    if (!result.results || result.results.length === 0) {
+      // Try adding common letter variations (e.g., "b hubali" -> "bahubali")
+      const altTitle = title.replace(/^b\s+/i, "ba").replace(/^bah\s+/i, "bahu");
+      result = await fetchTMDB<{ results: Movie[] }>("/search/movie", { query: altTitle });
+    }
+    
+    // Still no results? Try recent years (2024-2025)
+    if (!result.results || result.results.length === 0) {
+      result = await fetchTMDB<{ results: Movie[] }>("/search/movie", { 
+        query: title, 
+        primary_release_year: "2025" 
+      });
+    }
+    
     if (!result.results || result.results.length === 0) return null;
     
     // Normalize title for comparison
