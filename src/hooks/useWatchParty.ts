@@ -1,16 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-
-// Generate or get session ID for anonymous users
-const getSessionId = (): string => {
-  let sessionId = localStorage.getItem('watch_party_session_id');
-  if (!sessionId) {
-    sessionId = `anon_${crypto.randomUUID()}`;
-    localStorage.setItem('watch_party_session_id', sessionId);
-  }
-  return sessionId;
-};
 
 // Random nickname generator
 const ADJECTIVES = [
@@ -32,8 +23,27 @@ const generateRandomNickname = (): string => {
   return `${adjective}${noun}${number}`;
 };
 
-// Get or set display name
+// Get session ID - use auth user ID if available, otherwise localStorage
+const getSessionId = (): string => {
+  // Check if we have a cached auth session ID (set by useWatchParty hook)
+  const cachedAuthId = sessionStorage.getItem('watch_party_auth_session_id');
+  if (cachedAuthId) return cachedAuthId;
+  
+  // Fall back to localStorage for anonymous users
+  let sessionId = localStorage.getItem('watch_party_session_id');
+  if (!sessionId) {
+    sessionId = `anon_${crypto.randomUUID()}`;
+    localStorage.setItem('watch_party_session_id', sessionId);
+  }
+  return sessionId;
+};
+
+// Get display name - check sessionStorage for profile name first
 export const getDisplayName = (): string => {
+  // Check cached profile name from authenticated user
+  const cachedName = sessionStorage.getItem('watch_party_profile_name');
+  if (cachedName) return cachedName;
+  
   let name = localStorage.getItem('watch_party_display_name');
   if (!name) {
     name = generateRandomNickname();
@@ -44,6 +54,38 @@ export const getDisplayName = (): string => {
 
 export const setDisplayName = (name: string): void => {
   localStorage.setItem('watch_party_display_name', name);
+  sessionStorage.setItem('watch_party_profile_name', name);
+  
+  // If authenticated, also update profile (fire and forget)
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user?.id) {
+      supabase
+        .from('profiles')
+        .update({ display_name: name })
+        .eq('id', session.user.id)
+        .then(() => {});
+    }
+  });
+};
+
+// Initialize session from auth (call once on mount)
+const initializeAuthSession = async (): Promise<void> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user?.id) {
+    // Cache the auth-based session ID
+    sessionStorage.setItem('watch_party_auth_session_id', `user_${session.user.id}`);
+    
+    // Fetch profile display name
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', session.user.id)
+      .maybeSingle();
+    
+    if (profile?.display_name) {
+      sessionStorage.setItem('watch_party_profile_name', profile.display_name);
+    }
+  }
 };
 
 export interface WatchPartyRoom {
@@ -116,6 +158,11 @@ const DRIFT_THRESHOLD = 5; // 5 seconds drift threshold (reduced for tighter syn
 export function useWatchParty(options: UseWatchPartyOptions) {
   const { tmdbId, mediaType, season, episode, onPlaybackUpdate, onSyncEvent } = options;
   const sessionId = getSessionId();
+  
+  // Initialize auth session on mount
+  useEffect(() => {
+    initializeAuthSession();
+  }, []);
   
   const [room, setRoom] = useState<WatchPartyRoom | null>(null);
   const [members, setMembers] = useState<WatchPartyMember[]>([]);
