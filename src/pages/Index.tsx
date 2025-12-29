@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, WifiOff } from "lucide-react";
 
 export default function Index() {
-  const { data: trending, isLoading: trendingLoading, isError: trendingError, refetch: refetchTrending } = useQuery({
+  const { data: trending, isLoading: trendingLoading, isError: trendingError, refetch: refetchTrending, isFetching } = useQuery({
     queryKey: ["trending"],
     queryFn: () => tmdb.getTrending("week"),
-    retry: 2,
-    retryDelay: 1000,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const { data: popular, refetch: refetchPopular } = useQuery({
@@ -56,7 +57,7 @@ export default function Index() {
     refetchPopularTV();
   };
 
-  const hasNoData = !trending?.results?.length && !trendingLoading;
+  const hasNoData = !trending?.results?.length && !trendingLoading && !isFetching;
 
   return (
     <>
@@ -70,7 +71,7 @@ export default function Index() {
 
         <main className="flex-1">
           {/* Error/Empty State */}
-          {(trendingError || hasNoData) && !trendingLoading ? (
+          {(trendingError || hasNoData) && !trendingLoading && !isFetching ? (
             <div className="h-[70vh] md:h-[85vh] flex flex-col items-center justify-center gap-6 px-4 text-center">
               <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
                 <WifiOff className="w-10 h-10 text-muted-foreground" />
@@ -90,7 +91,7 @@ export default function Index() {
                 Pokušaj ponovo
               </Button>
             </div>
-          ) : trendingLoading ? (
+          ) : trendingLoading || isFetching ? (
             <div className="h-[70vh] md:h-[85vh] bg-card animate-pulse flex items-center justify-center">
               <div className="text-center space-y-4">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
