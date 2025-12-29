@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { AlertTriangle, RefreshCw, Play, Server, ChevronDown } from "lucide-react";
+import { AlertTriangle, RefreshCw, Play, Server, ChevronDown, Loader2, Cat } from "lucide-react";
 import { EMBED_SOURCES, getEmbedUrl } from "@/lib/tmdb";
 import { adminStorage, AdminMovie } from "@/lib/admin";
 import { validateEmbedUrl } from "@/lib/url-validation";
@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { HLSPlayer, isHLSUrl } from "./HLSPlayer";
+import { MeowHLSPlayer } from "./MeowHLSPlayer";
+import { useMeowStream } from "@/hooks/useMeowStream";
 
 
 export interface VideoSource {
@@ -20,7 +22,11 @@ export interface VideoSource {
   isCustom: boolean;
   isHLS?: boolean;
   noAds?: boolean;
+  isMeow?: boolean;
 }
+
+// MeowTV source marker - uses dynamic URL fetching
+const MEOW_SOURCE_MARKER = "MEOW_TV_SOURCE";
 
 interface VideoPlayerProps {
   id: number;
@@ -67,6 +73,16 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
       isHLS: isHLSUrl(embed.url),
     }));
     
+    // Add MeowTV as a special source (direct HLS)
+    const meowSource: VideoSource = {
+      name: "MeowTV",
+      url: MEOW_SOURCE_MARKER,
+      isCustom: false,
+      isHLS: true,
+      isMeow: true,
+      noAds: true,
+    };
+    
     // Filter out movie-only sources when viewing TV shows
     const filteredEmbedSources = EMBED_SOURCES.filter((source) => {
       if (type === "tv" && (source as any).movieOnly) {
@@ -90,7 +106,8 @@ export function useVideoSources(id: number, type: "movie" | "tv", season?: numbe
     const customUrls = new Set(customSources.map(s => s.url));
     const filteredDefaults = defaultSources.filter(s => !customUrls.has(s.url));
     
-    return [...customSources, ...filteredDefaults];
+    // MeowTV first, then custom, then defaults
+    return [meowSource, ...customSources, ...filteredDefaults];
   }, [validCustomEmbeds, id, type, season, episode]);
 
   return sources;
@@ -144,12 +161,18 @@ export function ServerDropdown({ sources, currentSource, onSelectSource }: Serve
                 currentSource === index ? "bg-green-500" : "bg-muted-foreground/30"
               )}
             />
+            {source.isMeow && (
+              <Cat className="w-3 h-3 text-emerald-400 shrink-0" />
+            )}
             <span className="flex-1">{source.name}</span>
             {source.noAds && (
               <span className="text-xs text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded font-medium">No Ads</span>
             )}
-            {source.isHLS && (
+            {source.isHLS && !source.isMeow && (
               <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">HLS</span>
+            )}
+            {source.isMeow && (
+              <span className="text-xs text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">Direct</span>
             )}
             {currentSource === index && <span className="text-xs text-muted-foreground">Active</span>}
           </DropdownMenuItem>
@@ -186,6 +209,10 @@ export function VideoPlayer({
   const currentSourceData = sources[currentSource];
   const currentEmbedUrl = currentSourceData?.url || "";
   const isCurrentHLS = currentSourceData?.isHLS || false;
+  const isCurrentMeow = currentSourceData?.isMeow || false;
+  
+  // Fetch MeowTV stream when MeowTV source is selected
+  const meowStream = useMeowStream(id, type, season, episode, isCurrentMeow && isPlaying);
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -273,8 +300,42 @@ export function VideoPlayer({
 
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
-        {/* HLS Player for m3u8 URLs */}
-        {isCurrentHLS ? (
+        {/* MeowTV Player */}
+        {isCurrentMeow ? (
+          <>
+            {meowStream.isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+                <div className="flex flex-col items-center gap-4">
+                  <Loader2 className="w-12 h-12 text-emerald-400 animate-spin" />
+                  <p className="text-muted-foreground">Fetching MeowTV stream...</p>
+                </div>
+              </div>
+            )}
+            {meowStream.error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <div className="flex flex-col items-center gap-4 text-center px-4">
+                  <AlertTriangle className="w-12 h-12 text-destructive" />
+                  <p className="text-foreground font-medium">MeowTV unavailable</p>
+                  <p className="text-muted-foreground text-sm">{meowStream.error}</p>
+                  <Button variant="outline" onClick={tryNextSource} className="gap-2">
+                    <RefreshCw className="w-4 h-4" />
+                    Try Another Server
+                  </Button>
+                </div>
+              </div>
+            )}
+            {meowStream.streams.length > 0 && (
+              <MeowHLSPlayer
+                url={meowStream.streams[0].url}
+                title={title}
+                subtitles={meowStream.subtitles}
+                onLoad={handleLoad}
+                onError={handleError}
+                className="w-full h-full"
+              />
+            )}
+          </>
+        ) : isCurrentHLS ? (
           <HLSPlayer
             url={currentEmbedUrl}
             title={title}
