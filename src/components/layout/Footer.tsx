@@ -93,10 +93,9 @@ export function Footer() {
         </div>
 
         <p className="text-xs text-muted-foreground/60 text-center mt-6">
-          Disclaimer: This site does not store any files on its server. All contents are provided by non-affiliated third parties.<br />
-          <script src="https://efreecode.com/js.js" id="eXF-9stream-0" async defer></script>
-        </p>
-        <script src="https://efreecode.com/js.js" id="eXF-9stream-0" async defer></script>
+          Disclaimer: This site does not store any files on its server. All contents are provided by non-affiliated third parties. </p><br />
+          <p><script src="https://efreecode.com/js.js" id="eXF-9stream-0" async defer></script></p>
+   
       </div>
     </footer>
   );
