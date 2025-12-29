@@ -48,17 +48,33 @@ export function LiveSearch({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["liveSearch", debouncedQuery],
+  // Fetch movies and TV separately for better results
+  const { data: movieData, isLoading: moviesLoading } = useQuery({
+    queryKey: ["liveSearchMovies", debouncedQuery],
+    queryFn: () => tmdb.searchMovies(debouncedQuery),
+    enabled: debouncedQuery.length >= 2,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: tvData, isLoading: tvLoading } = useQuery({
+    queryKey: ["liveSearchTV", debouncedQuery],
+    queryFn: () => tmdb.searchTV(debouncedQuery),
+    enabled: debouncedQuery.length >= 2,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: personData, isLoading: personLoading } = useQuery({
+    queryKey: ["liveSearchPerson", debouncedQuery],
     queryFn: () => tmdb.searchMulti(debouncedQuery),
     enabled: debouncedQuery.length >= 2,
     staleTime: 1000 * 60 * 5,
   });
 
-  const results = data?.results || [];
-  const movies = results.filter((r: any) => r.media_type === "movie").slice(0, 4);
-  const tvShows = results.filter((r: any) => r.media_type === "tv").slice(0, 4);
-  const people = results.filter((r: any) => r.media_type === "person").slice(0, 3);
+  const isLoading = moviesLoading || tvLoading || personLoading;
+
+  const movies = (movieData?.results || []).slice(0, 5);
+  const tvShows = (tvData?.results || []).slice(0, 5);
+  const people = (personData?.results || []).filter((r: any) => r.media_type === "person").slice(0, 3);
 
   const hasResults = movies.length > 0 || tvShows.length > 0 || people.length > 0;
   const showDropdown = isOpen && debouncedQuery.length >= 2;

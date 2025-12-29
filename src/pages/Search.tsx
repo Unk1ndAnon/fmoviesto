@@ -8,51 +8,91 @@ import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search as SearchIcon, Film, Tv, User } from "lucide-react";
+import { Search as SearchIcon, Film, Tv, User, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
+  const initialFilter = (searchParams.get("type") as "all" | "movie" | "tv" | "person") || "all";
+  const initialPage = parseInt(searchParams.get("page") || "1", 10);
+  
   const [searchInput, setSearchInput] = useState(initialQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
-  const [filter, setFilter] = useState<"all" | "movie" | "tv" | "person">("all");
+  const [filter, setFilter] = useState<"all" | "movie" | "tv" | "person">(initialFilter);
+  const [page, setPage] = useState(initialPage);
 
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchInput);
       if (searchInput.trim()) {
-        setSearchParams({ q: searchInput.trim() }, { replace: true });
+        const newParams = new URLSearchParams();
+        newParams.set("q", searchInput.trim());
+        if (filter !== "all") newParams.set("type", filter);
+        if (page > 1) newParams.set("page", String(page));
+        setSearchParams(newParams, { replace: true });
       } else {
         setSearchParams({}, { replace: true });
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchInput, setSearchParams]);
+  }, [searchInput, filter, page, setSearchParams]);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["search", debouncedQuery],
-    queryFn: () => tmdb.searchMulti(debouncedQuery),
-    enabled: !!debouncedQuery,
+  // Reset page when filter or query changes
+  useEffect(() => {
+    setPage(1);
+  }, [filter, debouncedQuery]);
+
+  // Sync URL params with state on URL change
+  useEffect(() => {
+    const urlQuery = searchParams.get("q") || "";
+    const urlFilter = (searchParams.get("type") as "all" | "movie" | "tv" | "person") || "all";
+    const urlPage = parseInt(searchParams.get("page") || "1", 10);
+    
+    if (urlQuery !== searchInput) setSearchInput(urlQuery);
+    if (urlFilter !== filter) setFilter(urlFilter);
+    if (urlPage !== page) setPage(urlPage);
+  }, [searchParams]);
+
+  // Use dedicated search APIs for better results
+  const { data: movieData, isLoading: moviesLoading } = useQuery({
+    queryKey: ["searchMovies", debouncedQuery, page],
+    queryFn: () => tmdb.searchMovies(debouncedQuery, filter === "movie" ? page : 1),
+    enabled: !!debouncedQuery && (filter === "all" || filter === "movie"),
   });
 
-  // Separate results by type
-  const allResults = data?.results || [];
+  const { data: tvData, isLoading: tvLoading } = useQuery({
+    queryKey: ["searchTV", debouncedQuery, page],
+    queryFn: () => tmdb.searchTV(debouncedQuery, filter === "tv" ? page : 1),
+    enabled: !!debouncedQuery && (filter === "all" || filter === "tv"),
+  });
+
+  const { data: multiData, isLoading: multiLoading } = useQuery({
+    queryKey: ["searchMulti", debouncedQuery],
+    queryFn: () => tmdb.searchMulti(debouncedQuery),
+    enabled: !!debouncedQuery && (filter === "all" || filter === "person"),
+  });
+
+  const isLoading = moviesLoading || tvLoading || multiLoading;
+
+  // Combine results
+  const movies = movieData?.results || [];
+  const tvShows = tvData?.results || [];
+  const people = (multiData?.results || []).filter((item: any) => item.media_type === "person");
   
-  const movies = allResults.filter((item: any) => item.media_type === "movie");
-  const tvShows = allResults.filter((item: any) => item.media_type === "tv");
-  const people = allResults.filter((item: any) => item.media_type === "person");
-  
-  const mediaResults = allResults.filter((item: any) => 
-    item.media_type === "movie" || item.media_type === "tv"
-  );
+  // For "all" filter, combine movies and TV shows
+  const mediaResults = filter === "all" 
+    ? [...movies.map((m: any) => ({ ...m, media_type: "movie" })), 
+       ...tvShows.map((t: any) => ({ ...t, media_type: "tv" }))]
+      .sort((a: any, b: any) => (b.popularity || 0) - (a.popularity || 0))
+    : [];
 
   const getFilteredResults = () => {
     switch (filter) {
       case "movie":
-        return movies;
+        return movies.map((m: any) => ({ ...m, media_type: "movie" }));
       case "tv":
-        return tvShows;
+        return tvShows.map((t: any) => ({ ...t, media_type: "tv" }));
       case "person":
         return people;
       default:
@@ -61,6 +101,39 @@ export default function Search() {
   };
 
   const results = getFilteredResults();
+  
+  // Get total pages for pagination
+  const getTotalPages = () => {
+    switch (filter) {
+      case "movie":
+        return Math.min(movieData?.total_pages || 1, 500);
+      case "tv":
+        return Math.min(tvData?.total_pages || 1, 500);
+      default:
+        return 1; // Multi-search doesn't support pagination well
+    }
+  };
+
+  const totalPages = getTotalPages();
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    const newParams = new URLSearchParams();
+    if (debouncedQuery) newParams.set("q", debouncedQuery);
+    if (filter !== "all") newParams.set("type", filter);
+    if (newPage > 1) newParams.set("page", String(newPage));
+    setSearchParams(newParams, { replace: true });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleFilterChange = (newFilter: "all" | "movie" | "tv" | "person") => {
+    setFilter(newFilter);
+    setPage(1);
+    const newParams = new URLSearchParams();
+    if (debouncedQuery) newParams.set("q", debouncedQuery);
+    if (newFilter !== "all") newParams.set("type", newFilter);
+    setSearchParams(newParams, { replace: true });
+  };
 
   return (
     <>
@@ -107,32 +180,32 @@ export default function Search() {
                     <Button
                       variant={filter === "all" ? "default" : "cinema"}
                       size="sm"
-                      onClick={() => setFilter("all")}
+                      onClick={() => handleFilterChange("all")}
                     >
-                      All ({mediaResults.length})
+                      All ({movies.length + tvShows.length})
                     </Button>
                     <Button
                       variant={filter === "movie" ? "default" : "cinema"}
                       size="sm"
-                      onClick={() => setFilter("movie")}
+                      onClick={() => handleFilterChange("movie")}
                       className="gap-2"
                     >
                       <Film className="w-4 h-4" />
-                      Movies ({movies.length})
+                      Movies ({movies.length}{movieData?.total_pages && movieData.total_pages > 1 ? "+" : ""})
                     </Button>
                     <Button
                       variant={filter === "tv" ? "default" : "cinema"}
                       size="sm"
-                      onClick={() => setFilter("tv")}
+                      onClick={() => handleFilterChange("tv")}
                       className="gap-2"
                     >
                       <Tv className="w-4 h-4" />
-                      TV Shows ({tvShows.length})
+                      TV Shows ({tvShows.length}{tvData?.total_pages && tvData.total_pages > 1 ? "+" : ""})
                     </Button>
                     <Button
                       variant={filter === "person" ? "default" : "cinema"}
                       size="sm"
-                      onClick={() => setFilter("person")}
+                      onClick={() => handleFilterChange("person")}
                       className="gap-2"
                     >
                       <User className="w-4 h-4" />
@@ -145,7 +218,7 @@ export default function Search() {
                 <h2 className="text-xl font-semibold text-foreground mb-6">
                   {isLoading
                     ? "Searching..."
-                    : `${results.length} results for "${debouncedQuery}"`}
+                    : `${results.length} results for "${debouncedQuery}"${totalPages > 1 ? ` (page ${page} of ${totalPages})` : ""}`}
                 </h2>
 
                 {/* Loading */}
@@ -209,6 +282,31 @@ export default function Search() {
                     <p className="text-muted-foreground/60 mt-2">
                       Try searching with different keywords
                     </p>
+                  </div>
+                )}
+
+                {/* Pagination - only for movie/tv filters */}
+                {totalPages > 1 && (filter === "movie" || filter === "tv") && (
+                  <div className="flex items-center justify-center gap-4 mt-12">
+                    <Button
+                      variant="cinema"
+                      onClick={() => handlePageChange(Math.max(1, page - 1))}
+                      disabled={page === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+                    <span className="text-muted-foreground">
+                      Page {page} of {totalPages}
+                    </span>
+                    <Button
+                      variant="cinema"
+                      onClick={() => handlePageChange(page + 1)}
+                      disabled={page >= totalPages}
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
                   </div>
                 )}
               </>
