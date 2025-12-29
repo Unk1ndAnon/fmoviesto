@@ -153,6 +153,11 @@ async function parseStreamResponse(data: any): Promise<StreamResult> {
   return parseDecryptedData(data);
 }
 
+function wrapWithProxy(url: string): string {
+  const absoluteUrl = url.startsWith('http') ? url : `https:${url}`;
+  return `/functions/v1/meow-proxy?url=${encodeURIComponent(absoluteUrl)}`;
+}
+
 function parseDecryptedData(data: any): StreamResult {
   const result: StreamResult = {
     streams: [],
@@ -167,7 +172,7 @@ function parseDecryptedData(data: any): StreamResult {
       const url = source.url || source.file || source.src;
       if (url && (url.includes('.m3u8') || url.includes('hls') || source.type === 'hls')) {
         result.streams.push({
-          url: url.startsWith('http') ? url : `https:${url}`,
+          url: wrapWithProxy(url),
           quality: source.quality || source.label || 'Auto',
           type: 'hls',
         });
@@ -175,7 +180,7 @@ function parseDecryptedData(data: any): StreamResult {
     }
   } else if (typeof sources === 'string' && sources.includes('.m3u8')) {
     result.streams.push({
-      url: sources.startsWith('http') ? sources : `https:${sources}`,
+      url: wrapWithProxy(sources),
       quality: 'Auto',
       type: 'hls',
     });
@@ -183,22 +188,22 @@ function parseDecryptedData(data: any): StreamResult {
   
   // Also check for single source
   const singleUrl = data.url || data.file || data.source;
-  if (singleUrl && !result.streams.find(s => s.url === singleUrl)) {
+  if (singleUrl && !result.streams.find(s => s.url.includes(encodeURIComponent(singleUrl)))) {
     result.streams.push({
-      url: singleUrl.startsWith('http') ? singleUrl : `https:${singleUrl}`,
+      url: wrapWithProxy(singleUrl),
       quality: data.quality || 'Auto',
       type: 'hls',
     });
   }
   
-  // Parse subtitles
+  // Parse subtitles - also proxy them
   const subs = data.subtitles || data.tracks || data.captions || [];
   if (Array.isArray(subs)) {
     for (const sub of subs) {
       const url = sub.url || sub.file || sub.src;
       if (url) {
         result.subtitles.push({
-          url: url.startsWith('http') ? url : `https:${url}`,
+          url: wrapWithProxy(url),
           lang: sub.lang || sub.language || sub.srclang || 'en',
           label: sub.label || sub.name || sub.language || 'English',
         });
