@@ -6,6 +6,7 @@ import { slugToTitle, generateSlug, getWatchMovieUrl, getWatchTVUrl, getMovieUrl
 import { generateMovieKeywords, generateTVKeywords } from "@/lib/seo-keywords";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { ServerDropdown, useVideoSources } from "@/components/movie/VideoPlayer";
 import { VideoPlayer } from "@/components/movie/VideoPlayer";
 import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
@@ -182,6 +183,10 @@ export default function Watch() {
   const year = isTV 
     ? (show?.first_air_date ? new Date(show.first_air_date).getFullYear() : "")
     : (movie?.release_date ? new Date(movie.release_date).getFullYear() : "");
+
+  // Video source state
+  const [currentSource, setCurrentSource] = useState(0);
+  const videoSources = useVideoSources(itemId || 0, isTV ? 'tv' : 'movie', title, isTV ? season : undefined, isTV ? episode : undefined);
 
   // Sync event state for overlay
   const [currentSyncEvent, setCurrentSyncEvent] = useState<SyncEvent | null>(null);
@@ -434,10 +439,17 @@ export default function Watch() {
             >
               {/* Constrained Player Container */}
               <div className="max-w-4xl">
-              {/* Watch Party & Watching Badge - Above Player */}
+              {/* Server Dropdown & Watch Party - Above Player */}
               <div className="flex items-center justify-between gap-2 mb-4">
-                {/* Watching Now Badge */}
+                {/* Left side: Server Dropdown & Watching Badge */}
                 <div className="flex items-center gap-3">
+                  {videoSources.length > 1 && (
+                    <ServerDropdown
+                      sources={videoSources}
+                      currentSource={currentSource}
+                      onSelectSource={setCurrentSource}
+                    />
+                  )}
                   {watchingCount > 0 && (
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/90 text-primary-foreground text-xs font-medium animate-pulse">
                       <Eye className="w-3 h-3" />
@@ -446,7 +458,7 @@ export default function Watch() {
                   )}
                 </div>
 
-                {/* Watch Party Button */}
+                {/* Right side: Watch Party Button */}
                 {watchParty.room ? (
                   <Button
                     variant="outline"
@@ -494,6 +506,10 @@ export default function Watch() {
                     episode={isTV ? episode : undefined}
                     title={title}
                     backdrop={getBackdropUrl(item.backdrop_path)}
+                    externalControls={true}
+                    currentSource={currentSource}
+                    onSourceChange={setCurrentSource}
+                    externalSources={videoSources}
                   />
                 </div>
               )}
