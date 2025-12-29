@@ -312,6 +312,17 @@ export function VideoPlayer({
   if (!isPlaying && backdrop) {
     return (
       <div className="w-full">
+        {/* Server Dropdown above player */}
+        {sources.length > 1 && (
+          <div className="mb-3">
+            <ServerDropdown
+              sources={sources}
+              currentSource={currentSource}
+              onSelectSource={handleSelectSource}
+            />
+          </div>
+        )}
+        
         {/* Player Preview */}
         <div 
           className="relative aspect-video bg-black overflow-hidden rounded-lg cursor-pointer group"
@@ -335,17 +346,25 @@ export function VideoPlayer({
 
   return (
     <div className="w-full">
+      {/* Server Dropdown above player */}
+      {sources.length > 1 && (
+        <div className="mb-3">
+          <ServerDropdown
+            sources={sources}
+            currentSource={currentSource}
+            onSelectSource={handleSelectSource}
+          />
+        </div>
+      )}
+
       {/* Player Container */}
       <div className="relative aspect-video bg-black overflow-hidden rounded-lg">
         {isCurrentApiStream ? (
-          // Use FmovPlayer for m3u8/HLS API streams with integrated source list
+          // Use FmovPlayer for m3u8/HLS API streams
           <FmovPlayer
             url={currentEmbedUrl}
             title={title}
             poster={backdrop}
-            sources={sources as VideoSourceItem[]}
-            currentSourceIndex={currentSource}
-            onSourceChange={handleSelectSource}
             onLoad={handleLoad}
             onError={handleError}
             className="w-full h-full"
@@ -400,17 +419,6 @@ export function VideoPlayer({
           </>
         )}
       </div>
-
-      {/* Server selection - show when not using FmovPlayer's integrated list */}
-      {!isCurrentApiStream && sources.length > 1 && (
-        <div className="mt-3">
-          <ServerDropdown
-            sources={sources}
-            currentSource={currentSource}
-            onSelectSource={handleSelectSource}
-          />
-        </div>
-      )}
     </div>
   );
 }
