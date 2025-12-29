@@ -425,14 +425,10 @@ export const tmdb = {
 };
 
 export const EMBED_SOURCES = [
-  { name: "Fmov", disabled: true, getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) =>
-    type === "tv" ? `https://fmov.online/embed/tv/${id}/${season}/${episode}` : `https://fmov.online/embed/movie/${id}` },
   { name: "Vidify", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) =>
     type === "tv" ? `https://player.vidify.top/embed/tv/${id}/${season}/${episode}` : `https://player.vidify.top/embed/movie/${id}` },
   { name: "Videasy", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
     type === "tv" ? `https://player.videasy.net/tv/${id}/${season}/${episode}` : `https://player.videasy.net/movie/${id}` },
-  { name: "FMovies4U", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
-    type === "tv" ? `https://fmovies4u.com/embed/tmdb-tv-${id}/${season}/${episode}` : `https://fmovies4u.com/embed/tmdb-movie-${id}` },
   { name: "Vidzee", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
     type === "tv" ? `https://player.vidzee.wtf/embed/tv/${id}/${season}/${episode}` : `https://player.vidzee.wtf/embed/movie/${id}` },
   { name: "VidLink", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
