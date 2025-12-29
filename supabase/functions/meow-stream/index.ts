@@ -19,9 +19,31 @@ function deriveKey(apiKeyB64: string): Uint8Array {
   return padded;
 }
 
-// AES-128-CBC Decryption (IV = Key as per MeowTV implementation)
-async function decryptData(encryptedB64: string, apiKeyB64: string): Promise<string | null> {
+// Handle large integers in JSON to avoid precision loss
+function quoteLargeInts(text: string): string {
+  return text.replace(/(:\s*)(\d{16,})/g, '$1"$2"');
+}
+
+function parseJsonPreserveBigInt<T = unknown>(text: string): T {
+  const safe = quoteLargeInts(text);
+  return JSON.parse(safe);
+}
+
+// Extract encrypted data from response (might be raw base64 or JSON with data field)
+function extractEncryptedData(text: string): string {
   try {
+    const json = JSON.parse(text);
+    if (json.data && typeof json.data === 'string') {
+      return json.data;
+    }
+  } catch { /* not JSON, use raw text */ }
+  return text;
+}
+
+// AES-128-CBC Decryption (IV = Key as per MeowTV implementation)
+async function decryptData(responseText: string, apiKeyB64: string): Promise<string | null> {
+  try {
+    const encryptedB64 = extractEncryptedData(responseText);
     const aesKey = deriveKey(apiKeyB64);
     const iv = aesKey.slice(); // IV is same as Key in MeowTV
 
@@ -100,7 +122,7 @@ async function searchContent(query: string, key: string): Promise<any[]> {
       return [];
     }
 
-    const data = JSON.parse(decryptedJson);
+    const data = parseJsonPreserveBigInt<{ data?: { rows?: any[] } }>(decryptedJson);
     return data?.data?.rows || [];
   } catch (e) {
     console.error('[MeowTV] search error:', e);
@@ -117,7 +139,7 @@ async function fetchDetails(movieId: string, key: string): Promise<any | null> {
     const payload = await res.text();
     const decryptedJson = await decryptData(payload, key);
     if (!decryptedJson) return null;
-    return JSON.parse(decryptedJson)?.data;
+    return parseJsonPreserveBigInt<{ data?: any }>(decryptedJson)?.data;
   } catch {
     return null;
   }
