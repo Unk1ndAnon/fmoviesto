@@ -83,12 +83,15 @@ export function useWatchTracking({
         .maybeSingle();
 
       if (existing) {
-        // Reuse existing event, just update ping
+        // Reuse existing event, but refresh timestamps so it counts for trending windows
         await supabase
           .from('watch_events')
-          .update({ last_ping: new Date().toISOString() })
+          .update({
+            started_at: new Date().toISOString(),
+            last_ping: new Date().toISOString(),
+          })
           .eq('id', existing.id);
-        
+
         setEventId(existing.id);
         setIsTracking(true);
         return;
