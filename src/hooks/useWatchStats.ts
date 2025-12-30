@@ -63,12 +63,13 @@ export function useWatchTracking({
   const sessionId = getSessionId();
 
   // Start tracking when playback begins
+  // Uses a longer window (2 hours) to prevent duplicate entries
   const startTracking = useCallback(async () => {
     if (!enabled || !tmdbId || isTracking) return;
 
     try {
-      // Check for duplicate view within 10 minutes
-      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      // Check for existing event within 2 hours - much longer window to reduce duplicates
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       
       const { data: existing } = await supabase
         .from('watch_events')
@@ -76,17 +77,24 @@ export function useWatchTracking({
         .eq('session_id', sessionId)
         .eq('tmdb_id', tmdbId)
         .eq('media_type', mediaType)
-        .gte('started_at', tenMinutesAgo)
+        .gte('started_at', twoHoursAgo)
+        .order('started_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (existing) {
         // Reuse existing event, just update ping
+        await supabase
+          .from('watch_events')
+          .update({ last_ping: new Date().toISOString() })
+          .eq('id', existing.id);
+        
         setEventId(existing.id);
         setIsTracking(true);
         return;
       }
 
-      // Insert new watch event
+      // Insert new watch event only if no recent one exists
       const { data, error } = await supabase
         .from('watch_events')
         .insert({
