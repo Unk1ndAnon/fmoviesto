@@ -1,6 +1,6 @@
 import { useParams, Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { tmdb, getBackdropUrl, getImageUrl } from "@/lib/tmdb";
 import { slugToTitle, generateSlug, getWatchMovieUrl, getWatchTVUrl, getMovieUrl, getTVShowUrl, parseSeasonEpisode } from "@/lib/slug";
 import { generateMovieKeywords, generateTVKeywords } from "@/lib/seo-keywords";
@@ -184,9 +184,24 @@ export default function Watch() {
     ? (show?.first_air_date ? new Date(show.first_air_date).getFullYear() : "")
     : (movie?.release_date ? new Date(movie.release_date).getFullYear() : "");
 
-  // Video source state
-  const [currentSource, setCurrentSource] = useState(0);
+  // Video source state - track by name to persist selection across episode changes
+  const [selectedServerName, setSelectedServerName] = useState<string | null>(null);
   const videoSources = useVideoSources(itemId || 0, isTV ? 'tv' : 'movie', title, isTV ? season : undefined, isTV ? episode : undefined);
+  
+  // Find current source index by name, fallback to first source
+  const currentSource = useMemo(() => {
+    if (!selectedServerName || videoSources.length === 0) return 0;
+    const idx = videoSources.findIndex(s => s.name === selectedServerName);
+    return idx >= 0 ? idx : 0;
+  }, [selectedServerName, videoSources]);
+  
+  // Wrapper to update both index (for VideoPlayer) and name (for persistence)
+  const setCurrentSource = useCallback((index: number) => {
+    const source = videoSources[index];
+    if (source) {
+      setSelectedServerName(source.name);
+    }
+  }, [videoSources]);
 
   // Sync event state for overlay
   const [currentSyncEvent, setCurrentSyncEvent] = useState<SyncEvent | null>(null);
