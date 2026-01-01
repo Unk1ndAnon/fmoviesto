@@ -425,6 +425,8 @@ export const tmdb = {
 };
 
 export const EMBED_SOURCES = [
+  { name: "Vidnest", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) =>
+    type === "tv" ? `https://vidnest.fun/tv/${id}/${season}/${episode}` : `https://vidnest.fun/movie/${id}` },
   { name: "Vidify", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) =>
     type === "tv" ? `https://player.vidify.top/embed/tv/${id}/${season}/${episode}` : `https://player.vidify.top/embed/movie/${id}` },
   { name: "Videasy", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) => 
