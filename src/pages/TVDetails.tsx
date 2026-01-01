@@ -10,8 +10,6 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { TVShowJsonLd } from "@/components/seo/JsonLd";
 import { TrailerDialog } from "@/components/movie/TrailerDialog";
-import { MovieTags } from "@/components/movie/MovieTags";
-import { GenerateTagsButton } from "@/components/movie/GenerateTagsButton";
 import { RelatedGenreLinks, Breadcrumbs, QuickLinks } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,7 +17,7 @@ import { Play, Star, ChevronRight, ChevronLeft, Plus, Film, Clock, ChevronDown, 
 import { SharePopover } from "@/components/SharePopover";
 import { useWatchlist, useFavorites } from "@/hooks/useUserLists";
 import { useTVFollows } from "@/hooks/useTVFollows";
-import { useAutoTag } from "@/hooks/useAutoTag";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthPromptDialog } from "@/components/AuthPromptDialog";
 import { cn } from "@/lib/utils";
@@ -61,9 +59,6 @@ export default function TVDetails() {
   });
 
   const isLoading = isSearching || isLoadingDetails;
-
-  // Auto-tag TV show on page view if not already tagged
-  useAutoTag({ tmdbId: show?.id, mediaType: "tv" });
 
   // Track view count
   useEffect(() => {
@@ -609,15 +604,6 @@ export default function TVDetails() {
           </div>
         </section>
 
-        {/* AI-Generated Tags */}
-        {show && (
-          <section className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 3xl:px-16 py-4 max-w-[2000px]">
-            <div className="flex items-center gap-3 mb-2 justify-center lg:justify-start">
-              <MovieTags tmdbId={show.id} mediaType="tv" maxTags={10} />
-              <GenerateTagsButton tmdbId={show.id} mediaType="tv" title={show.name} />
-            </div>
-          </section>
-        )}
 
         {/* Similar Shows */}
         <section className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 3xl:px-16 max-w-[2000px]">

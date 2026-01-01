@@ -1,4 +1,3 @@
-import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -17,8 +16,6 @@ import {
   LayoutDashboard, 
   Search, 
   Film, 
-  Tag, 
-  Sparkles, 
   AlertCircle,
   LogOut,
   Settings,
@@ -30,7 +27,6 @@ interface AdminSidebarProps {
   onLogout: () => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
-  failedJobsCount?: number;
 }
 
 const menuItems = [
@@ -38,9 +34,7 @@ const menuItems = [
   { id: "search", label: "Add Content", icon: Search },
   { id: "managed", label: "Managed Content", icon: Film },
   { id: "collections", label: "Collections", icon: FolderHeart },
-  { id: "ai-tagging", label: "AI Tagging", icon: Sparkles },
   { id: "failed-jobs", label: "Failed Jobs", icon: AlertCircle },
-  { id: "tags", label: "Tag Management", icon: Tag },
 ];
 
 export function AdminSidebar({ 
@@ -48,7 +42,6 @@ export function AdminSidebar({
   onLogout, 
   activeTab, 
   onTabChange,
-  failedJobsCount = 0 
 }: AdminSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -92,11 +85,6 @@ export function AdminSidebar({
                     <item.icon className="w-4 h-4" />
                     {!collapsed && (
                       <span className="flex-1">{item.label}</span>
-                    )}
-                    {!collapsed && item.id === "failed-jobs" && failedJobsCount > 0 && (
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-destructive text-destructive-foreground">
-                        {failedJobsCount}
-                      </span>
                     )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>

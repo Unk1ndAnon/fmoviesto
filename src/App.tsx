@@ -38,8 +38,6 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Following = lazy(() => import("./pages/Following"));
 const NewEpisodes = lazy(() => import("./pages/NewEpisodes"));
 const Genres = lazy(() => import("./pages/Genres"));
-const TagPage = lazy(() => import("./pages/TagPage"));
-const TagsIndex = lazy(() => import("./pages/TagsIndex"));
 const CollectionPage = lazy(() => import("./pages/CollectionPage"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const Trending = lazy(() => import("./pages/Trending"));
@@ -105,8 +103,6 @@ const App = () => (
                   <Route path="/genres" element={<Genres />} />
                   <Route path="/genre/movies/:genreSlug" element={<GenreMovies />} />
                   <Route path="/genre/tv/:genreSlug" element={<GenreTV />} />
-                  <Route path="/tags" element={<TagsIndex />} />
-                  <Route path="/tag/:slug" element={<TagPage />} />
                   <Route path="/collection/:slug" element={<CollectionPage />} />
                   <Route path="/trending" element={<Trending />} />
                   <Route path="/privacy" element={<Privacy />} />
