@@ -10,14 +10,12 @@ import { MovieRow } from "@/components/movie/MovieRow";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { MovieJsonLd } from "@/components/seo/JsonLd";
 import { TrailerDialog } from "@/components/movie/TrailerDialog";
-import { MovieTags } from "@/components/movie/MovieTags";
-import { GenerateTagsButton } from "@/components/movie/GenerateTagsButton";
 import { RelatedGenreLinks, Breadcrumbs, QuickLinks } from "@/components/seo/InternalLinks";
 import { Button } from "@/components/ui/button";
 import { Play, Star, Clock, Plus, Heart, ChevronRight } from "lucide-react";
 import { SharePopover } from "@/components/SharePopover";
 import { useWatchlist, useFavorites } from "@/hooks/useUserLists";
-import { useAutoTag } from "@/hooks/useAutoTag";
+
 
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthPromptDialog } from "@/components/AuthPromptDialog";
@@ -48,9 +46,6 @@ export default function MovieDetails() {
   });
 
   const isLoading = isSearching || isLoadingDetails;
-
-
-  useAutoTag({ tmdbId: movie?.id, mediaType: "movie" });
 
   // Track view count
   useEffect(() => {
@@ -417,15 +412,6 @@ export default function MovieDetails() {
           </div>
         </section>
 
-        {/* AI-Generated Tags */}
-        {movie && (
-          <section className="container mx-auto px-4 py-4">
-            <div className="flex items-center gap-3">
-              <MovieTags tmdbId={movie.id} mediaType="movie" maxTags={10} />
-              <GenerateTagsButton tmdbId={movie.id} mediaType="movie" title={movie.title} />
-            </div>
-          </section>
-        )}
 
         {/* Related Movies */}
         <section className="container mx-auto px-4 py-8">

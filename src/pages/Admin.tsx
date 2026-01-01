@@ -1,16 +1,13 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { adminStorage, adminAuth, AdminMovie } from "@/lib/admin";
-import { useBatchTagging } from "@/hooks/useTags";
 import { useAuth } from "@/contexts/AuthContext";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { ContentSearch } from "@/components/admin/ContentSearch";
 import { ManagedContent } from "@/components/admin/ManagedContent";
-import { AITaggingPanel } from "@/components/admin/AITaggingPanel";
 import { FailedJobsPanel } from "@/components/admin/FailedJobsPanel";
-import { TagManagement } from "@/components/admin/TagManagement";
 import { CollectionManagement } from "@/components/admin/CollectionManagement";
 
 import { SEOHead } from "@/components/seo/SEOHead";
@@ -27,7 +24,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [managedMovies, setManagedMovies] = useState<AdminMovie[]>([]);
 
-  const { stats } = useBatchTagging();
+  
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -147,7 +144,6 @@ export default function Admin() {
         return (
           <AdminDashboard
             managedMoviesCount={managedMovies.length}
-            stats={stats}
             onNavigate={setActiveTab}
           />
         );
@@ -163,12 +159,8 @@ export default function Admin() {
             onDelete={handleDelete}
           />
         );
-      case "ai-tagging":
-        return <AITaggingPanel />;
       case "failed-jobs":
         return <FailedJobsPanel />;
-      case "tags":
-        return <TagManagement />;
       case "collections":
         return <CollectionManagement />;
       default:
@@ -187,7 +179,6 @@ export default function Admin() {
             onLogout={handleLogout}
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            failedJobsCount={stats?.jobs?.failed || 0}
           />
 
           <main className="flex-1 overflow-auto">
