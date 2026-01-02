@@ -424,7 +424,7 @@ export const tmdb = {
   },
 };
 
-export const EMBED_SOURCES = 
+export const EMBED_SOURCES = [
   { name: "Vidify", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) =>
     type === "tv" ? `https://player.vidify.top/embed/tv/${id}/${season}/${episode}` : `https://player.vidify.top/embed/movie/${id}` },
   { name: "Fmov", getUrl: (id: number, type: "movie" | "tv", season?: number, episode?: number) =>
